@@ -37,7 +37,13 @@ using namespace std;
 			<< ", Relative difference: " << (abs(expected - actual) / expected); \
 		}\
 
-char* LoadArrayFromBinary(string path);
+int GetFileSize(string path);
+
+void* MallocFromDeviceArray(void* d_array, int size);
+void* CudaMallocFromHostArray(void* h_array, int size);
+void* MallocFromBinary(string path);
+void* CudaMallocFromBinaryFile(string path);
+
 
 double GetMeanAbsoluteError(float* const expected, float* const actual, int n);
 double GetMeanRelativeError(float* const expected, float* const actual, int n);
