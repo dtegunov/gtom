@@ -8,13 +8,13 @@ __declspec(dllexport) void __stdcall FFT(cufftReal* const d_input, cufftComplex*
 	switch (ndimensions)
 	{
 		case 1:
-			cufftPlan1d(&plan, dimensions.x, CUFFT_R2C, 1);
+			CudaSafeCall((cudaError)cufftPlan1d(&plan, dimensions.x, CUFFT_R2C, 1));
 			break;
 		case 2:
-			cufftPlan2d(&plan, dimensions.x, dimensions.y, CUFFT_R2C);
+			CudaSafeCall((cudaError)cufftPlan2d(&plan, dimensions.x, dimensions.y, CUFFT_R2C));
 			break;
 		case 3:
-			cufftPlan3d(&plan, dimensions.x, dimensions.y, dimensions.z, CUFFT_R2C);
+			CudaSafeCall((cudaError)cufftPlan3d(&plan, dimensions.x, dimensions.y, dimensions.z, CUFFT_R2C));
 			break;
 		default:
 			throw;
