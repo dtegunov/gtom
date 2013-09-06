@@ -1,5 +1,47 @@
 #include "Prerequisites.h"
 
+void ASSERT_ARRAY_ABSOLUTE_RANGE(float* expected, float* actual, int n, float range)
+{
+	int fails = 0;
+	#pragma omp for schedule(dynamic, 1024)
+	for(int i = 0; i < n; i++)
+		if(abs(expected[i] - actual[i]) > range)
+			#pragma omp atomic
+			fails++;
+
+	if(fails > 0)
+		GTEST_CHECK_(false) << fails << " out of " << n << " elements had an absolute error of over " << range;
+}
+
+void ASSERT_ARRAY_RELATIVE_RANGE(float* expected, float* actual, int n, float range)
+{
+	int fails = 0;
+	#pragma omp for schedule(dynamic, 1024)
+	for(int i = 0; i < n; i++)
+		if(expected[i] == 0.0f && actual[i] == 0.0f)
+			#pragma omp atomic
+			fails++;
+		else if(expected[i] != 0.0f && actual[i] != 0.0f && abs((actual[i] - expected[i]) / expected[i]) > range)
+			#pragma omp atomic
+			fails++;
+
+	if(fails > 0)
+		GTEST_CHECK_(false) << fails << " out of " << n << " elements had a relative error of over " << range;
+}
+
+void ASSERT_ARRAY_EQ(float* actual, float value, int n)
+{
+	int fails = 0;
+	#pragma omp for schedule(dynamic, 1024)
+	for(int i = 0; i < n; i++)
+		if(actual[i] != value)
+			#pragma omp atomic
+			fails++;
+
+	if(fails > 0)
+		GTEST_CHECK_(false) << fails << " out of " << n << " elements were not equal to " << value;
+}
+
 int GetFileSize(string path)
 {
 	ifstream inputfile(path, ios::in|ios::binary|ios::ate);
@@ -47,11 +89,31 @@ void* MallocFromBinary(string path)
 	return output;
 }
 
+float* CudaMallocZeroFilledFloat(int elements)
+{
+	float* h_array = (float*)malloc(elements * sizeof(float));
+
+	#pragma omp for schedule(dynamic, 1024)
+	for(int i = 0; i < elements; i++)
+		h_array[i] = 0.0f;
+
+	float* d_array = (float*)CudaMallocFromHostArray(h_array, elements * sizeof(float));
+	free(h_array);
+
+	return d_array;
+}
+
 double GetMeanAbsoluteError(float* const expected, float* const actual, int n)
 {
 	double sum = 0.0;
+
+	#pragma omp for schedule(dynamic, 1024)
 	for(int i = 0; i < n; i++)
-		sum += abs((double)expected[i] - (double)actual[i]);
+	{
+		float value = abs((double)expected[i] - (double)actual[i]);
+		#pragma omp atomic
+		sum += value;
+	}
 	sum /= (double)n;
 
 	return sum;
@@ -60,12 +122,19 @@ double GetMeanAbsoluteError(float* const expected, float* const actual, int n)
 double GetMeanRelativeError(float* const expected, float* const actual, int n)
 {
 	double sum = 0.0;
+
+	#pragma omp for schedule(dynamic, 1024)
 	for(int i = 0; i < n; i++)
 	{
 		if(expected[i] == 0.0f)
+			#pragma omp atomic
 			n--;
 		else
-			sum += abs((double)expected[i] - (double)actual[i]) / (double)expected[i];
+		{
+			float value = abs(((double)expected[i] - (double)actual[i]) / (double)expected[i]);
+			#pragma omp atomic
+			sum += value;
+		}
 	}
 
 	if(n == 0)

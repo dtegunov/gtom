@@ -54,6 +54,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_VARIADIC_MAX=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -82,7 +83,7 @@
     <ClInclude Include="Prerequisites.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FFT_1D.cpp" />
+    <ClCompile Include="FFT.cpp" />
     <ClCompile Include="Helper.cpp" />
   </ItemGroup>
   <ItemGroup>

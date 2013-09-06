@@ -18,11 +18,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FFT_1D.cpp">
-      <Filter>Source Files\FFT</Filter>
-    </ClCompile>
     <ClCompile Include="Helper.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FFT.cpp">
+      <Filter>Source Files\FFT</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
