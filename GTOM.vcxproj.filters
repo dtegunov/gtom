@@ -22,6 +22,9 @@
     <Filter Include="FFT">
       <UniqueIdentifier>{4bf12507-1cbe-48a6-a7b4-6669bd4ef946}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Helpers">
+      <UniqueIdentifier>{5204989d-a10c-4d4f-89fc-24365d4c5891}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="glm\CMakeLists.txt">
@@ -715,6 +718,9 @@
   <ItemGroup>
     <CudaCompile Include="FFT\FFT.cu">
       <Filter>FFT</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Helpers\TypeConversion.cu">
+      <Filter>Helpers</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

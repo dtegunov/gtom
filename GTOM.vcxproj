@@ -247,6 +247,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="FFT\FFT.cu" />
+    <CudaCompile Include="Helpers\TypeConversion.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C5083A95-7B41-47E7-99A5-FE08DC0ECDB1}</ProjectGuid>
