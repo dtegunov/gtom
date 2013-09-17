@@ -46,6 +46,8 @@ build/
 *.log
 *.scc
 *.bin
+*.asv
+*.mexw64
 
 # Visual C++ cache files
 ipch/
