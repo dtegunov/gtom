@@ -25,6 +25,9 @@
     <Filter Include="Helpers">
       <UniqueIdentifier>{5204989d-a10c-4d4f-89fc-24365d4c5891}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Generics">
+      <UniqueIdentifier>{d491355b-33db-44fd-8cd0-8ed024086add}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="glm\CMakeLists.txt">
@@ -721,6 +724,18 @@
     </CudaCompile>
     <CudaCompile Include="Helpers\TypeConversion.cu">
       <Filter>Helpers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="FFT\IFFT.cu">
+      <Filter>FFT</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Helpers\HermitianSymmetry.cu">
+      <Filter>Helpers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Helpers\Memory.cu">
+      <Filter>Helpers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Generics\Arithmetics.cu">
+      <Filter>Generics</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

@@ -6,24 +6,30 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include <cufft.h>
 #include <cublas_v2.h>
+#include <omp.h>
 
-#define GLM_FORCE_RADIANS
-#include "glm\glm.hpp"
-#include "glm\gtc\matrix_transform.hpp"
-#include "glm\gtx\quaternion.hpp"
-#include "glm\gtx\euler_angles.hpp"
+//#define GLM_FORCE_RADIANS
+//#include "glm\glm.hpp"
+//#include "glm\gtc\matrix_transform.hpp"
+//#include "glm\gtx\quaternion.hpp"
+//#include "glm\gtx\euler_angles.hpp"
 
 using namespace std;
 
-#define PI 3.14159265358979f
+#define TOM_TESTING
 
+#define PI 3.14159265358979f
 
 #define getOffset(x, y, stride) ((y) * (stride) + (x))
 #define getZigzag(x, stride) abs((((x) - (stride)) % ((stride) * 2)) - (stride))
+
+#define min(x, y) x > y ? y : x
+#define max(x, y) x < y ? y : x
 
 // Define this to turn on error checking
 #define CUDA_ERROR_CHECK
@@ -69,3 +75,27 @@ inline void __cudaCheckError( const char *file, const int line )
 
 	return;
 }
+
+/**
+ * \brief Executes the call, synchronizes the device and puts the ellapsed time into 'time'.
+ * \param[in] call	The call to be executed
+ * \param[in] time	Measured time will be written here
+ */
+#ifdef TOM_TESTING
+	#define CUDA_MEASURE_TIME(call) \
+			{ \
+				float time = 0.0f; \
+				cudaEvent_t start, stop; \
+				cudaEventCreate(&start); \
+				cudaEventCreate(&stop); \
+				cudaEventRecord(start); \
+				call; \
+				cudaDeviceSynchronize(); \
+				cudaEventRecord(stop); \
+				cudaEventSynchronize(stop); \
+				cudaEventElapsedTime(&time, start, stop); \
+				printf("Kernel in %s executed in %f ms.\n", __FILE__, time); \
+			}
+#else
+	#define CUDA_MEASURE_TIME(call) call
+#endif
