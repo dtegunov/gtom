@@ -21,7 +21,7 @@
     <ClCompile Include="Helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FFT.cpp">
+    <ClCompile Include="FFTR2C.cpp">
       <Filter>Source Files\FFT</Filter>
     </ClCompile>
   </ItemGroup>

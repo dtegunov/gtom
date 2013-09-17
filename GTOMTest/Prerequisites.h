@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
@@ -10,6 +9,7 @@
 #include <string.h>
 #include <math.h>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 
 #include <cufft.h>
@@ -56,7 +56,7 @@ using namespace std;
  * \param[in] n			Array element count
  * \param[in] range		Maximum margin of error that passes the test
  */
-void ASSERT_ARRAY_ABSOLUTE_RANGE(float* expected, float* actual, int n, float range);
+void ASSERT_ARRAY_ABSOLUTE_RANGE(float* expected, float* actual, size_t n, float range);
 
 /**
  * \brief Asserts that |(expected-actual)/expected| is below the specified margin for every value pair
@@ -65,7 +65,7 @@ void ASSERT_ARRAY_ABSOLUTE_RANGE(float* expected, float* actual, int n, float ra
  * \param[in] n			Array element count
  * \param[in] range		Maximum margin of error that passes the test
  */
-void ASSERT_ARRAY_RELATIVE_RANGE(float* expected, float* actual, int n, float range);
+void ASSERT_ARRAY_RELATIVE_RANGE(float* expected, float* actual, size_t n, float range);
 
 /**
  * \brief Asserts that actual=value for every array element
@@ -73,25 +73,7 @@ void ASSERT_ARRAY_RELATIVE_RANGE(float* expected, float* actual, int n, float ra
  * \param[in] value		Expected value
  * \param[in] n			Array element count
  */
-void ASSERT_ARRAY_EQ(float* actual, float value, int n);
-
-/**
- * \brief Executes the call, synchronizes the device and puts the ellapsed time into 'time'.
- * \param[in] call	The call to be executed
- * \param[in] time	Measured time will be written here
- */
-#define CUDA_MEASURE_TIME(call, time) \
-		{ \
-			cudaEvent_t start, stop; \
-			cudaEventCreate(&start); \
-			cudaEventCreate(&stop); \
-			cudaEventRecord(start); \
-			call; \
-			cudaDeviceSynchronize(); \
-			cudaEventRecord(stop); \
-			cudaEventSynchronize(stop); \
-			cudaEventElapsedTime(&time, start, stop); \
-		}
+void ASSERT_ARRAY_EQ(float* actual, float value, size_t n);
 
 /**
  * \brief Retrieves the file size in bytes.
@@ -101,27 +83,11 @@ void ASSERT_ARRAY_EQ(float* actual, float value, int n);
 int GetFileSize(string path);
 
 /**
- * \brief Allocates an array in host memory that is a copy of the array in device memory.
- * \param[in] d_array	Array in device memory to be copied
- * \param[in] size		Array size in bytes
- * \returns Array pointer in host memory
- */
-void* MallocFromDeviceArray(void* d_array, int size);
-
-/**
- * \brief Allocates an array in device memory that is a copy of the array in host memory.
- * \param[in] h_array	Array in host memory to be copied
- * \param[in] size		Array size in bytes
- * \returns Array pointer in device memory
- */
-void* CudaMallocFromHostArray(void* h_array, int size);
-
-/**
  * \brief Creates an array in device memory that is filled with a binary file's content and has the same size.
  * \param[in] path	File path
  * \returns Array pointer in device memory
  */
-void* MallocFromBinary(string path);
+void* MallocFromBinaryFile(string path);
 
 /**
  * \brief Creates an array in host memory that is filled with a binary file's content and has the same size.
@@ -131,20 +97,13 @@ void* MallocFromBinary(string path);
 void* CudaMallocFromBinaryFile(string path);
 
 /**
- * \brief Creates an array of floats initialized to 0.0f in device memory with the specified element count.
- * \param[in] elements	Element count
- * \returns Array pointer in device memory
- */
-float* CudaMallocZeroFilledFloat(int elements);
-
-/**
  * \brief Calculates the mean difference between expected and actual values.
  * \param[in] expected	Array with expected values
  * \param[in] actual	Array with actual values
  * \param[in] n			Array element count
  * \returns Mean difference
  */
-double GetMeanAbsoluteError(float* const expected, float* const actual, int n);
+double GetMeanAbsoluteError(float* const expected, float* const actual, size_t n);
 
 /**
  * \brief Calculates the mean quotient of difference between expected and actual values, and expected values, i. e. |(a-b)/a|. Cases with a=0 are left out.
@@ -153,4 +112,4 @@ double GetMeanAbsoluteError(float* const expected, float* const actual, int n);
  * \param[in] n			Array element count
  * \returns Mean quotient; or, in case every expected element is 0: -1
  */
-double GetMeanRelativeError(float* const expected, float* const actual, int n);
+double GetMeanRelativeError(float* const expected, float* const actual, size_t n);
