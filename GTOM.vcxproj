@@ -246,12 +246,25 @@
     <ClCompile Include="glm\core\dummy.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="Alignment\Align2D.cu" />
     <CudaCompile Include="FFT\FFT.cu" />
+    <CudaCompile Include="FFT\FFTRemap.cu" />
     <CudaCompile Include="FFT\IFFT.cu" />
     <CudaCompile Include="Generics\Arithmetics.cu" />
+    <CudaCompile Include="Generics\CompositeArithmetics.cu" />
+    <CudaCompile Include="Generics\MinMax.cu" />
+    <CudaCompile Include="Generics\Sum.cu" />
+    <CudaCompile Include="Generics\Dev.cu" />
+    <CudaCompile Include="Generics\SumMinMax.cu" />
     <CudaCompile Include="Helpers\HermitianSymmetry.cu" />
     <CudaCompile Include="Helpers\Memory.cu" />
     <CudaCompile Include="Helpers\TypeConversion.cu" />
+    <CudaCompile Include="ImageManipulation\Bandpass.cu" />
+    <CudaCompile Include="ImageManipulation\Bin.cu" />
+    <CudaCompile Include="ImageManipulation\Coordinates.cu" />
+    <CudaCompile Include="ImageManipulation\Norm.cu" />
+    <CudaCompile Include="Masking\Remap.cu" />
+    <CudaCompile Include="Masking\SphereMask.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C5083A95-7B41-47E7-99A5-FE08DC0ECDB1}</ProjectGuid>
@@ -315,9 +328,12 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN64;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN64;_CONSOLE;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OpenMPSupport>true</OpenMPSupport>
+      <AdditionalOptions>
+      </AdditionalOptions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -335,7 +351,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <CodeGeneration>compute_20,sm_20</CodeGeneration>
       <PtxAsOptionV>true</PtxAsOptionV>
       <AdditionalCompilerOptions>/openmp</AdditionalCompilerOptions>
-      <FastMath>true</FastMath>
+      <FastMath>false</FastMath>
       <Runtime>MT</Runtime>
     </CudaCompile>
   </ItemDefinitionGroup>

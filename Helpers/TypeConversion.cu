@@ -109,9 +109,9 @@ template void ConvertTComplexToSplitComplex<float>(tcomplex const* const origina
 template <class T> void d_ConvertToTFloat(T const* const d_original, tfloat* const d_copy, size_t const n)
 {
 	size_t TpB = 256;
-	size_t totalblocks = min((n + TpB - 1) / TpB, 8192);
-	dim3 grid = dim3((unsigned int)totalblocks);
-	ConvertToKernel<T, tfloat> <<<grid, (unsigned int)TpB>>> (d_original, d_copy, n);
+	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
+	dim3 grid = dim3((uint)totalblocks);
+	ConvertToKernel<T, tfloat> <<<grid, (uint)TpB>>> (d_original, d_copy, n);
 	cudaDeviceSynchronize();
 }
 template void d_ConvertToTFloat<double>(double const* const d_original, tfloat* const d_copy, size_t const n);
@@ -120,9 +120,9 @@ template void d_ConvertToTFloat<float>(float const* const d_original, tfloat* co
 template <class T> void d_ConvertTFloatTo(tfloat const* const d_original, T* const d_copy, size_t const n)
 {
 	size_t TpB = 256;
-	size_t totalblocks = min((n + TpB - 1) / TpB, 8192);
-	dim3 grid = dim3((unsigned int)totalblocks);
-	ConvertToKernel<tfloat, T> <<<grid, (unsigned int)TpB>>> (d_original, d_copy, n);
+	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
+	dim3 grid = dim3((uint)totalblocks);
+	ConvertToKernel<tfloat, T> <<<grid, (uint)TpB>>> (d_original, d_copy, n);
 	cudaDeviceSynchronize();
 }
 template void d_ConvertTFloatTo<double>(tfloat const* const d_original, double* const d_copy, size_t const n);
@@ -131,9 +131,9 @@ template void d_ConvertTFloatTo<float>(tfloat const* const d_original, float* co
 template <class T> void d_ConvertSplitComplexToTComplex(T const* const d_originalr, T const* const d_originali, tcomplex* const d_copy, size_t const n)
 {
 	size_t TpB = 256;
-	size_t totalblocks = min((n + TpB - 1) / TpB, 8192);
-	dim3 grid = dim3((unsigned int)totalblocks);
-	ConvertSplitComplexToTComplexKernel<T> <<<grid, (unsigned int)TpB>>> (d_originalr, d_originali, d_copy, n);
+	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
+	dim3 grid = dim3((uint)totalblocks);
+	ConvertSplitComplexToTComplexKernel<T> <<<grid, (uint)TpB>>> (d_originalr, d_originali, d_copy, n);
 	cudaDeviceSynchronize();
 }
 template void d_ConvertSplitComplexToTComplex<double>(double const* const d_originalr, double const* const d_originali, tcomplex* const d_copy, size_t const n);
@@ -142,9 +142,9 @@ template void d_ConvertSplitComplexToTComplex<float>(float const* const d_origin
 template <class T> void d_ConvertTComplexToSplitComplex(tcomplex const* const d_original, T* const d_copyr, T* const d_copyi, size_t const n)
 {
 	size_t TpB = 256;
-	size_t totalblocks = min((n + TpB - 1) / TpB, 8192);
-	dim3 grid = dim3((unsigned int)totalblocks);
-	ConvertTComplexToSplitComplexKernel<T> <<<grid, (unsigned int)TpB>>> (d_original, d_copyr, d_copyi, n);
+	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
+	dim3 grid = dim3((uint)totalblocks);
+	ConvertTComplexToSplitComplexKernel<T> <<<grid, (uint)TpB>>> (d_original, d_copyr, d_copyi, n);
 	cudaDeviceSynchronize();
 }
 template void d_ConvertTComplexToSplitComplex<double>(tcomplex const* const d_original, double* const d_copyr, double* const d_copyi, size_t const n);

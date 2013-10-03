@@ -28,6 +28,15 @@
     <Filter Include="Generics">
       <UniqueIdentifier>{d491355b-33db-44fd-8cd0-8ed024086add}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Masking">
+      <UniqueIdentifier>{c45d3d3a-e1b1-404a-b649-92ec88389380}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Image Manipulation">
+      <UniqueIdentifier>{7821bd65-9a28-4724-9bd5-3a5b25d9c823}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Alignment">
+      <UniqueIdentifier>{9ed67da0-c4df-4e12-8697-c66e9eded4ea}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="glm\CMakeLists.txt">
@@ -736,6 +745,45 @@
     </CudaCompile>
     <CudaCompile Include="Generics\Arithmetics.cu">
       <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Masking\SphereMask.cu">
+      <Filter>Masking</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Generics\Sum.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Generics\MinMax.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Masking\Remap.cu">
+      <Filter>Masking</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Generics\Dev.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Generics\CompositeArithmetics.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Generics\SumMinMax.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="ImageManipulation\Bin.cu">
+      <Filter>Image Manipulation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="ImageManipulation\Norm.cu">
+      <Filter>Image Manipulation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Alignment\Align2D.cu">
+      <Filter>Alignment</Filter>
+    </CudaCompile>
+    <CudaCompile Include="ImageManipulation\Bandpass.cu">
+      <Filter>Image Manipulation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="FFT\FFTRemap.cu">
+      <Filter>FFT</Filter>
+    </CudaCompile>
+    <CudaCompile Include="ImageManipulation\Coordinates.cu">
+      <Filter>Image Manipulation</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

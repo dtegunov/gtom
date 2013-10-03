@@ -9,11 +9,14 @@ __global__ void HermitianSymmetryTrimKernel(tcomplex* const d_input, tcomplex* c
 //Symmetry Padding//
 ////////////////////
 
-void d_HermitianSymmetryPad(tcomplex* const d_input, tcomplex* const d_output, int3 const dimensions)
+void d_HermitianSymmetryPad(tcomplex* const d_input, tcomplex* const d_output, int3 const dimensions, int batch)
 {
 	int TpB = 256;
 	dim3 grid = dim3((dimensions.x + TpB - 1) / TpB, dimensions.y, dimensions.z);
-	HermitianSymmetryPadKernel <<<grid, TpB>>> (d_input, d_output, dimensions);
+	size_t elementsFull = dimensions.x * dimensions.y * dimensions.z;
+	size_t elementsTrimmed = (dimensions.x / 2 + 1) * dimensions.y * dimensions.z;
+	for (int i = 0; i < batch; i++)
+		HermitianSymmetryPadKernel <<<grid, TpB>>> (d_input + elementsTrimmed, d_output + elementsFull, dimensions);
 
 	CudaSafeCall(cudaDeviceSynchronize());
 }
@@ -55,11 +58,14 @@ __global__ void HermitianSymmetryPadKernel(tcomplex* const d_input, tcomplex* co
 //Symmetry Trimming//
 /////////////////////
 
-void d_HermitianSymmetryTrim(tcomplex* const d_input, tcomplex* const d_output, int3 const dimensions)
+void d_HermitianSymmetryTrim(tcomplex* const d_input, tcomplex* const d_output, int3 const dimensions, int batch)
 {
 	int TpB = 256;
 	dim3 grid = dim3(((dimensions.x / 2 + 1) + TpB - 1) / TpB, dimensions.y, dimensions.z);
-	HermitianSymmetryTrimKernel <<<grid, TpB>>> (d_input, d_output, dimensions);
+	size_t elementsFull = dimensions.x * dimensions.y * dimensions.z;
+	size_t elementsTrimmed = (dimensions.x / 2 + 1) * dimensions.y * dimensions.z;
+	for (int i = 0; i < batch; i++)
+		HermitianSymmetryTrimKernel <<<grid, TpB>>> (d_input + elementsFull, d_output + elementsTrimmed, dimensions);
 
 	CudaSafeCall(cudaDeviceSynchronize());
 }
