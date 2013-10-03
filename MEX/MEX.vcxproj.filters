@@ -16,6 +16,9 @@
     <Filter Include="Source Files\FFT">
       <UniqueIdentifier>{6422e057-f6ea-4c89-acf2-ad7d13b6e4e9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Generics">
+      <UniqueIdentifier>{4aa4114f-78c2-4a26-872c-0fb3820006ba}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Helper.cu">
@@ -48,6 +51,9 @@
   <ItemGroup>
     <ClCompile Include="complexinterleaved.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Generics\Norm.cu">
+      <Filter>Source Files\Generics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

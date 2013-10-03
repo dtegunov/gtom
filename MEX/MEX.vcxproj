@@ -24,6 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="complexinterleaved.cpp" />
+    <ClCompile Include="Generics\Norm.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B14BE630-7941-47BB-9BE3-FA8AF3BBEB7D}</ProjectGuid>

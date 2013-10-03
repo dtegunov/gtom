@@ -1,0 +1,1 @@
+mex 'Generics\Norm.cu' Helper.cu;
