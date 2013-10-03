@@ -16,6 +16,15 @@
     <Filter Include="Source Files\FFT">
       <UniqueIdentifier>{b9e7f5f2-df1f-4a17-b6f7-689de09430b7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Generics">
+      <UniqueIdentifier>{01b19b4f-8ac7-4da6-9b75-a523fe49d6ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Masking">
+      <UniqueIdentifier>{98e12c3c-eed0-4c25-a7ad-93001340c0d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Image Manipulation">
+      <UniqueIdentifier>{ab2ef8f4-6b27-4153-a27c-f21d92aec8e7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -23,6 +32,39 @@
     </ClCompile>
     <ClCompile Include="FFTR2C.cpp">
       <Filter>Source Files\FFT</Filter>
+    </ClCompile>
+    <ClCompile Include="Sum.cpp">
+      <Filter>Source Files\Generics</Filter>
+    </ClCompile>
+    <ClCompile Include="Min.cpp">
+      <Filter>Source Files\Generics</Filter>
+    </ClCompile>
+    <ClCompile Include="Max.cpp">
+      <Filter>Source Files\Generics</Filter>
+    </ClCompile>
+    <ClCompile Include="Remap.cpp">
+      <Filter>Source Files\Masking</Filter>
+    </ClCompile>
+    <ClCompile Include="Dev.cpp">
+      <Filter>Source Files\Generics</Filter>
+    </ClCompile>
+    <ClCompile Include="Norm.cpp">
+      <Filter>Source Files\Image Manipulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Bin.cpp">
+      <Filter>Source Files\Image Manipulation</Filter>
+    </ClCompile>
+    <ClCompile Include="SphereMask.cpp">
+      <Filter>Source Files\Masking</Filter>
+    </ClCompile>
+    <ClCompile Include="Bandpass.cpp">
+      <Filter>Source Files\Image Manipulation</Filter>
+    </ClCompile>
+    <ClCompile Include="FFTRemap.cpp">
+      <Filter>Source Files\FFT</Filter>
+    </ClCompile>
+    <ClCompile Include="Coordinates.cpp">
+      <Filter>Source Files\Image Manipulation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

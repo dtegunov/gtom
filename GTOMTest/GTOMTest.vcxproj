@@ -64,7 +64,7 @@
       <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)Data" "$(TargetDir)Data" /E /Y</Command>
+      <Command>xcopy "$(ProjectDir)Data" "$(TargetDir)Data" /e /d /y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -75,7 +75,9 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_VARIADIC_MAX=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CONSOLE;_VARIADIC_MAX=10;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>/D_SECURE_SCL=0,/D_ITERATOR_DEBUG_LEVEL=0</AdditionalOptions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -85,15 +87,26 @@
       <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)Data" "$(TargetDir)Data" /E /Y</Command>
+      <Command>xcopy "$(ProjectDir)Data" "$(TargetDir)Data" /e /d /y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Bandpass.cpp" />
+    <ClCompile Include="Bin.cpp" />
+    <ClCompile Include="Coordinates.cpp" />
+    <ClCompile Include="Dev.cpp" />
     <ClCompile Include="FFTR2C.cpp" />
+    <ClCompile Include="FFTRemap.cpp" />
     <ClCompile Include="Helper.cpp" />
+    <ClCompile Include="Max.cpp" />
+    <ClCompile Include="Min.cpp" />
+    <ClCompile Include="Norm.cpp" />
+    <ClCompile Include="Remap.cpp" />
+    <ClCompile Include="SphereMask.cpp" />
+    <ClCompile Include="Sum.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\GoogleTest\GoogleTest.vcxproj">

@@ -56,7 +56,7 @@ using namespace std;
  * \param[in] n			Array element count
  * \param[in] range		Maximum margin of error that passes the test
  */
-void ASSERT_ARRAY_ABSOLUTE_RANGE(float* expected, float* actual, size_t n, float range);
+void ASSERT_ARRAY_ABSOLUTE_RANGE(tfloat* expected, tfloat* actual, size_t n, tfloat range);
 
 /**
  * \brief Asserts that |(expected-actual)/expected| is below the specified margin for every value pair
@@ -65,7 +65,7 @@ void ASSERT_ARRAY_ABSOLUTE_RANGE(float* expected, float* actual, size_t n, float
  * \param[in] n			Array element count
  * \param[in] range		Maximum margin of error that passes the test
  */
-void ASSERT_ARRAY_RELATIVE_RANGE(float* expected, float* actual, size_t n, float range);
+void ASSERT_ARRAY_RELATIVE_RANGE(tfloat* expected, tfloat* actual, size_t n, tfloat range);
 
 /**
  * \brief Asserts that actual=value for every array element
@@ -73,7 +73,15 @@ void ASSERT_ARRAY_RELATIVE_RANGE(float* expected, float* actual, size_t n, float
  * \param[in] value		Expected value
  * \param[in] n			Array element count
  */
-void ASSERT_ARRAY_EQ(float* actual, float value, size_t n);
+template <class T> void ASSERT_ARRAY_EQ(T* actual, T value, size_t n);
+
+/**
+ * \brief Asserts that actual=value for every array element
+ * \param[in] actual	Array with actual values
+ * \param[in] value		Array with expected values
+ * \param[in] n			Array element count
+ */
+template <class T> void ASSERT_ARRAY_EQ(T* actual, T* values, size_t n);
 
 /**
  * \brief Retrieves the file size in bytes.
@@ -113,3 +121,11 @@ double GetMeanAbsoluteError(float* const expected, float* const actual, size_t n
  * \returns Mean quotient; or, in case every expected element is 0: -1
  */
 double GetMeanRelativeError(float* const expected, float* const actual, size_t n);
+
+/**
+ * \brief Calculates the sum of the array's elements using Kahan's algorithm to minimize the error for large arrays.
+ * \param[in] expected	Array with values to be summed
+ * \param[in] n			Array element count
+ * \returns Sum
+ */
+template<class T> T KahanSum(T *data, int size);

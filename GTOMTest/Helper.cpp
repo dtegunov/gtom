@@ -29,11 +29,11 @@ void ASSERT_ARRAY_RELATIVE_RANGE(tfloat* expected, tfloat* actual, size_t n, tfl
 		GTEST_CHECK_(false) << fails << " out of " << n << " elements had a relative error of over " << range;
 }
 
-void ASSERT_ARRAY_EQ(tfloat* actual, tfloat value, size_t n)
+template <class T> void ASSERT_ARRAY_EQ(T* actual, T value, size_t n)
 {
 	int fails = 0;
 	#pragma omp for schedule(dynamic, 1024)
-	for(int i = 0; i < n; i++)
+	for(intptr_t i = 0; i < n; i++)
 		if(actual[i] != value)
 			#pragma omp atomic
 			fails++;
@@ -41,6 +41,23 @@ void ASSERT_ARRAY_EQ(tfloat* actual, tfloat value, size_t n)
 	if(fails > 0)
 		GTEST_CHECK_(false) << fails << " out of " << n << " elements were not equal to " << value;
 }
+template void ASSERT_ARRAY_EQ<tfloat>(tfloat* actual, tfloat value, size_t n);
+template void ASSERT_ARRAY_EQ<int>(int* actual, int value, size_t n);
+
+template <class T> void ASSERT_ARRAY_EQ(T* actual, T* expected, size_t n)
+{
+	int fails = 0;
+	#pragma omp for schedule(dynamic, 1024)
+	for(intptr_t i = 0; i < n; i++)
+		if(actual[i] != expected[i])
+			#pragma omp atomic
+			fails++;
+
+	if(fails > 0)
+		GTEST_CHECK_(false) << fails << " out of " << n << " elements were not equal to expected";
+}
+template void ASSERT_ARRAY_EQ<tfloat>(tfloat* actual, tfloat* expected, size_t n);
+template void ASSERT_ARRAY_EQ<int>(int* actual, int* expected, size_t n);
 
 int GetFileSize(string path)
 {
@@ -76,15 +93,24 @@ double GetMeanAbsoluteError(tfloat* const expected, tfloat* const actual, size_t
 {
 	double sum = 0.0;
 
+	double* summands = (double*)malloc(n * sizeof(double));
 	intptr_t s_n = (intptr_t)n;
 	#pragma omp for schedule(dynamic, 1024)
 	for(intptr_t i = 0; i < s_n; i++)
+		summands[i] = abs((double)expected[i] - (double)actual[i]);
+
+	double c = 0, y, t;
+	for(size_t i = 0; i < n; i++)
 	{
-		double value = abs((double)expected[i] - (double)actual[i]);
-		#pragma omp atomic
-		sum += value;
+		y = summands[i] - c;
+		t = sum + y;
+		c = (t - sum) - y;
+		sum = t;
 	}
-	sum /= (double)s_n;
+
+	free(summands);
+
+	sum /= (double)n;
 
 	return sum;
 }
@@ -92,24 +118,32 @@ double GetMeanAbsoluteError(tfloat* const expected, tfloat* const actual, size_t
 double GetMeanRelativeError(tfloat* const expected, tfloat* const actual, size_t n)
 {
 	double sum = 0.0;
-	
+
+	double* summands = (double*)malloc(n * sizeof(double));
 	intptr_t s_n = (intptr_t)n;
+	size_t actual_n = n;
 	#pragma omp for schedule(dynamic, 1024)
 	for(intptr_t i = 0; i < s_n; i++)
-	{
 		if(expected[i] == 0.0f)
-			#pragma omp atomic
-			s_n--;
-		else
 		{
-			double value = abs(((double)expected[i] - (double)actual[i]) / (double)expected[i]);
+			summands[i] = 0;
 			#pragma omp atomic
-			sum += value;
+			actual_n--;
 		}
+		else
+			summands[i] = abs(((double)expected[i] - (double)actual[i]) / (double)expected[i]);
+
+	double c = 0, y, t;
+	for(size_t i = 0; i < n; i++)
+	{
+		y = summands[i] - c;
+		t = sum + y;
+		c = (t - sum) - y;
+		sum = t;
 	}
 
-	if(s_n == 0)
+	if(actual_n == 0)
 		return -1.0;
 	else
-		return sum / (double)s_n;
+		return sum / (double)actual_n;
 }
