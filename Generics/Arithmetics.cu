@@ -53,6 +53,7 @@ template <class T> void d_MultiplyByScalar(T* d_input, T* d_output, size_t eleme
 	cudaDeviceSynchronize();
 }
 template void d_MultiplyByScalar<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat multiplicator);
+template void d_MultiplyByScalar<double>(double* d_input, double* d_output, size_t elements, double multiplicator);
 template void d_MultiplyByScalar<int>(int* d_input, int* d_output, size_t elements, int multiplicator);
 
 template <class T> void d_MultiplyByScalar(T* d_input, T* d_multiplicators, T* d_output, size_t elements, int batch)

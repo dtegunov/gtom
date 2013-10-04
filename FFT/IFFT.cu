@@ -25,6 +25,30 @@ void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimen
 	d_MultiplyByScalar(d_output, d_output, elements, 1.0f / (float)elements);
 }
 
+void d_IFFTZ2D(cufftDoubleComplex* const d_input, double* const d_output, int const ndimensions, int3 const dimensions, int batch)
+{
+	cufftHandle plan;
+	cufftType direction = CUFFT_Z2D;
+	int n[3] = { dimensions.z, dimensions.y, dimensions.x };
+
+	CudaSafeCall((cudaError)cufftPlanMany(&plan, ndimensions, n + (3 - ndimensions),
+										  NULL, 1, 0,
+										  NULL, 1, 0,
+										  direction, batch));
+
+	CudaSafeCall((cudaError)cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE));
+	#ifdef TOM_DOUBLE
+		CUDA_MEASURE_TIME(CudaSafeCall((cudaError)cufftExecZ2D(plan, d_input, d_output)));
+	#else
+		CUDA_MEASURE_TIME(CudaSafeCall((cudaError)cufftExecZ2D(plan, d_input, d_output)));
+	#endif
+
+	CudaSafeCall((cudaError)cufftDestroy(plan));
+
+	size_t elements = dimensions.x * dimensions.y * dimensions.z;
+	d_MultiplyByScalar(d_output, d_output, elements, 1.0 / (double)elements);
+}
+
 void d_IFFTC2RFull(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch)
 {
 	tcomplex* d_unpadded;
