@@ -66,8 +66,6 @@
     <ClCompile Include="Coordinates.cpp">
       <Filter>Source Files\Image Manipulation</Filter>
     </ClCompile>
-    <ClCompile Include="Shift.cpp">
-      <Filter>Source Files\Image Manipulation</Filter>
     <ClCompile Include="RectangleMask.cpp">
       <Filter>Source Files\Masking</Filter>
     </ClCompile>
