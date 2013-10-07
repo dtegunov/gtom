@@ -66,13 +66,10 @@
     <ClCompile Include="Coordinates.cpp">
       <Filter>Source Files\Image Manipulation</Filter>
     </ClCompile>
-<<<<<<< HEAD
     <ClCompile Include="Shift.cpp">
       <Filter>Source Files\Image Manipulation</Filter>
-=======
     <ClCompile Include="RectangleMask.cpp">
       <Filter>Source Files\Masking</Filter>
->>>>>>> 77ee24d2625debc91b0cc36e1f8bdad326e7221b
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
