@@ -785,13 +785,10 @@
     <CudaCompile Include="ImageManipulation\Coordinates.cu">
       <Filter>Image Manipulation</Filter>
     </CudaCompile>
-<<<<<<< HEAD
     <CudaCompile Include="ImageManipulation\Shift.cu">
       <Filter>Image Manipulation</Filter>
-=======
     <CudaCompile Include="Masking\RectangleMask.cu">
       <Filter>Masking</Filter>
->>>>>>> 77ee24d2625debc91b0cc36e1f8bdad326e7221b
     </CudaCompile>
   </ItemGroup>
 </Project>
