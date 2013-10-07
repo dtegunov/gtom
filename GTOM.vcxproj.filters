@@ -785,5 +785,8 @@
     <CudaCompile Include="ImageManipulation\Coordinates.cu">
       <Filter>Image Manipulation</Filter>
     </CudaCompile>
+    <CudaCompile Include="Masking\RectangleMask.cu">
+      <Filter>Masking</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

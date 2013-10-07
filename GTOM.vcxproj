@@ -263,6 +263,7 @@
     <CudaCompile Include="ImageManipulation\Bin.cu" />
     <CudaCompile Include="ImageManipulation\Coordinates.cu" />
     <CudaCompile Include="ImageManipulation\Norm.cu" />
+    <CudaCompile Include="Masking\RectangleMask.cu" />
     <CudaCompile Include="Masking\Remap.cu" />
     <CudaCompile Include="Masking\SphereMask.cu" />
   </ItemGroup>

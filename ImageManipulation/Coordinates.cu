@@ -41,7 +41,7 @@ void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, int batch)
 							dims.x * sizeof(tfloat));
 
 		size_t TpB = min(256, polardims.y);
-		dim3 grid = dim3((polardims.y + TpB - 1) / TpB, polardims.x);
+		dim3 grid = dim3((int)((polardims.y + TpB - 1) / TpB), polardims.x);
 
 		Cart2PolarKernel <<<grid, (uint)TpB>>> (d_output + polarelements * b, polardims, (tfloat)max(dims.x, dims.y) / (tfloat)2);
 
