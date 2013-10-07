@@ -14,8 +14,8 @@ void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat
 
 	//Prepare mask:
 
-	tfloat* d_maskhigh = (tfloat*)CudaMallocValueFilled(dims.x * dims.y * dims.z, (tfloat)1);
-	tfloat* d_masklow = (tfloat*)CudaMallocValueFilled(dims.x * dims.y * dims.z, (tfloat)1);
+	tfloat* d_maskhigh = (tfloat*)CudaMallocValueFilled(elements, (tfloat)1);
+	tfloat* d_masklow = (tfloat*)CudaMallocValueFilled(elements, (tfloat)1);
 
 	d_SphereMask(d_maskhigh, d_maskhigh, dims, &high, smooth, (tfloat3*)NULL, 1);
 	d_SphereMask(d_masklow, d_masklow, dims, &low, smooth, (tfloat3*)NULL, 1);
@@ -25,8 +25,8 @@ void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat
 	tfloat* d_masklowFFT;
 	cudaMalloc((void**)&d_masklowFFT, elementsFFT * sizeof(tfloat));
 
-	d_RemapFullToHalfFFT(d_maskhigh, d_maskhighFFT, dims);
-	d_RemapFullToHalfFFT(d_masklow, d_masklowFFT, dims);
+	d_RemapFull2HalfFFT(d_maskhigh, d_maskhighFFT, dims);
+	d_RemapFull2HalfFFT(d_masklow, d_masklowFFT, dims);
 
 	tfloat* d_mask = d_maskhighFFT;
 	d_SubtractVector(d_mask, d_masklowFFT, d_mask, elementsFFT, 1);

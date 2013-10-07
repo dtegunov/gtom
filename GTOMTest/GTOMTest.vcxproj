@@ -66,6 +66,10 @@
     <PostBuildEvent>
       <Command>xcopy "$(ProjectDir)Data" "$(TargetDir)Data" /e /d /y</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -104,7 +108,9 @@
     <ClCompile Include="Max.cpp" />
     <ClCompile Include="Min.cpp" />
     <ClCompile Include="Norm.cpp" />
+    <ClCompile Include="RectangleMask.cpp" />
     <ClCompile Include="Remap.cpp" />
+    <ClCompile Include="Shift.cpp" />
     <ClCompile Include="SphereMask.cpp" />
     <ClCompile Include="Sum.cpp" />
   </ItemGroup>

@@ -114,8 +114,11 @@ template <class T> void d_MultiplyByScalar(T* d_input, T* d_multiplicators, T* d
 template <class T> void d_MultiplyByVector(T* d_input, T* d_multiplicators, T* d_output, size_t elements, int batch = 1);
 
 void d_ComplexMultiplyByVector(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
+void d_ComplexMultiplyByVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tfloat multiplicator);
+void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator);
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
+void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
 
 template <class T> void d_AddScalar(T* d_input, T* d_output, size_t elements, T summand);
 template <class T> void d_AddScalar(T* d_input, T* d_summands, T* d_output, size_t elements, int batch = 1);
@@ -179,9 +182,14 @@ void d_HermitianSymmetryPad(tcomplex* const d_input, tcomplex* const d_output, i
 void d_HermitianSymmetryTrim(tcomplex* const d_input, tcomplex* const d_output, int3 const dimensions, int batch = 1);
 
 //FFTRemap.cu:
+<<<<<<< HEAD
 template <class T> void d_RemapFullToHalfFFT(T* d_input, T* d_output, int3 dims);
 template <class T> void d_RemapHalfToHalfFFT(T* d_input, T* d_output, int3 dims);
 template <class T> void d_RemapHalfFFTToHalf(T* d_input, T* d_output, int3 dims);
+=======
+template <class T> void d_RemapFull2HalfFFT(T* d_input, T* d_output, int3 dims);
+template <class T> void d_RemapFullFFT2Full(T* d_input, T* d_output, int3 dims);
+>>>>>>> 77ee24d2625debc91b0cc36e1f8bdad326e7221b
 
 
 //////////////////////
@@ -221,6 +229,9 @@ void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3 delta, int ba
 
 //SphereMask.cu:
 template <class T> void d_SphereMask(T const* const d_input, T* const d_output, int3 const size, tfloat const* const radius, tfloat const sigma, tfloat3 const* const center, int batch = 1);
+
+//RectangleMask.cu:
+template <class T> void d_RectangleMask(T const* const d_input, T* const d_output, int3 const size, int3 const rectsize, tfloat const sigma, int3 const* const center, int batch);
 
 //Remap.cu:
 template <class T> void d_Remap(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch = 1);

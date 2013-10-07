@@ -37,7 +37,7 @@ using namespace std;
 #endif
 
 struct tfloat2
-{
+{	
 	tfloat x;
 	tfloat y;
 
@@ -75,6 +75,18 @@ struct tfloat5
 	tfloat5(tfloat x, tfloat y, tfloat z, tfloat w, tfloat v) : x(x), y(y), z(z), w(w), v(v) {}
 };
 
+inline int2 toInt2(int x, int y)
+{
+	int2 value = {x, y};
+	return value;
+}
+
+inline int3 toInt3(int x, int y, int z)
+{
+	int3 value = {x, y, z};
+	return value;
+}
+
 struct imgstats5
 {
 	tfloat mean;
@@ -109,39 +121,8 @@ typedef unsigned int uint;
 #define min(x, y) ((x) > (y) ? (y) : (x))
 #define max(x, y) ((x) < (y) ? (y) : (x))
 
-//Utility class used to avoid linker errors with extern
-//unsized shared memory arrays with templated type
-template<class T> struct SharedMemory
-{
-    __device__ inline operator T*()
-    {
-        extern __shared__ int __smem[];
-        return (T*)__smem;
-    }
+#define NumOfDims(dims) (3 - max(2 - max((dims).x, 1), 0) - max(2 - max((dims).y, 1), 0) - max(2 - max((dims).z, 1), 0))
 
-    __device__ inline operator const T*() const
-    {
-        extern __shared__ int __smem[];
-        return (T*)__smem;
-    }
-};
-
-//specialize for tfloat to avoid unaligned memory
-//access compile errors
-template<> struct SharedMemory<tfloat>
-{
-    __device__ inline operator tfloat*()
-    {
-        extern __shared__ tfloat __smem_d[];
-        return (tfloat*)__smem_d;
-    }
-
-    __device__ inline operator const tfloat*() const
-    {
-        extern __shared__ tfloat __smem_d[];
-        return (tfloat*)__smem_d;
-    }
-};
 
 // Define this to turn on error checking
 #define CUDA_ERROR_CHECK
@@ -153,13 +134,8 @@ inline void __cudaSafeCall( cudaError err, const char *file, const int line )
 {
 #ifdef CUDA_ERROR_CHECK
 	if ( cudaSuccess != err )
-	{
 		printf(cudaGetErrorString( err ));
-		//exit( -1 );
-	}
 #endif
-
-	return;
 }
 
 inline void __cudaCheckError( const char *file, const int line )
@@ -167,31 +143,13 @@ inline void __cudaCheckError( const char *file, const int line )
 #ifdef CUDA_ERROR_CHECK
 	cudaError err = cudaGetLastError();
 	if ( cudaSuccess != err )
-	{
-		//printf( "cudaCheckError() failed at %s:%i : %s\n",
-				 //file, line, cudaGetErrorString( err ) );
 		printf(cudaGetErrorString( err ));
-		//exit( -1 );
-	}
-
-	// More careful checking. However, this will affect performance.
-	// Comment away if needed.
-	/*err = cudaDeviceSynchronize();
-	if( cudaSuccess != err )
-	{
-		printf( "cudaCheckError() with sync failed at %s:%i : %s\n",
-				 file, line, cudaGetErrorString( err ) );
-		//exit( -1 );
-	}*/
 #endif
-
-	return;
 }
 
 /**
- * \brief Executes the call, synchronizes the device and puts the ellapsed time into 'time'.
+ * \brief Executes a call and prints the time needed for execution.
  * \param[in] call	The call to be executed
- * \param[in] time	Measured time will be written here
  */
 #ifdef TOM_TESTING
 	#define CUDA_MEASURE_TIME(call) \
