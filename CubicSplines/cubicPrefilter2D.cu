@@ -45,8 +45,8 @@ following papers:
 #define _2D_CUBIC_BSPLINE_PREFILTER_H_
 
 #include <stdio.h>
-#include <cutil.h>
 #include "internal/cubicPrefilter_kernel.cu"
+#include "..\Prerequisites.cuh"
 
 // ***************************************************************************
 // *	Global GPU procedures
@@ -60,7 +60,7 @@ __global__ void SamplesToCoefficients2DX(
 {
 	// process lines in x-direction
 	const uint y = blockIdx.x * blockDim.x + threadIdx.x;
-	floatN* line = (floatN*)((uchar*)image + y * pitch);  //direct access
+	floatN* line = (floatN*)((char*)image + y * pitch);  //direct access
 
 	ConvertToInterpolationCoefficients(line, width, sizeof(floatN));
 }
@@ -88,55 +88,15 @@ __global__ void SamplesToCoefficients2DY(
 //! @param pitch   width in bytes (including padding bytes)
 //! @param width   image width in number of pixels
 //! @param height  image height in number of pixels
-template<class floatN>
-extern void CubicBSplinePrefilter2D(floatN* image, uint pitch, uint width, uint height)
+template<class floatN> void CubicBSplinePrefilter2D(floatN* image, uint pitch, uint width, uint height)
 {
 	dim3 dimBlockX(min(PowTwoDivider(height), 64));
 	dim3 dimGridX(height / dimBlockX.x);
 	SamplesToCoefficients2DX<floatN><<<dimGridX, dimBlockX>>>(image, pitch, width, height);
-	CUT_CHECK_ERROR("SamplesToCoefficients2DX kernel failed");
 
 	dim3 dimBlockY(min(PowTwoDivider(width), 64));
 	dim3 dimGridY(width / dimBlockY.x);
 	SamplesToCoefficients2DY<floatN><<<dimGridY, dimBlockY>>>(image, pitch, width, height);
-	CUT_CHECK_ERROR("SamplesToCoefficients2DY kernel failed");
-}
-
-//! Convert the pixel values into cubic b-spline coefficients
-//! @param image  pointer to the image bitmap in GPU (device) memory
-//! @param pitch   width in bytes (including padding bytes)
-//! @param width   image width in number of pixels
-//! @param height  image height in number of pixels
-//! @note Prints stopwatch feedback
-template<class floatN>
-extern void CubicBSplinePrefilter2DTimer(floatN* image, uint pitch, uint width, uint height)
-{
-	printf("\nCubic B-Spline Prefilter timer:\n");
-	unsigned int hTimer;
-	CUT_SAFE_CALL(cutCreateTimer(&hTimer));
-	CUT_SAFE_CALL(cutResetTimer(hTimer));
-	CUT_SAFE_CALL(cutStartTimer(hTimer));
-
-	dim3 dimBlockX(min(PowTwoDivider(height), 64));
-	dim3 dimGridX(height / dimBlockX.x);
-	SamplesToCoefficients2DX<floatN><<<dimGridX, dimBlockX>>>(image, pitch, width, height);
-	CUT_CHECK_ERROR("SamplesToCoefficients2DX kernel failed");
-
-	CUT_SAFE_CALL(cutStopTimer(hTimer));
-	double timerValueX = cutGetTimerValue(hTimer);
-	printf("x-direction : %f msec\n", timerValueX);
-	CUT_SAFE_CALL(cutResetTimer(hTimer));
-	CUT_SAFE_CALL(cutStartTimer(hTimer));
-
-	dim3 dimBlockY(min(PowTwoDivider(width), 64));
-	dim3 dimGridY(width / dimBlockY.x);
-	SamplesToCoefficients2DY<floatN><<<dimGridY, dimBlockY>>>(image, pitch, width, height);
-	CUT_CHECK_ERROR("SamplesToCoefficients2DY kernel failed");
-
-	CUT_SAFE_CALL(cutStopTimer(hTimer));
-	double timerValueY = cutGetTimerValue(hTimer);
-	printf("y-direction : %f msec\n", timerValueY);
-	printf("total : %f msec\n\n", timerValueX+timerValueY);
 }
 
 #endif  //_2D_CUBIC_BSPLINE_PREFILTER_H_

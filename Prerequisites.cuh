@@ -1,5 +1,7 @@
-#pragma once
+#ifndef GTOM_PREREQUISITES_H
+#define GTOM_PREREQUISITES_H
 
+#include "CubicSplines\internal\cutil_math_bugfixes.h"
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
@@ -75,6 +77,16 @@ struct tfloat5
 	tfloat5(tfloat x, tfloat y, tfloat z, tfloat w, tfloat v) : x(x), y(y), z(z), w(w), v(v) {}
 };
 
+inline __host__ __device__ float2 operator-(float a, float2 b)
+{
+	return make_float2(a - b.x, a - b.y);
+}
+
+inline __host__ __device__ float3 operator-(float a, float3 b)
+{
+	return make_float3(a - b.x, a - b.y, a - b.z);
+}
+
 inline int2 toInt2(int x, int y)
 {
 	int2 value = {x, y};
@@ -115,13 +127,17 @@ typedef unsigned int uint;
 
 #define getOffset(x, y, stride) ((y) * (stride) + (x))
 #define getZigzag(x, stride) abs((((x) - (stride)) % ((stride) * 2)) - (stride))
-#define DimensionCount(dims) (3 - max(2 - (dims.z), 0) - max(2 - (dims.y), 0) - max(2 - (dims).x, 0))
+#define DimensionCount(dims) (3 - max(2 - max((dims).z, 1), 0) - max(2 - max((dims).y, 1), 0) - max(2 - max((dims).x, 1), 0))
 #define NextMultipleOf(value, base) (((value) + (base) - 1) / (base) * (base))
 
 #define min(x, y) ((x) > (y) ? (y) : (x))
 #define max(x, y) ((x) < (y) ? (y) : (x))
 
-#define NumOfDims(dims) (3 - max(2 - max((dims).x, 1), 0) - max(2 - max((dims).y, 1), 0) - max(2 - max((dims).z, 1), 0))
+enum T_INTERP_MODE 
+{ 
+	T_INTERP_LINEAR = 1,
+	T_INTERP_CUBIC = 2
+};
 
 
 // Define this to turn on error checking
@@ -168,4 +184,6 @@ inline void __cudaCheckError( const char *file, const int line )
 			}
 #else
 	#define CUDA_MEASURE_TIME(call) call
+#endif
+
 #endif

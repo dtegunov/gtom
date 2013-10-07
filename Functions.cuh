@@ -37,6 +37,16 @@ template <class T> void d_Im(tcomplex const* const d_input, T* const d_output, s
 void* MallocFromDeviceArray(void* d_array, size_t size);
 
 /**
+ * \brief Allocates an array in device memory with an alignment constraint (useful for odd-sized 2D textures).
+ * \param[in] widthbytes	Array width in bytes
+ * \param[in] height		Array height
+ * \param[in] pitch			Pitched width value will be written here
+ * \param[in] alignment		Alignment constraint, usually 32 bytes
+ * \returns Array pointer in device memory
+ */
+void* CudaMallocAligned2D(size_t widthbytes, size_t height, int* pitch, int alignment = 32);
+
+/**
  * \brief Allocates an array in device memory that is a copy of the array in host memory.
  * \param[in] h_array	Array in host memory to be copied
  * \param[in] size		Array size in bytes
@@ -155,6 +165,31 @@ template <class T> void d_SumMinMax(T* d_input, T* d_sum, T* d_min, T* d_max, si
 //Dev.cu:
 template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t elements, Tmask* d_mask, int batch = 1);
 
+///////////////////////
+//Cubic interpolation//
+///////////////////////
+
+cudaPitchedPtr CopyVolumeHostToDevice(const float* host, uint width, uint height, uint depth);
+cudaPitchedPtr CopyVolumeDeviceToDevice(const float* deviceFrom, uint width, uint height, uint depth);
+void CopyVolumeDeviceToHost(float* host, const cudaPitchedPtr device, uint width, uint height, uint depth);
+template<class T, enum cudaTextureReadMode mode> void CreateTextureFromVolume(texture<T, 3, mode>* tex, 
+																			  cudaArray** texArray,	
+																			  const cudaPitchedPtr volume, 
+																			  cudaExtent extent, 
+																			  bool onDevice);
+template<class T, enum cudaTextureReadMode mode> void CreateTextureFromVolume(texture<T, 3, mode>* tex, 
+																			  cudaArray** texArray,
+																			  const T* volume, 
+																			  cudaExtent extent,
+																			  bool onDevice);
+template<class floatN> void CubicBSplinePrefilter2D(floatN* image, uint pitch, uint width, uint height);
+template<class floatN> void CubicBSplinePrefilter3D(floatN* volume, uint pitch, uint width, uint height, uint depth);
+
+__device__ float cubicTex1D(texture<float, cudaTextureType1D> tex, float x);
+__device__ float cubicTex2D(texture<float, cudaTextureType2D> tex, float x, float y);
+__device__ float cubicTexture3D(texture<float, cudaTextureType3D> tex, float3 coord);
+
+
 
 /////////////////////
 //Fourier transform//
@@ -210,11 +245,11 @@ void d_Bin(tfloat* d_input, tfloat* d_output, int3 dims, int bincount, int batch
 void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch = 1);
 
 //Coordinates.cu:
-void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, int batch);
+void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE interpolation, int batch = 1);
 int2 GetCart2PolarSize(int2 dims);
 
 //Shift.cu:
-void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3 delta, int batch);
+void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3 delta, int batch = 1);
 
 
 ///////////

@@ -44,7 +44,7 @@ following papers:
 #ifndef _CUBIC_BSPLINE_PREFILTER_KERNEL_H_
 #define _CUBIC_BSPLINE_PREFILTER_KERNEL_H_
 
-#include "math_func.cu"
+#include "..\..\Prerequisites.cuh"
 
 // The code below is based on the work of Philippe Thevenaz.
 // See <http://bigwww.epfl.ch/thevenaz/interpolation/>
@@ -69,7 +69,7 @@ __host__ __device__ floatN InitialCausalCoefficient(
 	for (uint n = 0; n < Horizon; n++) {
 		Sum += zn * *c;
 		zn *= Pole;
-		c = (floatN*)((uchar*)c + step);
+		c = (floatN*)((char*)c + step);
 	}
 	return(Sum);
 }
@@ -99,14 +99,14 @@ __host__ __device__ void ConvertToInterpolationCoefficients(
 	*c = previous_c = Lambda * InitialCausalCoefficient(c, DataLength, step);
 	// causal recursion
 	for (uint n = 1; n < DataLength; n++) {
-		c = (floatN*)((uchar*)c + step);
+		c = (floatN*)((char*)c + step);
 		*c = previous_c = Lambda * *c + Pole * previous_c;
 	}
 	// anticausal initialization
 	*c = previous_c = InitialAntiCausalCoefficient(c, DataLength, step);
 	// anticausal recursion
 	for (int n = DataLength - 2; 0 <= n; n--) {
-		c = (floatN*)((uchar*)c - step);
+		c = (floatN*)((char*)c - step);
 		*c = previous_c = Pole * (previous_c - *c);
 	}
 }

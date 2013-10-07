@@ -37,6 +37,12 @@
     <Filter Include="Alignment">
       <UniqueIdentifier>{9ed67da0-c4df-4e12-8697-c66e9eded4ea}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Cubic Splines">
+      <UniqueIdentifier>{3798f66a-a1a2-4dc3-9999-d9552b15eea2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cubic Splines\internal">
+      <UniqueIdentifier>{c3b0fd44-d3e8-499f-8eba-5e28f5ac0cf0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="glm\CMakeLists.txt">
@@ -409,6 +415,9 @@
     </ClInclude>
     <ClInclude Include="glm\virtrev\xstream.hpp">
       <Filter>glm\virtrev</Filter>
+    </ClInclude>
+    <ClInclude Include="CubicSplines\internal\cutil_math_bugfixes.h">
+      <Filter>Cubic Splines\internal</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -787,6 +796,36 @@
     </CudaCompile>
     <CudaCompile Include="Masking\RectangleMask.cu">
       <Filter>Masking</Filter>
+    </CudaCompile>
+    <CudaCompile Include="ImageManipulation\Shift.cu">
+      <Filter>Image Manipulation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="CubicSplines\cubicPrefilter2D.cu">
+      <Filter>Cubic Splines</Filter>
+    </CudaCompile>
+    <CudaCompile Include="CubicSplines\cubicPrefilter3D.cu">
+      <Filter>Cubic Splines</Filter>
+    </CudaCompile>
+    <CudaCompile Include="CubicSplines\memcpy.cu">
+      <Filter>Cubic Splines</Filter>
+    </CudaCompile>
+    <CudaCompile Include="CubicSplines\internal\bspline_kernel.cu">
+      <Filter>Cubic Splines\internal</Filter>
+    </CudaCompile>
+    <CudaCompile Include="CubicSplines\internal\cubicPrefilter_kernel.cu">
+      <Filter>Cubic Splines\internal</Filter>
+    </CudaCompile>
+    <CudaCompile Include="CubicSplines\internal\math_func.cu">
+      <Filter>Cubic Splines\internal</Filter>
+    </CudaCompile>
+    <CudaCompile Include="CubicSplines\internal\version.cu">
+      <Filter>Cubic Splines\internal</Filter>
+    </CudaCompile>
+    <CudaCompile Include="CubicSplines\internal\cubicTexKernels.cu">
+      <Filter>Cubic Splines\internal</Filter>
+    </CudaCompile>
+    <CudaCompile Include="CubicSplines\cubicTex.cu">
+      <Filter>Cubic Splines</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

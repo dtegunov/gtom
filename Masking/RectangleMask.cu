@@ -46,19 +46,19 @@ template <class T> void d_RectangleMask(T const* const d_input,
 
 		tcomplex* d_maskFFT;
 		cudaMalloc((void**)&d_maskFFT, elementsFFT * sizeof(tcomplex));
-		d_FFTR2C(d_mask, d_maskFFT, NumOfDims(size), size);
+		d_FFTR2C(d_mask, d_maskFFT, DimensionCount(size), size);
 		cudaFree(d_mask);
 
 		tcomplex* d_outputFFT;
 		cudaMalloc((void**)&d_outputFFT, elementsFFT * sizeof(tcomplex));
-		d_FFTR2C(d_output, d_outputFFT, NumOfDims(size), size);
+		d_FFTR2C(d_output, d_outputFFT, DimensionCount(size), size);
 
 		d_ComplexMultiplyByVector(d_outputFFT, d_maskFFT, d_outputFFT, elementsFFT);
 		cudaFree(d_maskFFT);
 
 		tfloat* d_intermediate;
 		cudaMalloc((void**)&d_intermediate, elements * sizeof(tfloat));
-		d_IFFTC2R(d_outputFFT, d_intermediate, NumOfDims(size), size);
+		d_IFFTC2R(d_outputFFT, d_intermediate, DimensionCount(size), size);
 		cudaFree(d_outputFFT);
 
 		d_RemapFullFFT2Full(d_intermediate, d_output, size);

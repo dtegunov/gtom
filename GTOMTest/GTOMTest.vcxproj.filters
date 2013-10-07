@@ -69,6 +69,9 @@
     <ClCompile Include="RectangleMask.cpp">
       <Filter>Source Files\Masking</Filter>
     </ClCompile>
+    <ClCompile Include="Shift.cpp">
+      <Filter>Source Files\Image Manipulation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">

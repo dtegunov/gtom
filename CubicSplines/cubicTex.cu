@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*\
-Copyright (c) 2008-2010, Danny Ruijters. All rights reserved.
+Copyright (c) 2008-2013, Danny Ruijters. All rights reserved.
 http://www.dannyruijters.nl/cubicinterpolation/
 This file is part of CUDA Cubic B-Spline Interpolation (CI).
 
@@ -41,19 +41,62 @@ following papers:
    Journal of Graphics Tools, vol. 13, no. 4, pp. 61-69, 2008.
 \*--------------------------------------------------------------------------*/
 
-#ifndef _CUBIC3D_KERNEL_H_
-#define _CUBIC3D_KERNEL_H_
+#ifndef _CUBIC1D_KERNEL_H_
+#define _CUBIC1D_KERNEL_H_
 
 #include "internal/bspline_kernel.cu"
 
-//! Trilinearly interpolated texture lookup, using unnormalized coordinates.
-//! This function merely serves as a reference for the tricubic versions.
-//! @param tex  3D texture
-//! @param coord  unnormalized 3D texture coordinate
+//! Cubic interpolated texture lookup, using unnormalized coordinates.
+//! Straight forward implementation, using 4 nearest neighbour lookups.
+//! @param tex  1D texture
+//! @param x  unnormalized x texture coordinate
 template<class T, enum cudaTextureReadMode mode>
-__device__ float linearTex3D(texture<T, 3, mode> tex, float3 coord)
+__device__ float cubicTex1DSimple(texture<T, 1, mode> tex, float x)
 {
-	return tex3D(tex, coord.x, coord.y, coord.z);
+	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
+	const float coord_grid = x - 0.5f;
+	float index = floor(coord_grid);
+	const float fraction = coord_grid - index;
+	index += 0.5f;  //move from [-0.5, extent-0.5] to [0, extent]
+
+	float result = 0.0f;
+	for (float x=-1; x < 2.5f; x++)
+	{
+		float bsplineX = bspline(x-fraction);
+		float u = index + x;
+		result += bsplineX * tex1D(tex, u);
+	}
+	return result;
+}
+
+//! Bicubic interpolated texture lookup, using unnormalized coordinates.
+//! Straight forward implementation, using 16 nearest neighbour lookups.
+//! @param tex  2D texture
+//! @param x  unnormalized x texture coordinate
+//! @param y  unnormalized y texture coordinate
+template<class T, enum cudaTextureReadMode mode>
+__device__ float cubicTex2DSimple(texture<T, 2, mode> tex, float x, float y)
+{
+	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
+	const float2 coord_grid = make_float2(x - 0.5f, y - 0.5f);
+	float2 index = floor(coord_grid);
+	const float2 fraction = coord_grid - index;
+	index.x += 0.5f;  //move from [-0.5, extent-0.5] to [0, extent]
+	index.y += 0.5f;  //move from [-0.5, extent-0.5] to [0, extent]
+
+	float result = 0.0f;
+	for (float y=-1; y < 2.5f; y++)
+	{
+		float bsplineY = bspline(y-fraction.y);
+		float v = index.y + y;
+		for (float x=-1; x < 2.5f; x++)
+		{
+			float bsplineXY = bspline(x-fraction.x) * bsplineY;
+			float u = index.x + x;
+			result += bsplineXY * tex2D(tex, u, v);
+		}
+	}
+	return result;
 }
 
 //! Tricubic interpolated texture lookup, using unnormalized coordinates.
@@ -89,67 +132,4 @@ __device__ float cubicTex3DSimple(texture<T, 3, mode> tex, float3 coord)
 	return result;
 }
 
-//! Tricubic interpolated texture lookup, using unnormalized coordinates.
-//! Fast implementation, using 8 trilinear lookups.
-//! @param tex  3D texture
-//! @param coord  unnormalized 3D texture coordinate
-#define WEIGHTS bspline_weights
-#define CUBICTEX3D cubicTex3D
-#include "internal/cubicTex3D_kernel.cu"
-#undef CUBICTEX3D
-#undef WEIGHTS
-
-// Fast tricubic interpolated 1st order derivative texture lookup in x-, y-
-// and z-direction, using unnormalized coordinates.
-__device__ void bspline_weights_1st_derivative_x(float3 fraction, float3& w0, float3& w1, float3& w2, float3& w3)
-{
-	float t0, t1, t2, t3;
-	bspline_weights_1st_derivative(fraction.x, t0, t1, t2, t3);
-	w0.x = t0; w1.x = t1; w2.x = t2; w3.x = t3;
-	bspline_weights(fraction.y, t0, t1, t2, t3);
-	w0.y = t0; w1.y = t1; w2.y = t2; w3.y = t3;
-	bspline_weights(fraction.z, t0, t1, t2, t3);
-	w0.z = t0; w1.z = t1; w2.z = t2; w3.z = t3;
-}
-
-__device__ void bspline_weights_1st_derivative_y(float3 fraction, float3& w0, float3& w1, float3& w2, float3& w3)
-{
-	float t0, t1, t2, t3;
-	bspline_weights(fraction.x, t0, t1, t2, t3);
-	w0.x = t0; w1.x = t1; w2.x = t2; w3.x = t3;
-	bspline_weights_1st_derivative(fraction.y, t0, t1, t2, t3);
-	w0.y = t0; w1.y = t1; w2.y = t2; w3.y = t3;
-	bspline_weights(fraction.z, t0, t1, t2, t3);
-	w0.z = t0; w1.z = t1; w2.z = t2; w3.z = t3;
-}
-
-__device__ void bspline_weights_1st_derivative_z(float3 fraction, float3& w0, float3& w1, float3& w2, float3& w3)
-{
-	float t0, t1, t2, t3;
-	bspline_weights(fraction.x, t0, t1, t2, t3);
-	w0.x = t0; w1.x = t1; w2.x = t2; w3.x = t3;
-	bspline_weights(fraction.y, t0, t1, t2, t3);
-	w0.y = t0; w1.y = t1; w2.y = t2; w3.y = t3;
-	bspline_weights_1st_derivative(fraction.z, t0, t1, t2, t3);
-	w0.z = t0; w1.z = t1; w2.z = t2; w3.z = t3;
-}
-
-#define WEIGHTS bspline_weights_1st_derivative_x
-#define CUBICTEX3D cubicTex3D_1st_derivative_x
-#include "internal/cubicTex3D_kernel.cu"
-#undef CUBICTEX3D
-#undef WEIGHTS
-
-#define WEIGHTS bspline_weights_1st_derivative_y
-#define CUBICTEX3D cubicTex3D_1st_derivative_y
-#include "internal/cubicTex3D_kernel.cu"
-#undef CUBICTEX3D
-#undef WEIGHTS
-
-#define WEIGHTS bspline_weights_1st_derivative_z
-#define CUBICTEX3D cubicTex3D_1st_derivative_z
-#include "internal/cubicTex3D_kernel.cu"
-#undef CUBICTEX3D
-#undef WEIGHTS
-
-#endif // _CUBIC3D_KERNEL_H_
+#endif // _CUBIC1D_KERNEL_H_

@@ -50,6 +50,19 @@ template int* MallocValueFilled<int>(size_t elements, int value);
 //Device memory//
 /////////////////
 
+void* CudaMallocAligned2D(size_t widthbytes, size_t height, int* pitch, int alignment)
+{       
+   if((widthbytes % alignment) != 0)
+      widthbytes += (alignment - (widthbytes % alignment));
+
+   (*pitch) = widthbytes;
+
+   void* ptr;
+   cudaMalloc((void**)&ptr, widthbytes* height);
+
+   return ptr;
+}
+
 void* CudaMallocFromHostArray(void* h_array, size_t size)
 {
 	void* d_array;
