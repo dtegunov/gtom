@@ -110,11 +110,13 @@ template <class T1, class T2> struct tuple2
 
 typedef unsigned int uint;
 
-#define PI 3.14159265358979
-#define PI2 6.28318530717959
+#define PI 3.1415926535897932384626433832795
+#define PI2 6.283185307179586476925286766559
 
 #define getOffset(x, y, stride) ((y) * (stride) + (x))
 #define getZigzag(x, stride) abs((((x) - (stride)) % ((stride) * 2)) - (stride))
+#define DimensionCount(dims) (3 - max(2 - (dims.z), 0) - max(2 - (dims.y), 0) - max(2 - (dims).x, 0))
+#define NextMultipleOf(value, base) (((value) + (base) - 1) / (base) * (base))
 
 #define min(x, y) ((x) > (y) ? (y) : (x))
 #define max(x, y) ((x) < (y) ? (y) : (x))

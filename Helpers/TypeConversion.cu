@@ -13,6 +13,8 @@
 template <class Tfrom, class Tto> __global__ void ConvertToKernel(Tfrom const* const d_original, Tto* const d_copy, size_t const n);
 template <class T> __global__ void ConvertSplitComplexToTComplexKernel(T const* const d_originalr, T const* const d_originali, tcomplex* const d_copy, size_t const n);
 template <class T> __global__ void ConvertTComplexToSplitComplexKernel(tcomplex const* const d_original, T* const d_copyr, T* const d_copyi, size_t const n);
+template <class T> __global__ void ReKernel(tcomplex const* const d_input, T* const d_output, size_t const n);
+template <class T> __global__ void ImKernel(tcomplex const* const d_input, T* const d_output, size_t const n);
 
 
 ////////////////////
@@ -108,7 +110,7 @@ template void ConvertTComplexToSplitComplex<float>(tcomplex const* const origina
 
 template <class T> void d_ConvertToTFloat(T const* const d_original, tfloat* const d_copy, size_t const n)
 {
-	size_t TpB = 256;
+	size_t TpB = min(256, NextMultipleOf(n, 32));
 	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
 	dim3 grid = dim3((uint)totalblocks);
 	ConvertToKernel<T, tfloat> <<<grid, (uint)TpB>>> (d_original, d_copy, n);
@@ -119,7 +121,7 @@ template void d_ConvertToTFloat<float>(float const* const d_original, tfloat* co
 
 template <class T> void d_ConvertTFloatTo(tfloat const* const d_original, T* const d_copy, size_t const n)
 {
-	size_t TpB = 256;
+	size_t TpB = min(256, NextMultipleOf(n, 32));
 	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
 	dim3 grid = dim3((uint)totalblocks);
 	ConvertToKernel<tfloat, T> <<<grid, (uint)TpB>>> (d_original, d_copy, n);
@@ -130,7 +132,7 @@ template void d_ConvertTFloatTo<float>(tfloat const* const d_original, float* co
 
 template <class T> void d_ConvertSplitComplexToTComplex(T const* const d_originalr, T const* const d_originali, tcomplex* const d_copy, size_t const n)
 {
-	size_t TpB = 256;
+	size_t TpB = min(256, NextMultipleOf(n, 32));
 	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
 	dim3 grid = dim3((uint)totalblocks);
 	ConvertSplitComplexToTComplexKernel<T> <<<grid, (uint)TpB>>> (d_originalr, d_originali, d_copy, n);
@@ -141,7 +143,7 @@ template void d_ConvertSplitComplexToTComplex<float>(float const* const d_origin
 
 template <class T> void d_ConvertTComplexToSplitComplex(tcomplex const* const d_original, T* const d_copyr, T* const d_copyi, size_t const n)
 {
-	size_t TpB = 256;
+	size_t TpB = min(256, NextMultipleOf(n, 32));
 	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
 	dim3 grid = dim3((uint)totalblocks);
 	ConvertTComplexToSplitComplexKernel<T> <<<grid, (uint)TpB>>> (d_original, d_copyr, d_copyi, n);
@@ -149,6 +151,26 @@ template <class T> void d_ConvertTComplexToSplitComplex(tcomplex const* const d_
 }
 template void d_ConvertTComplexToSplitComplex<double>(tcomplex const* const d_original, double* const d_copyr, double* const d_copyi, size_t const n);
 template void d_ConvertTComplexToSplitComplex<float>(tcomplex const* const d_original, float* const d_copyr, float* const d_copyi, size_t const n);
+
+template <class T> void d_Re(tcomplex const* const d_input, T* const d_output, size_t const n)
+{
+	size_t TpB = min(256, NextMultipleOf(n, 32));
+	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
+	dim3 grid = dim3((uint)totalblocks);
+	ReKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, n);
+	cudaDeviceSynchronize();
+}
+template void d_Re<tfloat>(tcomplex const* const d_input, tfloat* const d_output, size_t const n);
+
+template <class T> void d_Im(tcomplex const* const d_input, T* const d_output, size_t const n)
+{
+	size_t TpB = min(256, NextMultipleOf(n, 32));
+	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
+	dim3 grid = dim3((uint)totalblocks);
+	ImKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, n);
+	cudaDeviceSynchronize();
+}
+template void d_Re<tfloat>(tcomplex const* const d_input, tfloat* const d_output, size_t const n);
 
 
 ///////////////////////////////////////
@@ -183,4 +205,20 @@ template <class T> __global__ void ConvertTComplexToSplitComplexKernel(tcomplex 
 		d_copyr[id] = (T)d_original[id].x;
 		d_copyi[id] = (T)d_original[id].y;
 	}
+}
+
+template <class T> __global__ void ReKernel(tcomplex const* const d_input, T* const d_output, size_t const n)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < n; 
+		id += blockDim.x * gridDim.x)
+		d_output[id] = (T)d_input[id].x;
+}
+
+template <class T> __global__ void ImKernel(tcomplex const* const d_input, T* const d_output, size_t const n)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < n; 
+		id += blockDim.x * gridDim.x)
+		d_output[id] = (T)d_input[id].y;
 }

@@ -8,7 +8,7 @@
 
 void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch)
 {
-	int dimensions = 3 - max(2 - dims.z, 0) - max(2 - dims.y, 0);
+	int dimensions = DimensionCount(dims);
 	size_t elements = dims.x * dims.y * dims.z;
 	size_t elementsFFT = (dims.x / 2 + 1) * dims.y * dims.z;
 

@@ -23,6 +23,9 @@ template <class T> void d_ConvertTFloatTo(tfloat const* const d_original, T* con
 template <class T> void d_ConvertSplitComplexToTComplex(T const* const d_originalr, T const* const d_originali, tcomplex* const d_copy, size_t const n);
 template <class T> void d_ConvertTComplexToSplitComplex(tcomplex const* const d_original, T* const d_copyr, T* const d_copyi, size_t const n);
 
+template <class T> void d_Re(tcomplex const* const d_input, T* const d_output, size_t const n);
+template <class T> void d_Im(tcomplex const* const d_input, T* const d_output, size_t const n);
+
 //Memory.cu:
 
 /**
@@ -159,6 +162,7 @@ template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t e
 
 //FFT.cu:
 void d_FFTR2C(tfloat* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+void d_IFFTZ2D(cufftDoubleComplex* const d_input, double* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_FFTR2CFull(tfloat* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_FFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void FFTR2C(tfloat* const h_input, tcomplex* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
@@ -208,6 +212,9 @@ void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat
 //Coordinates.cu:
 void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, int batch);
 int2 GetCart2PolarSize(int2 dims);
+
+//Shift.cu:
+void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3 delta, int batch);
 
 
 ///////////
