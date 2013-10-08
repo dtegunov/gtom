@@ -25,6 +25,9 @@
     <Filter Include="Source Files\Image Manipulation">
       <UniqueIdentifier>{ab2ef8f4-6b27-4153-a27c-f21d92aec8e7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Correlation">
+      <UniqueIdentifier>{672c3915-d074-46d0-976b-df01c7bf6d87}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -71,6 +74,9 @@
     </ClCompile>
     <ClCompile Include="Shift.cpp">
       <Filter>Source Files\Image Manipulation</Filter>
+    </ClCompile>
+    <ClCompile Include="CCF.cpp">
+      <Filter>Source Files\Correlation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -44,9 +44,9 @@ following papers:
 #ifndef _VERSION_CUBIC_INTERPOLATION
 #define _VERSION_CUBIC_INTERPOLATION 12
 
-const char* ciVersion = "CUDA Cubic B-Spline Interpolation (CI) Version 1.2";
-const char* ciDate = "22 May 2013";
-const char* ciAuthors = "Danny Ruijters";
-const char* ciCopyright = "(C) Copyright 2008-2013 Danny Ruijters.";
+//const char* ciVersion = "CUDA Cubic B-Spline Interpolation (CI) Version 1.2";
+//const char* ciDate = "22 May 2013";
+//const char* ciAuthors = "Danny Ruijters";
+//const char* ciCopyright = "(C) Copyright 2008-2013 Danny Ruijters.";
 
 #endif  //_VERSION_CUBIC_INTERPOLATION

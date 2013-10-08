@@ -46,7 +46,7 @@ following papers:
 
 #include "version.cu"
 #include "cutil_math_bugfixes.h"
-#include "..\..\Prerequisites.cuh"
+#include "../../Prerequisites.cuh"
 
 typedef unsigned int uint;
 typedef unsigned short ushort;

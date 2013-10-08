@@ -248,6 +248,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Alignment\Align2D.cu" />
+    <CudaCompile Include="Correlation\CCF.cu" />
     <CudaCompile Include="CubicSplines\cubicPrefilter2D.cu" />
     <CudaCompile Include="CubicSplines\cubicPrefilter3D.cu" />
     <CudaCompile Include="CubicSplines\cubicTex.cu" />

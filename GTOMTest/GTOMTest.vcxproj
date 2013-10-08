@@ -100,6 +100,7 @@
   <ItemGroup>
     <ClCompile Include="Bandpass.cpp" />
     <ClCompile Include="Bin.cpp" />
+    <ClCompile Include="CCF.cpp" />
     <ClCompile Include="Coordinates.cpp" />
     <ClCompile Include="Dev.cpp" />
     <ClCompile Include="FFTR2C.cpp" />

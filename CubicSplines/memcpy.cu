@@ -46,7 +46,7 @@ following papers:
 
 #include <stdio.h>
 #include "internal/math_func.cu"
-#include "..\Prerequisites.cuh"
+#include "../Prerequisites.cuh"
 
 
 //--------------------------------------------------------------------------

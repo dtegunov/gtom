@@ -44,7 +44,7 @@ following papers:
 #ifndef _CUBIC_BSPLINE_PREFILTER_KERNEL_H_
 #define _CUBIC_BSPLINE_PREFILTER_KERNEL_H_
 
-#include "..\..\Prerequisites.cuh"
+#include "../../Prerequisites.cuh"
 
 // The code below is based on the work of Philippe Thevenaz.
 // See <http://bigwww.epfl.ch/thevenaz/interpolation/>
@@ -54,59 +54,53 @@ following papers:
 //--------------------------------------------------------------------------
 // Local GPU device procedures
 //--------------------------------------------------------------------------
-template<class floatN>
-__host__ __device__ floatN InitialCausalCoefficient(
-	floatN* c,			// coefficients
-	uint DataLength,	// number of coefficients
-	int step)			// element interleave in bytes
+template<class T> __host__ __device__ T InitialCausalCoefficient(T* c,			// coefficients
+																int DataLength,	// number of coefficients
+																int step)			// element interleave in bytes
 {
-	const uint Horizon = UMIN(12, DataLength);
+	const int Horizon = min(12, DataLength);
 
 	// this initialization corresponds to clamping boundaries
 	// accelerated loop
 	float zn = Pole;
-	floatN Sum = *c;
-	for (uint n = 0; n < Horizon; n++) {
+	T Sum = *c;
+	for (int n = 0; n < Horizon; n++) {
 		Sum += zn * *c;
 		zn *= Pole;
-		c = (floatN*)((char*)c + step);
+		c = (T*)((char*)c + step);
 	}
 	return(Sum);
 }
 
-template<class floatN>
-__host__ __device__ floatN InitialAntiCausalCoefficient(
-	floatN* c,			// last coefficient
-	uint DataLength,	// number of samples or coefficients
-	int step)			// element interleave in bytes
+template<class T> __host__ __device__ T InitialAntiCausalCoefficient(T* c,			// last coefficient
+																				uint DataLength,	// number of samples or coefficients
+																				int step)			// element interleave in bytes
 {
 	// this initialization corresponds to clamping boundaries
 	return((Pole / (Pole - 1.0f)) * *c);
 }
 
-template<class floatN>
-__host__ __device__ void ConvertToInterpolationCoefficients(
-	floatN* coeffs,		// input samples --> output coefficients
-	uint DataLength,	// number of samples or coefficients
-	int step)			// element interleave in bytes
+template<class T> __host__ __device__ void ConvertToInterpolationCoefficients(T* coeffs,		// input samples --> output coefficients
+																			  uint DataLength,	// number of samples or coefficients
+																			  int step)			// element interleave in bytes
 {
 	// compute the overall gain
 	const float Lambda = (1.0f - Pole) * (1.0f - 1.0f / Pole);
 
 	// causal initialization
-	floatN* c = coeffs;
-	floatN previous_c;  //cache the previously calculated c rather than look it up again (faster!)
+	T* c = coeffs;
+	T previous_c;  //cache the previously calculated c rather than look it up again (faster!)
 	*c = previous_c = Lambda * InitialCausalCoefficient(c, DataLength, step);
 	// causal recursion
 	for (uint n = 1; n < DataLength; n++) {
-		c = (floatN*)((char*)c + step);
+		c = (T*)((char*)c + step);
 		*c = previous_c = Lambda * *c + Pole * previous_c;
 	}
 	// anticausal initialization
 	*c = previous_c = InitialAntiCausalCoefficient(c, DataLength, step);
 	// anticausal recursion
 	for (int n = DataLength - 2; 0 <= n; n--) {
-		c = (floatN*)((char*)c - step);
+		c = (T*)((char*)c - step);
 		*c = previous_c = Pole * (previous_c - *c);
 	}
 }

@@ -67,6 +67,7 @@ template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t e
 	cudaFree(d_vars);
 	cudaFree(d_devs);
 }
+template void d_Dev<tfloat>(tfloat* d_input, imgstats5* d_output, size_t elements, tfloat* d_mask, int batch);
 template void d_Dev<int>(tfloat* d_input, imgstats5* d_output, size_t elements, int* d_mask, int batch);
 template void d_Dev<char>(tfloat* d_input, imgstats5* d_output, size_t elements, char* d_mask, int batch);
 template void d_Dev<bool>(tfloat* d_input, imgstats5* d_output, size_t elements, bool* d_mask, int batch);

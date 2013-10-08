@@ -46,37 +46,35 @@ following papers:
 
 #include <stdio.h>
 #include "internal/cubicPrefilter_kernel.cu"
-#include "..\Prerequisites.cuh"
+#include "../Prerequisites.cuh"
 
 // ***************************************************************************
 // *	Global GPU procedures
 // ***************************************************************************
-template<class floatN>
-__global__ void SamplesToCoefficients2DX(
-	floatN* image,		// in-place processing
-	uint pitch,			// width in bytes
-	uint width,			// width of the image
-	uint height)		// height of the image
+template<class T> __global__ void SamplesToCoefficients2DX(T* image,		// in-place processing
+														   uint pitch,		// width in bytes
+														   int2 dims)		// image dimensions
 {
 	// process lines in x-direction
 	const uint y = blockIdx.x * blockDim.x + threadIdx.x;
-	floatN* line = (floatN*)((char*)image + y * pitch);  //direct access
+	if(y >= dims.y)
+		return;
+	T* line = (T*)((char*)image + y * pitch);  //direct access
 
-	ConvertToInterpolationCoefficients(line, width, sizeof(floatN));
+	ConvertToInterpolationCoefficients(line, dims.x, sizeof(T));
 }
 
-template<class floatN>
-__global__ void SamplesToCoefficients2DY(
-	floatN* image,		// in-place processing
-	uint pitch,			// width in bytes
-	uint width,			// width of the image
-	uint height)		// height of the image
+template<class T> __global__ void SamplesToCoefficients2DY(T* image,		// in-place processing
+														   uint pitch,		// width in bytes
+														   int2 dims)		// image dimensions
 {
 	// process lines in x-direction
 	const uint x = blockIdx.x * blockDim.x + threadIdx.x;
-	floatN* line = image + x;  //direct access
+	if(x >= dims.x)
+		return;
+	T* line = image + x;  //direct access
 
-	ConvertToInterpolationCoefficients(line, height, pitch);
+	ConvertToInterpolationCoefficients(line, dims.y, pitch);
 }
 
 // ***************************************************************************
@@ -88,15 +86,16 @@ __global__ void SamplesToCoefficients2DY(
 //! @param pitch   width in bytes (including padding bytes)
 //! @param width   image width in number of pixels
 //! @param height  image height in number of pixels
-template<class floatN> void CubicBSplinePrefilter2D(floatN* image, uint pitch, uint width, uint height)
+template<class T> void d_CubicBSplinePrefilter2D(T* image, int pitch, int2 dims)
 {
-	dim3 dimBlockX(min(PowTwoDivider(height), 64));
-	dim3 dimGridX(height / dimBlockX.x);
-	SamplesToCoefficients2DX<floatN><<<dimGridX, dimBlockX>>>(image, pitch, width, height);
-
-	dim3 dimBlockY(min(PowTwoDivider(width), 64));
-	dim3 dimGridY(width / dimBlockY.x);
-	SamplesToCoefficients2DY<floatN><<<dimGridY, dimBlockY>>>(image, pitch, width, height);
+	int TpB = (min(dims.y, 64));
+	dim3 grid((dims.y + TpB - 1) / TpB);
+	SamplesToCoefficients2DX<T><<<grid, TpB>>>(image, pitch, dims);
+	
+	TpB = (min(dims.x, 64));
+	grid = dim3((dims.x + TpB - 1) / TpB);
+	SamplesToCoefficients2DY<T><<<grid, TpB>>>(image, pitch, dims);
 }
+template void d_CubicBSplinePrefilter2D<tfloat>(tfloat* image, int pitch, int2 dims);
 
 #endif  //_2D_CUBIC_BSPLINE_PREFILTER_H_

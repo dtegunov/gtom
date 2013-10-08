@@ -170,7 +170,7 @@ template <class T> void d_Im(tcomplex const* const d_input, T* const d_output, s
 	ImKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, n);
 	cudaDeviceSynchronize();
 }
-template void d_Re<tfloat>(tcomplex const* const d_input, tfloat* const d_output, size_t const n);
+template void d_Im<tfloat>(tcomplex const* const d_input, tfloat* const d_output, size_t const n);
 
 
 ///////////////////////////////////////

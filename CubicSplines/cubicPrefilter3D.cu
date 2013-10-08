@@ -46,7 +46,7 @@ following papers:
 
 #include <stdio.h>
 #include "internal/cubicPrefilter_kernel.cu"
-#include "..\Prerequisites.cuh"
+#include "../Prerequisites.cuh"
 
 //--------------------------------------------------------------------------
 // Global CUDA procedures
@@ -113,7 +113,7 @@ __global__ void SamplesToCoefficients3DZ(
 //! @param width   volume width in number of voxels
 //! @param height  volume height in number of voxels
 //! @param depth   volume depth in number of voxels
-template<class floatN> void CubicBSplinePrefilter3D(floatN* volume, uint pitch, uint width, uint height, uint depth)
+template<class floatN> void CubicBSplinePrefilter3D(floatN* volume, int pitch, int width, int height, int depth)
 {
 	// Try to determine the optimal block dimensions
 	uint dimX = min(min(PowTwoDivider(width), PowTwoDivider(height)), 64);

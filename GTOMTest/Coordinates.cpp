@@ -13,7 +13,7 @@ TEST(ImageManipulation, Coordinates)
 		tfloat* d_output;
 		cudaMalloc((void**)&d_output, polardims.x * polardims.y * sizeof(tfloat));
 		
-		d_Cart2Polar(d_input, d_output, dims, 1);
+		d_Cart2Polar(d_input, d_output, dims, T_INTERP_LINEAR);
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_output, polardims.x * polardims.y * sizeof(tfloat));
 	
 		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, polardims.x * polardims.y);
@@ -36,7 +36,7 @@ TEST(ImageManipulation, Coordinates)
 
 		tfloat* h_input = (tfloat*)MallocFromDeviceArray(d_input, dims.x * dims.y * sizeof(tfloat));
 		
-		d_Cart2Polar(d_input, d_output, dims, 1);
+		d_Cart2Polar(d_input, d_output, dims, T_INTERP_CUBIC);
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_output, polardims.x * polardims.y * sizeof(tfloat));
 	
 		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, polardims.x * polardims.y);

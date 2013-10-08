@@ -41,8 +41,22 @@ following papers:
    Journal of Graphics Tools, vol. 13, no. 4, pp. 61-69, 2008.
 \*--------------------------------------------------------------------------*/
 
-#include "..\..\Functions.cuh"
+#ifndef CUBIC_TEX_KERNELS_CU
+#define CUBIC_TEX_KERNELS_CU
 
+#include "cutil_math_bugfixes.h"
+#include "cuda.h"
+#include "cuda_runtime.h"
+
+inline __host__ __device__ float2 operator-(float a, float2 b)
+{
+	return make_float2(a - b.x, a - b.y);
+}
+
+inline __host__ __device__ float3 operator-(float a, float3 b)
+{
+	return make_float3(a - b.x, a - b.y, a - b.z);
+}
 
 // Inline calculation of the bspline convolution weights, without conditional statements
 inline __device__ void bspline_weights(float fraction, float& w0, float& w1, float& w2, float& w3)
@@ -180,3 +194,5 @@ __device__ float cubicTexture3D(texture<float, cudaTextureType3D> tex, float3 co
 
 	return (g0.z * tex000 + g1.z * tex001);  //weigh along the z-direction
 }
+
+#endif

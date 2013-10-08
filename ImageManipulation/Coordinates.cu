@@ -1,5 +1,6 @@
-#include "..\Prerequisites.cuh"
-#include "..\Functions.cuh"
+#include "../Prerequisites.cuh"
+#include "../Functions.cuh"
+#include "../CubicSplines/internal/cubicTexKernels.cu"
 
 
 ////////////////////////////
@@ -14,7 +15,7 @@ __global__ void Cart2PolarCubicKernel(tfloat* d_output, int2 polardims, tfloat r
 //Globals//
 ///////////
 
-texture<tfloat, 2> texInput2d;
+texture<tfloat, 2, cudaReadModeElementType> texInput2d;
 
 /////////////////////////////////////////////
 //Equivalent of TOM's tom_cart2polar method//
@@ -43,11 +44,14 @@ void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE in
 		{
 			for (int y = 0; y < dims.y; y++)
 				cudaMemcpy((char*)d_pitched + y * pitchedwidth, 
-						   d_offsetinput + y * dims.x, 
-						   dims.x * sizeof(tfloat), 
-						   cudaMemcpyDeviceToDevice);
+							d_offsetinput + y * dims.x, 
+							dims.x * sizeof(tfloat), 
+							cudaMemcpyDeviceToDevice);
 			d_offsetinput = d_pitched;
 		}
+			
+		if(interpolation == T_INTERP_CUBIC)
+			d_CubicBSplinePrefilter2D(d_offsetinput, pitchedwidth, dims);
 
 		cudaBindTexture2D(NULL, 
 							texInput2d, 
@@ -60,10 +64,16 @@ void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE in
 		size_t TpB = min(256, polardims.y);
 		dim3 grid = dim3((int)((polardims.y + TpB - 1) / TpB), polardims.x);
 
-		Cart2PolarLinearKernel <<<grid, (uint)TpB>>> (d_output + polarelements * b, polardims, (tfloat)max(dims.x, dims.y) / (tfloat)2);
+		if(interpolation == T_INTERP_LINEAR)
+			Cart2PolarLinearKernel <<<grid, (uint)TpB>>> (d_output + polarelements * b, polardims, (tfloat)max(dims.x, dims.y) / (tfloat)2);
+		else if(interpolation == T_INTERP_CUBIC)
+			Cart2PolarCubicKernel <<<grid, (uint)TpB>>> (d_output + polarelements * b, polardims, (tfloat)max(dims.x, dims.y) / (tfloat)2);
 
 		cudaUnbindTexture(texInput2d);
 	}
+
+	if(d_pitched != NULL)
+		cudaFree(d_pitched);
 }
 
 int2 GetCart2PolarSize(int2 dims)
@@ -105,7 +115,7 @@ __global__ void Cart2PolarCubicKernel(tfloat* d_output, int2 polardims, tfloat r
 	tfloat r = (tfloat)idx;
 	tfloat phi = (tfloat)(idy) * PI2 / (tfloat)polardims.y;
 
-	d_output[idy * polardims.x + idx] = tex2D(texInput2d, 
-											  cos(phi) * r + radius + (tfloat)0.5, 
-											  sin(phi) * r + radius + (tfloat)0.5);
+	d_output[idy * polardims.x + idx] = cubicTex2D(texInput2d, 
+												  cos(phi) * r + radius + (tfloat)0.5, 
+												  sin(phi) * r + radius + (tfloat)0.5);
 }

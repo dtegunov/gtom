@@ -31,11 +31,13 @@ using namespace std;
 	typedef cufftDoubleComplex tcomplex;
 	#define IS_TFLOAT_DOUBLE true
 	#define cmul cuCmul
+	#define cconj cuConj
 #else
 	typedef float tfloat;
 	typedef cufftComplex tcomplex;
 	#define IS_TFLOAT_DOUBLE false
 	#define cmul cuCmulf
+	#define cconj cuConjf
 #endif
 
 struct tfloat2
@@ -76,16 +78,6 @@ struct tfloat5
 
 	tfloat5(tfloat x, tfloat y, tfloat z, tfloat w, tfloat v) : x(x), y(y), z(z), w(w), v(v) {}
 };
-
-inline __host__ __device__ float2 operator-(float a, float2 b)
-{
-	return make_float2(a - b.x, a - b.y);
-}
-
-inline __host__ __device__ float3 operator-(float a, float3 b)
-{
-	return make_float3(a - b.x, a - b.y, a - b.z);
-}
 
 inline int2 toInt2(int x, int y)
 {

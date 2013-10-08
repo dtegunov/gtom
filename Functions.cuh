@@ -124,11 +124,16 @@ template <class T> void d_MultiplyByScalar(T* d_input, T* d_multiplicators, T* d
 template <class T> void d_MultiplyByVector(T* d_input, T* d_multiplicators, T* d_output, size_t elements, int batch = 1);
 
 void d_ComplexMultiplyByVector(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
-void d_ComplexMultiplyByVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tfloat multiplicator);
-void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator);
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
+
+void d_ComplexMultiplyByVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
+void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator);
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
+
+void d_ComplexMultiplyByConjVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
+void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator);
+void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
 
 template <class T> void d_AddScalar(T* d_input, T* d_output, size_t elements, T summand);
 template <class T> void d_AddScalar(T* d_input, T* d_summands, T* d_output, size_t elements, int batch = 1);
@@ -165,29 +170,21 @@ template <class T> void d_SumMinMax(T* d_input, T* d_sum, T* d_min, T* d_max, si
 //Dev.cu:
 template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t elements, Tmask* d_mask, int batch = 1);
 
+
+///////////////
+//Correlation//
+///////////////
+
+//CCF.cu:
+template<class T> void d_CCF(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, T* d_mask, int batch = 1);
+
+
 ///////////////////////
 //Cubic interpolation//
 ///////////////////////
 
-cudaPitchedPtr CopyVolumeHostToDevice(const float* host, uint width, uint height, uint depth);
-cudaPitchedPtr CopyVolumeDeviceToDevice(const float* deviceFrom, uint width, uint height, uint depth);
-void CopyVolumeDeviceToHost(float* host, const cudaPitchedPtr device, uint width, uint height, uint depth);
-template<class T, enum cudaTextureReadMode mode> void CreateTextureFromVolume(texture<T, 3, mode>* tex, 
-																			  cudaArray** texArray,	
-																			  const cudaPitchedPtr volume, 
-																			  cudaExtent extent, 
-																			  bool onDevice);
-template<class T, enum cudaTextureReadMode mode> void CreateTextureFromVolume(texture<T, 3, mode>* tex, 
-																			  cudaArray** texArray,
-																			  const T* volume, 
-																			  cudaExtent extent,
-																			  bool onDevice);
-template<class floatN> void CubicBSplinePrefilter2D(floatN* image, uint pitch, uint width, uint height);
-template<class floatN> void CubicBSplinePrefilter3D(floatN* volume, uint pitch, uint width, uint height, uint depth);
-
-__device__ float cubicTex1D(texture<float, cudaTextureType1D> tex, float x);
-__device__ float cubicTex2D(texture<float, cudaTextureType2D> tex, float x, float y);
-__device__ float cubicTexture3D(texture<float, cudaTextureType3D> tex, float3 coord);
+template<class T> void d_CubicBSplinePrefilter2D(T* image, int pitch, int2 dims);
+template<class T> void d_CubicBSplinePrefilter3D(T* d_volume, int pitch, int width, int height, int depth);
 
 
 

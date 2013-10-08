@@ -18,6 +18,10 @@ __global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tcomplex* multi
 __global__ void ComplexMultiplyByScalarKernel(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator);
 __global__ void ComplexMultiplyByScalarKernel(tcomplex* d_input, tcomplex* multiplicators, tcomplex* d_output, size_t elements);
 
+__global__ void ComplexMultiplyByConjVectorKernel(tcomplex* d_input, tcomplex* multiplicators, tcomplex* d_output, size_t elements, int batch);
+__global__ void ComplexMultiplyByConjScalarKernel(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator);
+__global__ void ComplexMultiplyByConjScalarKernel(tcomplex* d_input, tcomplex* multiplicators, tcomplex* d_output, size_t elements);
+
 template <class T> __global__ void AddVectorKernel(T* d_input, T* d_summands, T* d_output, size_t elements, int batch);
 template <class T> __global__ void AddScalarKernel(T* d_input, T* d_output, size_t elements, T summand);
 template <class T> __global__ void AddScalarKernel(T* d_input, T* d_summands, T* d_output, size_t elements);
@@ -132,6 +136,16 @@ void d_ComplexMultiplyByVector(tcomplex* d_input, tcomplex* d_multiplicators, tc
 	cudaDeviceSynchronize();
 }
 
+void d_ComplexMultiplyByConjVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	dim3 grid = dim3((uint)totalblocks);
+	ComplexMultiplyByConjVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements, batch);
+
+	cudaDeviceSynchronize();
+}
+
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tfloat multiplicator)
 {
 	size_t TpB = min(256, elements);
@@ -152,6 +166,16 @@ void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t ele
 	cudaDeviceSynchronize();
 }
 
+void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	dim3 grid = dim3((uint)totalblocks);
+	ComplexMultiplyByConjScalarKernel <<<grid, (uint)TpB>>> (d_input, d_output, elements, multiplicator);
+
+	cudaDeviceSynchronize();
+}
+
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
 {
 	size_t TpB = min(256, elements);
@@ -168,6 +192,16 @@ void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_multiplicators, tc
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
+
+	cudaDeviceSynchronize();
+}
+
+void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	dim3 grid = dim3((uint)totalblocks, batch);
+	ComplexMultiplyByConjScalarKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 
 	cudaDeviceSynchronize();
 }
@@ -203,6 +237,21 @@ __global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tcomplex* d_mul
 	}
 }
 
+__global__ void ComplexMultiplyByConjVectorKernel(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
+{
+	tcomplex val;
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+	{
+		val = d_multiplicators[id];
+		for(size_t n = 0; n < batch; n++)
+		{
+			d_output[id + elements * n] = cmul(d_input[id + elements * n], cconj(val));
+		}
+	}
+}
+
 __global__ void ComplexMultiplyByScalarKernel(tcomplex* d_input, tcomplex* d_output, size_t elements, tfloat multiplicator)
 {
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
@@ -220,6 +269,14 @@ __global__ void ComplexMultiplyByScalarKernel(tcomplex* d_input, tcomplex* d_out
 		id < elements; 
 		id += blockDim.x * gridDim.x)
 		d_output[id] = cmul(d_input[id], multiplicator);
+}
+
+__global__ void ComplexMultiplyByConjScalarKernel(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+		d_output[id] = cmul(d_input[id], cconj(multiplicator));
 }
 
 __global__ void ComplexMultiplyByScalarKernel(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements)
@@ -251,6 +308,20 @@ __global__ void ComplexMultiplyByScalarKernel(tcomplex* d_input, tcomplex* d_mul
 		id < elements; 
 		id += blockDim.x * gridDim.x)
 		d_output[id + offset] = cmul(d_input[id + offset], scalar);
+}
+
+__global__ void ComplexMultiplyByConjScalarKernel(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements)
+{
+	__shared__ tcomplex scalar;
+	if(threadIdx.x == 0)
+		scalar = d_multiplicators[blockIdx.y];
+	__syncthreads();
+
+	size_t offset = elements * blockIdx.y;
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+		d_output[id + offset] = cmul(d_input[id + offset], cconj(scalar));
 }
 
 

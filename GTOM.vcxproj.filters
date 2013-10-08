@@ -43,6 +43,9 @@
     <Filter Include="Cubic Splines\internal">
       <UniqueIdentifier>{c3b0fd44-d3e8-499f-8eba-5e28f5ac0cf0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Correlation">
+      <UniqueIdentifier>{cfbf289c-1c9d-4a20-8674-5d0c86ef39bf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="glm\CMakeLists.txt">
@@ -826,6 +829,9 @@
     </CudaCompile>
     <CudaCompile Include="CubicSplines\cubicTex.cu">
       <Filter>Cubic Splines</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Correlation\CCF.cu">
+      <Filter>Correlation</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>
