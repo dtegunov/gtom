@@ -41,8 +41,8 @@ following papers:
    Journal of Graphics Tools, vol. 13, no. 4, pp. 61-69, 2008.
 \*--------------------------------------------------------------------------*/
 
-#ifndef _CUBIC1D_KERNEL_H_
-#define _CUBIC1D_KERNEL_H_
+#ifndef CUBIC_TEX_CU
+#define CUBIC_TEX_CU
 
 #include "internal/bspline_kernel.cu"
 
@@ -50,20 +50,19 @@ following papers:
 //! Straight forward implementation, using 4 nearest neighbour lookups.
 //! @param tex  1D texture
 //! @param x  unnormalized x texture coordinate
-template<class T, enum cudaTextureReadMode mode>
-__device__ float cubicTex1DSimple(texture<T, 1, mode> tex, float x)
+__device__ tfloat cubicTex1DSimple(texture<tfloat, 1> tex, tfloat x)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
-	const float coord_grid = x - 0.5f;
-	float index = floor(coord_grid);
-	const float fraction = coord_grid - index;
-	index += 0.5f;  //move from [-0.5, extent-0.5] to [0, extent]
+	const tfloat coord_grid = x - (tfloat)0.5;
+	tfloat index = floor(coord_grid);
+	const tfloat fraction = coord_grid - index;
+	index += (tfloat)0.5;  //move from [-0.5, extent-0.5] to [0, extent]
 
-	float result = 0.0f;
-	for (float x=-1; x < 2.5f; x++)
+	tfloat result = (tfloat)0;
+	for (tfloat x=-1; x < (tfloat)2.5; x++)
 	{
-		float bsplineX = bspline(x-fraction);
-		float u = index + x;
+		tfloat bsplineX = bspline(x-fraction);
+		tfloat u = index + x;
 		result += bsplineX * tex1D(tex, u);
 	}
 	return result;

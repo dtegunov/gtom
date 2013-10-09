@@ -128,7 +128,8 @@ typedef unsigned int uint;
 enum T_INTERP_MODE 
 { 
 	T_INTERP_LINEAR = 1,
-	T_INTERP_CUBIC = 2
+	T_INTERP_CUBIC = 2,
+	T_INTERP_FOURIER = 3
 };
 
 

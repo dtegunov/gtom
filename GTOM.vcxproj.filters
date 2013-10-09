@@ -46,6 +46,9 @@
     <Filter Include="Correlation">
       <UniqueIdentifier>{cfbf289c-1c9d-4a20-8674-5d0c86ef39bf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Transformation">
+      <UniqueIdentifier>{c8529e15-b02c-48f5-80e7-d695534f516f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="glm\CMakeLists.txt">
@@ -738,6 +741,12 @@
     <None Include="Prerequisites.cuh">
       <Filter>Headers</Filter>
     </None>
+    <None Include="DeviceFunctions.cuh">
+      <Filter>Headers</Filter>
+    </None>
+    <None Include="FFT\FFTResize.cuh">
+      <Filter>FFT</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="FFT\FFT.cu">
@@ -779,9 +788,6 @@
     <CudaCompile Include="Generics\SumMinMax.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="ImageManipulation\Bin.cu">
-      <Filter>Image Manipulation</Filter>
-    </CudaCompile>
     <CudaCompile Include="ImageManipulation\Norm.cu">
       <Filter>Image Manipulation</Filter>
     </CudaCompile>
@@ -794,14 +800,8 @@
     <CudaCompile Include="FFT\FFTRemap.cu">
       <Filter>FFT</Filter>
     </CudaCompile>
-    <CudaCompile Include="ImageManipulation\Coordinates.cu">
-      <Filter>Image Manipulation</Filter>
-    </CudaCompile>
     <CudaCompile Include="Masking\RectangleMask.cu">
       <Filter>Masking</Filter>
-    </CudaCompile>
-    <CudaCompile Include="ImageManipulation\Shift.cu">
-      <Filter>Image Manipulation</Filter>
     </CudaCompile>
     <CudaCompile Include="CubicSplines\cubicPrefilter2D.cu">
       <Filter>Cubic Splines</Filter>
@@ -832,6 +832,18 @@
     </CudaCompile>
     <CudaCompile Include="Correlation\CCF.cu">
       <Filter>Correlation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Transformation\Shift.cu">
+      <Filter>Transformation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Transformation\Coordinates.cu">
+      <Filter>Transformation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Transformation\Bin.cu">
+      <Filter>Transformation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Transformation\Scale.cu">
+      <Filter>Transformation</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

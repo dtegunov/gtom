@@ -28,6 +28,9 @@
     <Filter Include="Source Files\Correlation">
       <UniqueIdentifier>{672c3915-d074-46d0-976b-df01c7bf6d87}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Transformation">
+      <UniqueIdentifier>{7c37fb68-3b80-4e1d-a90f-a13a22f03206}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -54,9 +57,6 @@
     <ClCompile Include="Norm.cpp">
       <Filter>Source Files\Image Manipulation</Filter>
     </ClCompile>
-    <ClCompile Include="Bin.cpp">
-      <Filter>Source Files\Image Manipulation</Filter>
-    </ClCompile>
     <ClCompile Include="SphereMask.cpp">
       <Filter>Source Files\Masking</Filter>
     </ClCompile>
@@ -66,17 +66,23 @@
     <ClCompile Include="FFTRemap.cpp">
       <Filter>Source Files\FFT</Filter>
     </ClCompile>
-    <ClCompile Include="Coordinates.cpp">
-      <Filter>Source Files\Image Manipulation</Filter>
-    </ClCompile>
     <ClCompile Include="RectangleMask.cpp">
       <Filter>Source Files\Masking</Filter>
     </ClCompile>
-    <ClCompile Include="Shift.cpp">
-      <Filter>Source Files\Image Manipulation</Filter>
-    </ClCompile>
     <ClCompile Include="CCF.cpp">
       <Filter>Source Files\Correlation</Filter>
+    </ClCompile>
+    <ClCompile Include="Bin.cpp">
+      <Filter>Source Files\Transformation</Filter>
+    </ClCompile>
+    <ClCompile Include="Coordinates.cpp">
+      <Filter>Source Files\Transformation</Filter>
+    </ClCompile>
+    <ClCompile Include="Shift.cpp">
+      <Filter>Source Files\Transformation</Filter>
+    </ClCompile>
+    <ClCompile Include="Scale.cpp">
+      <Filter>Source Files\Transformation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

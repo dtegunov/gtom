@@ -1,6 +1,7 @@
 #include "../Prerequisites.cuh"
 #include "../Functions.cuh"
-#include "../CubicSplines/internal/cubicTexKernels.cu"
+#include "../DeviceFunctions.cuh"
+//#include "../CubicSplines/internal/cubicTexKernels.cu"
 
 
 ////////////////////////////
@@ -15,7 +16,7 @@ __global__ void Cart2PolarCubicKernel(tfloat* d_output, int2 polardims, tfloat r
 //Globals//
 ///////////
 
-texture<tfloat, 2, cudaReadModeElementType> texInput2d;
+texture<tfloat, 2, cudaReadModeElementType> texCoordinatesInput2d;
 
 /////////////////////////////////////////////
 //Equivalent of TOM's tom_cart2polar method//
@@ -25,8 +26,8 @@ void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE in
 {
 	int2 polardims = GetCart2PolarSize(dims);
 
-	texInput2d.normalized = false;
-	texInput2d.filterMode = cudaFilterModeLinear;
+	texCoordinatesInput2d.normalized = false;
+	texCoordinatesInput2d.filterMode = cudaFilterModeLinear;
 
 	size_t elements = dims.x * dims.y;
 	size_t polarelements = polardims.x * polardims.y;
@@ -54,7 +55,7 @@ void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE in
 			d_CubicBSplinePrefilter2D(d_offsetinput, pitchedwidth, dims);
 
 		cudaBindTexture2D(NULL, 
-							texInput2d, 
+							texCoordinatesInput2d, 
 							d_offsetinput, 
 							desc, 
 							dims.x, 
@@ -69,7 +70,7 @@ void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE in
 		else if(interpolation == T_INTERP_CUBIC)
 			Cart2PolarCubicKernel <<<grid, (uint)TpB>>> (d_output + polarelements * b, polardims, (tfloat)max(dims.x, dims.y) / (tfloat)2);
 
-		cudaUnbindTexture(texInput2d);
+		cudaUnbindTexture(texCoordinatesInput2d);
 	}
 
 	if(d_pitched != NULL)
@@ -100,7 +101,7 @@ __global__ void Cart2PolarLinearKernel(tfloat* d_output, int2 polardims, tfloat 
 	tfloat r = (tfloat)idx;
 	tfloat phi = (tfloat)(idy) * PI2 / (tfloat)polardims.y;
 
-	d_output[idy * polardims.x + idx] = tex2D(texInput2d, 
+	d_output[idy * polardims.x + idx] = tex2D(texCoordinatesInput2d, 
 											  cos(phi) * r + radius + (tfloat)0.5, 
 											  sin(phi) * r + radius + (tfloat)0.5);
 }
@@ -115,7 +116,7 @@ __global__ void Cart2PolarCubicKernel(tfloat* d_output, int2 polardims, tfloat r
 	tfloat r = (tfloat)idx;
 	tfloat phi = (tfloat)(idy) * PI2 / (tfloat)polardims.y;
 
-	d_output[idy * polardims.x + idx] = cubicTex2D(texInput2d, 
+	d_output[idy * polardims.x + idx] = cubicTex2D(texCoordinatesInput2d, 
 												  cos(phi) * r + radius + (tfloat)0.5, 
 												  sin(phi) * r + radius + (tfloat)0.5);
 }

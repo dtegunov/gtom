@@ -1,14 +1,14 @@
 #include "Prerequisites.h"
 
-TEST(ImageManipulation, Coordinates)
+TEST(Transformation, Coordinates)
 {
 	cudaDeviceReset();
 
 	//Case 1:
 	{
 		int2 dims = {16, 16};
-		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\ImageManipulation\\Input_Cart2Polar_1.bin");
-		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\ImageManipulation\\Output_Cart2Polar_1.bin");
+		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\Transformation\\Input_Cart2Polar_1.bin");
+		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Transformation\\Output_Cart2Polar_1.bin");
 		int2 polardims = GetCart2PolarSize(dims);
 		tfloat* d_output;
 		cudaMalloc((void**)&d_output, polardims.x * polardims.y * sizeof(tfloat));
@@ -28,8 +28,8 @@ TEST(ImageManipulation, Coordinates)
 	//Case 2:
 	{
 		int2 dims = {15, 15};
-		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\ImageManipulation\\Input_Cart2Polar_2.bin");
-		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\ImageManipulation\\Output_Cart2Polar_2.bin");
+		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\Transformation\\Input_Cart2Polar_2.bin");
+		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Transformation\\Output_Cart2Polar_2.bin");
 		int2 polardims = GetCart2PolarSize(dims);
 		tfloat* d_output;
 		cudaMalloc((void**)&d_output, polardims.x * polardims.y * sizeof(tfloat));

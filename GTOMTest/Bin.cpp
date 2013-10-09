@@ -1,6 +1,6 @@
 #include "Prerequisites.h"
 
-TEST(ImageManipulation, Bin)
+TEST(Transformation, Bin)
 {
 	for(int i = 11; i < 12; i++)
 	{	

@@ -1,14 +1,14 @@
 #include "Prerequisites.h"
 
-TEST(ImageManipulation, Shift)
+TEST(Transformation, Shift)
 {
 	cudaDeviceReset();
 
 	//Case 1:
 	{
 		int3 dims = {16, 16, 1};
-		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\ImageManipulation\\Input_Shift_1.bin");
-		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\ImageManipulation\\Output_Shift_1.bin");
+		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\Transformation\\Input_Shift_1.bin");
+		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Transformation\\Output_Shift_1.bin");
 		d_Shift(d_input, d_input, dims, tfloat3(1.0f, 2.0f, 0.0f), 1);
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, dims.x * dims.y * dims.z * sizeof(tfloat));
 	
@@ -23,8 +23,8 @@ TEST(ImageManipulation, Shift)
 	//Case 2:
 	{
 		int3 dims = {16, 16, 1};
-		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\ImageManipulation\\Input_Shift_2.bin");
-		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\ImageManipulation\\Output_Shift_2.bin");
+		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\Transformation\\Input_Shift_2.bin");
+		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Transformation\\Output_Shift_2.bin");
 		d_Shift(d_input, d_input, dims, tfloat3(1.5f, 2.5f, 0.0f), 1);
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, dims.x * dims.y * dims.z * sizeof(tfloat));
 	

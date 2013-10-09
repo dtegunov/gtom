@@ -187,7 +187,6 @@ template<class T> void d_CubicBSplinePrefilter2D(T* image, int pitch, int2 dims)
 template<class T> void d_CubicBSplinePrefilter3D(T* d_volume, int pitch, int width, int height, int depth);
 
 
-
 /////////////////////
 //Fourier transform//
 /////////////////////
@@ -235,18 +234,8 @@ enum T_NORM_MODE
 };
 template <class Tmask> void d_Norm(tfloat* d_input, tfloat* d_output, size_t elements, Tmask* d_mask, T_NORM_MODE mode, tfloat scf, int batch = 1);
 
-//Bin.cu:
-void d_Bin(tfloat* d_input, tfloat* d_output, int3 dims, int bincount, int batch = 1);
-
 //Bandpass.cu:
 void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch = 1);
-
-//Coordinates.cu:
-void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE interpolation, int batch = 1);
-int2 GetCart2PolarSize(int2 dims);
-
-//Shift.cu:
-void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3 delta, int batch = 1);
 
 
 ///////////
@@ -264,3 +253,21 @@ template <class T> void d_Remap(T* d_input, intptr_t* d_map, T* d_output, size_t
 template <class T> void Remap(T* h_input, intptr_t* h_map, T* h_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch = 1);
 template <class T> void d_MaskSparseToDense(T* d_input, intptr_t** d_mapforward, intptr_t* d_mapbackward, size_t &elementsmapped, size_t elementsoriginal);
 template <class T> void MaskSparseToDense(T* h_input, intptr_t** h_mapforward, intptr_t* h_mapbackward, size_t &elementsmapped, size_t elementsoriginal);
+
+
+//////////////////
+//Transformation//
+//////////////////
+
+//Bin.cu:
+void d_Bin(tfloat* d_input, tfloat* d_output, int3 dims, int bincount, int batch = 1);
+
+//Coordinates.cu:
+void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE interpolation, int batch = 1);
+int2 GetCart2PolarSize(int2 dims);
+
+//Shift.cu:
+void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3 delta, int batch = 1);
+
+//Scale.cu:
+void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, int batch = 1);
