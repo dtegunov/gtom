@@ -6,8 +6,8 @@ TEST(FFT, FFTResize)
 
 	//Case 1:
 	{
-		int3 olddims = {16, 16, 1};
-		int3 newdims = {8, 8, 1};
+		int3 olddims = {15, 15, 1};
+		int3 newdims = {7, 7, 1};
 
 		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\FFT\\Input_Resize_1.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\FFT\\Output_Resize_1.bin");
@@ -32,11 +32,11 @@ TEST(FFT, FFTResize)
 
 	//Case 2:
 	{
-		int3 olddims = {5, 1, 1};
-		int3 newdims = {9, 1, 1};
+		int3 olddims = {8, 8, 1};
+		int3 newdims = {16, 16, 1};
 
 		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\FFT\\Input_Resize_2.bin");
-		//tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\FFT\\Output_Resize_2.bin");
+		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\FFT\\Output_Resize_2.bin");
 		
 		tcomplex* d_output;
 		cudaMalloc((void**)&d_output, (newdims.x / 2 + 1) * newdims.y * newdims.z * sizeof(tcomplex));
@@ -48,8 +48,8 @@ TEST(FFT, FFTResize)
 
 		tcomplex* h_output = (tcomplex*)MallocFromDeviceArray(d_output, (newdims.x / 2 + 1) * newdims.y * newdims.z * sizeof(tcomplex));
 	
-		//double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, (newdims.x / 2 + 1) * newdims.y * newdims.z);
-		//ASSERT_LE(MeanRelative, 1e-5);
+		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, (newdims.x / 2 + 1) * newdims.y * newdims.z);
+		ASSERT_LE(MeanRelative, 1e-5);
 
 		cudaFree(d_input);
 		//free(desired_output);

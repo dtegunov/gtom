@@ -9,14 +9,14 @@
 template<class T> void d_CCF(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, T* d_mask, int batch)
 {
 	d_CCFUnshifted(d_input1, d_input2, d_output, dims, normalized, d_mask, batch);
-	d_RemapFull2FullFFT(d_output, d_output, dims, batch);
+	d_RemapFullFFT2Full(d_output, d_output, dims, batch);
 }
 template void d_CCF<tfloat>(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, tfloat* d_mask, int batch);
 template void d_CCF<int>(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, int* d_mask, int batch);
 template void d_CCF<char>(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, char* d_mask, int batch);
 
 ////////////////////////////////////////////////////////////////////////////
-//Equivalent of TOM's tom_ccf method, but without the ifftshift at the end//
+//Equivalent of TOM's tom_ccf method, but without the fftshift at the end//
 ////////////////////////////////////////////////////////////////////////////
 
 template<class T> void d_CCFUnshifted(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, T* d_mask, int batch)

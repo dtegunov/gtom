@@ -87,6 +87,9 @@
     <ClCompile Include="FFTResize.cpp">
       <Filter>Source Files\FFT</Filter>
     </ClCompile>
+    <ClCompile Include="Peak.cpp">
+      <Filter>Source Files\Correlation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">

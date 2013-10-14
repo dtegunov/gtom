@@ -179,6 +179,15 @@ template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t e
 template<class T> void d_CCF(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, T* d_mask, int batch = 1);
 template<class T> void d_CCFUnshifted(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, T* d_mask, int batch = 1);
 
+//Peak.cu:
+enum T_PEAK_MODE
+{
+	T_PEAK_INTEGER = 1,
+	T_PEAK_SUBCOARSE = 2,
+	T_PEAK_SUBFINE = 3
+};
+void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, T_PEAK_MODE mode, int batch = 1);
+
 
 ///////////////////////
 //Cubic interpolation//
@@ -220,7 +229,9 @@ template <class T> void d_RemapFull2FullFFT(T* d_input, T* d_output, int3 dims, 
 
 //FFTResize.cu:
 void d_FFTCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
+void d_FFTFullCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
 void d_FFTPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
+void d_FFTFullPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
 
 
 //////////////////////
