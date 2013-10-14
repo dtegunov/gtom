@@ -1,0 +1,25 @@
+#include "../Prerequisites.cuh"
+#include "../Functions.cuh"
+
+
+////////////////////////////
+//CUDA kernel declarations//
+////////////////////////////
+
+
+
+
+///////////////////////////////////////
+//Equivalent of TOM's tom_peak method//
+///////////////////////////////////////
+
+void d_Peak(tfloat* d_input, tfloat3* d_positions, int3 dims, bool subpixel, int batch)
+{
+
+}
+
+
+////////////////
+//CUDA kernels//
+////////////////
+

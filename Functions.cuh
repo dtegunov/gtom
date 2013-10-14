@@ -177,6 +177,7 @@ template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t e
 
 //CCF.cu:
 template<class T> void d_CCF(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, T* d_mask, int batch = 1);
+template<class T> void d_CCFUnshifted(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, T* d_mask, int batch = 1);
 
 
 ///////////////////////
@@ -214,7 +215,12 @@ void d_HermitianSymmetryTrim(tcomplex* const d_input, tcomplex* const d_output, 
 
 //FFTRemap.cu:
 template <class T> void d_RemapFull2HalfFFT(T* d_input, T* d_output, int3 dims);
-template <class T> void d_RemapFullFFT2Full(T* d_input, T* d_output, int3 dims);
+template <class T> void d_RemapFullFFT2Full(T* d_input, T* d_output, int3 dims, int batch = 1);
+template <class T> void d_RemapFull2FullFFT(T* d_input, T* d_output, int3 dims, int batch = 1);
+
+//FFTResize.cu:
+void d_FFTCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
+void d_FFTPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
 
 
 //////////////////////
@@ -267,7 +273,7 @@ void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE in
 int2 GetCart2PolarSize(int2 dims);
 
 //Shift.cu:
-void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3 delta, int batch = 1);
+void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, int batch = 1);
 
 //Scale.cu:
 void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, int batch = 1);

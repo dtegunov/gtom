@@ -744,7 +744,7 @@
     <None Include="DeviceFunctions.cuh">
       <Filter>Headers</Filter>
     </None>
-    <None Include="FFT\FFTResize.cuh">
+    <None Include="FFT\FFTResize.cu">
       <Filter>FFT</Filter>
     </None>
   </ItemGroup>
@@ -844,6 +844,9 @@
     </CudaCompile>
     <CudaCompile Include="Transformation\Scale.cu">
       <Filter>Transformation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Correlation\Peak.cu">
+      <Filter>Correlation</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

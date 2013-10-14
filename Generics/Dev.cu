@@ -23,8 +23,6 @@ template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t e
 		d_denseinput = d_remapped;
 	}
 
-	tfloat sumdivisor = (tfloat)1 / (tfloat)denseelements;
-
 	tfloat* d_mins;
 	cudaMalloc((void**)&d_mins, batch * sizeof(tfloat));
 	tfloat* d_maxs;
@@ -39,19 +37,19 @@ template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t e
 	cudaMalloc((void**)&d_devs, batch * sizeof(tfloat));
 
 	d_SumMinMax(d_denseinput, d_means, d_mins, d_maxs, denseelements, batch);
-	d_MultiplyByScalar(d_means, d_means, batch, sumdivisor);
+	d_MultiplyByScalar(d_means, d_means, batch, (tfloat)1 / (tfloat)denseelements);
 		
 	d_SquaredDistanceFromScalar(d_denseinput, d_means, d_meancentered, denseelements, batch);
 
 	d_Sum(d_meancentered, d_vars, denseelements, batch);
-	d_MultiplyByScalar(d_vars, d_vars, batch, sumdivisor);
+	d_MultiplyByScalar(d_vars, d_vars, batch, (tfloat)1 / (tfloat)(denseelements - 1));
 
 	d_Sqrt(d_vars, d_devs, batch);
 
 	tfloat** h_fields = (tfloat**)malloc(5 * sizeof(tfloat*));
 	h_fields[0] = d_means;
-	h_fields[1] = d_maxs;
-	h_fields[2] = d_mins;
+	h_fields[1] = d_mins;
+	h_fields[2] = d_maxs;
 	h_fields[3] = d_devs;
 	h_fields[4] = d_vars;
 	tfloat** d_fields = (tfloat**)CudaMallocFromHostArray(h_fields, 5 * sizeof(tfloat*));

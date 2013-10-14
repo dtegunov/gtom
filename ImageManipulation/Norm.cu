@@ -6,10 +6,10 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-__global__ void NormPhaseKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, int batch);
-__global__ void NormStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, tfloat stddevmultiple, int batch);
-__global__ void NormMeanStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, int batch);
-__global__ void NormCustomScfKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, tfloat scf, int batch);
+__global__ void NormPhaseKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements);
+__global__ void NormStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, tfloat stddevmultiple);
+__global__ void NormMeanStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements);
+__global__ void NormCustomScfKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, tfloat scf);
 
 
 ///////////////////////////////////////
@@ -22,30 +22,33 @@ template <class Tmask> void d_Norm(tfloat* d_input, tfloat* d_output, size_t ele
 	cudaMalloc((void**)&d_imagestats, batch * sizeof(imgstats5));
 	d_Dev(d_input, d_imagestats, elements, d_mask, batch);
 
-	size_t TpB = min(192, elements);
+	imgstats5* h_imagestats = (imgstats5*)MallocFromDeviceArray(d_imagestats, batch * sizeof(imgstats5));
+
+	size_t TpB = min(192, NextMultipleOf(elements, 32));
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 
 	if(mode == T_NORM_MODE::T_NORM_PHASE)
-		NormPhaseKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, batch);
+		NormPhaseKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements);
 	else if(mode == T_NORM_MODE::T_NORM_STD1)
-		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)1, batch);
+		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)1);
 	else if(mode == T_NORM_MODE::T_NORM_STD2)
-		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)2, batch);
+		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)2);
 	else if(mode == T_NORM_MODE::T_NORM_STD3)
-		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)3, batch);
+		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)3);
 	else if(mode == T_NORM_MODE::T_NORM_MEAN01STD)
-		NormMeanStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, batch);
+		NormMeanStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements);
 	else if(mode == T_NORM_MODE::T_NORM_OSCAR)
 	{
-		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)3, batch);
+		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)3);
 		d_AddScalar(d_output, d_output, elements * batch, (tfloat)100);
 		d_Dev(d_output, d_imagestats, elements, d_mask, batch);
-		NormPhaseKernel <<<grid, (uint)TpB>>> (d_output, d_output, d_imagestats, elements, batch);
+		NormPhaseKernel <<<grid, (uint)TpB>>> (d_output, d_output, d_imagestats, elements);
 	}
 	else if(mode == T_NORM_MODE::T_NORM_CUSTOM)
-		NormCustomScfKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, scf, batch);
+		NormCustomScfKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, scf);
 
+	tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_output, elements * sizeof(tfloat));
 }
 template void d_Norm<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat* d_mask, T_NORM_MODE mode, tfloat stddev, int batch);
 template void d_Norm<int>(tfloat* d_input, tfloat* d_output, size_t elements, int* d_mask, T_NORM_MODE mode, tfloat stddev, int batch);
@@ -57,7 +60,7 @@ template void d_Norm<bool>(tfloat* d_input, tfloat* d_output, size_t elements, b
 //CUDA kernels//
 ////////////////
 
-__global__ void NormPhaseKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, int batch)
+__global__ void NormPhaseKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements)
 {
 	__shared__ tfloat mean;
 	if(threadIdx.x == 0)
@@ -71,7 +74,7 @@ __global__ void NormPhaseKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_
 		d_output[id + offset] = (d_input[id + offset] - mean) / (mean + (tfloat)0.000000000001);
 }
 
-__global__ void NormStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, tfloat stddevmultiple, int batch)
+__global__ void NormStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, tfloat stddevmultiple)
 {
 	__shared__ tfloat mean, stddev;
 	if(threadIdx.x == 0)
@@ -88,7 +91,7 @@ __global__ void NormStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d
 		d_output[id + offset] = max(min(d_input[id + offset], upper), lower) - mean;
 }
 
-__global__ void NormMeanStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, int batch)
+__global__ void NormMeanStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements)
 {
 	__shared__ tfloat mean, stddev;
 	if(threadIdx.x == 0)
@@ -110,7 +113,7 @@ __global__ void NormMeanStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats
 			d_output[id + offset] = (d_input[id + offset] - mean) / stddev;
 }
 
-__global__ void NormCustomScfKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, tfloat scf, int batch)
+__global__ void NormCustomScfKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, tfloat scf)
 {
 	__shared__ imgstats5 stats;
 	if(threadIdx.x == 0)

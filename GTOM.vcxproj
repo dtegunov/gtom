@@ -12,7 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="DeviceFunctions.cuh" />
-    <None Include="FFT\FFTResize.cuh" />
     <None Include="Functions.cuh" />
     <None Include="glm\core\func_common.inl" />
     <None Include="glm\core\func_exponential.inl" />
@@ -251,6 +250,7 @@
   <ItemGroup>
     <CudaCompile Include="Alignment\Align2D.cu" />
     <CudaCompile Include="Correlation\CCF.cu" />
+    <CudaCompile Include="Correlation\Peak.cu" />
     <CudaCompile Include="CubicSplines\cubicPrefilter2D.cu" />
     <CudaCompile Include="CubicSplines\cubicPrefilter3D.cu" />
     <CudaCompile Include="CubicSplines\cubicTex.cu" />
@@ -262,6 +262,7 @@
     <CudaCompile Include="CubicSplines\memcpy.cu" />
     <CudaCompile Include="FFT\FFT.cu" />
     <CudaCompile Include="FFT\FFTRemap.cu" />
+    <CudaCompile Include="FFT\FFTResize.cu" />
     <CudaCompile Include="FFT\IFFT.cu" />
     <CudaCompile Include="Generics\Arithmetics.cu" />
     <CudaCompile Include="Generics\CompositeArithmetics.cu" />

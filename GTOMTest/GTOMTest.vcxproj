@@ -105,6 +105,7 @@
     <ClCompile Include="Dev.cpp" />
     <ClCompile Include="FFTR2C.cpp" />
     <ClCompile Include="FFTRemap.cpp" />
+    <ClCompile Include="FFTResize.cpp" />
     <ClCompile Include="Helper.cpp" />
     <ClCompile Include="Scale.cpp" />
     <ClCompile Include="Max.cpp" />

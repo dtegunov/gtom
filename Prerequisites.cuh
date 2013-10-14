@@ -45,7 +45,7 @@ struct tfloat2
 	tfloat x;
 	tfloat y;
 
-	tfloat2(tfloat x, tfloat y) : x(x), y(y) {}
+	__host__ __device__ tfloat2(tfloat x, tfloat y) : x(x), y(y) {}
 };
 
 struct tfloat3

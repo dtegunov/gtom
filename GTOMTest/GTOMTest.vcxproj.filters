@@ -84,6 +84,9 @@
     <ClCompile Include="Scale.cpp">
       <Filter>Source Files\Transformation</Filter>
     </ClCompile>
+    <ClCompile Include="FFTResize.cpp">
+      <Filter>Source Files\FFT</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">
