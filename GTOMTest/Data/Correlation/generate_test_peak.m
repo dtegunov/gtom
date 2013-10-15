@@ -17,9 +17,9 @@ fwrite(fid,outdata,'single');
 fclose(fid);
 
 %Case 2:
-dimx=9;
-dimy=9;
-delta=[1.78 2.25];
+dimx=20;
+dimy=20;
+delta=[1.87 2.13];
 image1 = single(rand(dimx,dimy));
 image2 = tom_shift(image1, delta);
 indata = tom_corr(image1, image2);

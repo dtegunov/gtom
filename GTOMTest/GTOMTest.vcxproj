@@ -57,6 +57,8 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_VARIADIC_MAX=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
+      <MinimalRebuild>true</MinimalRebuild>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -103,6 +105,7 @@
     <ClCompile Include="CCF.cpp" />
     <ClCompile Include="Coordinates.cpp" />
     <ClCompile Include="Dev.cpp" />
+    <ClCompile Include="Extraction.cpp" />
     <ClCompile Include="FFTR2C.cpp" />
     <ClCompile Include="FFTRemap.cpp" />
     <ClCompile Include="FFTResize.cpp" />

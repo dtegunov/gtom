@@ -114,9 +114,12 @@ template <class T, int fieldcount> T* d_JoinInterleaved(T** d_fields, size_t ele
 template <class T, int fieldcount> void d_JoinInterleaved(T** d_fields, T* d_output, size_t elements);
 
 
-///////////////
-//Arithmetics//
-///////////////
+//Misc.cu:
+ int pow(int base, int exponent);
+
+////////////
+//Generics//
+////////////
 
 //Arithmetics.cu:
 template <class T> void d_MultiplyByScalar(T* d_input, T* d_output, size_t elements, T multiplicator);
@@ -164,11 +167,14 @@ template <class T> void d_Min(T *d_input, T *d_output, size_t n, int batch = 1);
 template <class T> void d_Max(T *d_input, tuple2<T, size_t> *d_output, size_t n, int batch = 1);
 template <class T> void d_Max(T *d_input, T *d_output, size_t n, int batch = 1);
 
-//SumMinMax.cu
+//SumMinMax.cu:
 template <class T> void d_SumMinMax(T* d_input, T* d_sum, T* d_min, T* d_max, size_t n, int batch = 1);
 
 //Dev.cu:
 template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t elements, Tmask* d_mask, int batch = 1);
+
+//Extraction.cu:
+template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch = 1);
 
 
 ///////////////

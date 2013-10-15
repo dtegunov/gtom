@@ -851,5 +851,8 @@
     <CudaCompile Include="Generics\Extraction.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
+    <CudaCompile Include="Helpers\Misc.cu">
+      <Filter>Helpers</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

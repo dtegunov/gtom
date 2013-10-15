@@ -121,6 +121,8 @@ typedef unsigned int uint;
 #define getZigzag(x, stride) abs((((x) - (stride)) % ((stride) * 2)) - (stride))
 #define DimensionCount(dims) (3 - max(2 - max((dims).z, 1), 0) - max(2 - max((dims).y, 1), 0) - max(2 - max((dims).x, 1), 0))
 #define NextMultipleOf(value, base) (((value) + (base) - 1) / (base) * (base))
+#define Elements(dims) ((dims).x * (dims).y * (dims).z)
+#define ElementsFFT(dims) (((dims).x / 2 + 1) * (dims).y * (dims).z)
 
 #define min(x, y) ((x) > (y) ? (y) : (x))
 #define max(x, y) ((x) < (y) ? (y) : (x))

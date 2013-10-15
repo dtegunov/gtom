@@ -90,6 +90,9 @@
     <ClCompile Include="Peak.cpp">
       <Filter>Source Files\Correlation</Filter>
     </ClCompile>
+    <ClCompile Include="Extraction.cpp">
+      <Filter>Source Files\Generics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">
