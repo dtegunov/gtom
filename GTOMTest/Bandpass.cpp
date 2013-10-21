@@ -10,9 +10,9 @@ TEST(ImageManipulation, Bandpass)
 		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\ImageManipulation\\Input_Bandpass_1.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\ImageManipulation\\Output_Bandpass_1.bin");
 		d_Bandpass(d_input, d_input, dims, 5, 126, 10);
-		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, dims.x * dims.y * dims.z * sizeof(tfloat));
+		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, Elements(dims) * sizeof(tfloat));
 	
-		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, dims.x * dims.y * dims.z);
+		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, Elements(dims));
 		ASSERT_LE(MeanRelative, 1e-5);
 
 		cudaFree(d_input);
@@ -26,9 +26,9 @@ TEST(ImageManipulation, Bandpass)
 		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\ImageManipulation\\Input_Bandpass_2.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\ImageManipulation\\Output_Bandpass_2.bin");
 		d_Bandpass(d_input, d_input, dims, 5, 126, 10);
-		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, dims.x * dims.y * dims.z * sizeof(tfloat));
+		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, Elements(dims) * sizeof(tfloat));
 	
-		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, dims.x * dims.y * dims.z);
+		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, Elements(dims));
 		ASSERT_LE(MeanRelative, 1e-5);
 
 		cudaFree(d_input);
@@ -42,9 +42,25 @@ TEST(ImageManipulation, Bandpass)
 		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\ImageManipulation\\Input_Bandpass_3.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\ImageManipulation\\Output_Bandpass_3.bin");
 		d_Bandpass(d_input, d_input, dims, 5, 28, 6);
-		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, dims.x * dims.y * dims.z * sizeof(tfloat));
+		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, Elements(dims) * sizeof(tfloat));
 	
-		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, dims.x * dims.y * dims.z);
+		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, Elements(dims));
+		ASSERT_LE(MeanRelative, 5e-5);
+
+		cudaFree(d_input);
+		free(desired_output);
+		free(h_output);
+	}
+
+	//Case 4:
+	{
+		int3 dims = {1855, 1855, 1};
+		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\ImageManipulation\\Input_Bandpass_4.bin");
+		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\ImageManipulation\\Output_Bandpass_4.bin");
+		d_Bandpass(d_input, d_input, dims, 5, 1855 / 5, 20);
+		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, Elements(dims) * sizeof(tfloat));
+	
+		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, Elements(dims));
 		ASSERT_LE(MeanRelative, 5e-5);
 
 		cudaFree(d_input);

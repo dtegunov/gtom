@@ -79,7 +79,7 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 				h_positions[b].y += (tfloat)((int)(*h_maxtuple).t2 - centerindex) / (tfloat)subdivisions;
 			}
 
-			//Interpolate along 2st dimension
+			//Interpolate along 3rd dimension
 			if(dims.z > 1)
 			{
 				d_Extract(d_input + Elements(dims) * b, d_original, dims, toInt3(1, 1, samples), coarseposition);

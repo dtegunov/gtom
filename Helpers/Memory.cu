@@ -8,6 +8,7 @@
 
 template <class T> __global__ void ValueFillKernel(T* d_output, size_t elements, T value);
 template <class T, int fieldcount> __global__ void JoinInterleavedKernel(T** d_fields, T* d_output, size_t elements);
+template <class T1, class T2> __global__ void TypeConversionKernel(T1* d_input, T2* d_output, size_t elements);
 
 
 ///////////////
@@ -80,6 +81,26 @@ void* CudaMallocFromHostArray(void* h_array, size_t devicesize, size_t hostsize)
 
 	return d_array;
 }
+
+template <class T1, class T2> T2* CudaMallocFromHostArrayConverted(T1* h_array, size_t elements)
+{
+	T1* d_input = (T1*)CudaMallocFromHostArray(h_array, elements * sizeof(T1));
+	T2* d_output;
+	cudaMalloc((void**)&d_output, elements * sizeof(T2));
+
+	size_t TpB = 256;
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	dim3 grid = dim3((uint)totalblocks);
+	TypeConversionKernel<T1, T2> <<<grid, (uint)TpB>>> (d_input, d_output, elements);
+
+	cudaFree(d_input);
+
+	return d_output;
+}
+template tfloat* CudaMallocFromHostArrayConverted<char, tfloat>(char* h_array, size_t elements);
+template tfloat* CudaMallocFromHostArrayConverted<short, tfloat>(short* h_array, size_t elements);
+template tfloat* CudaMallocFromHostArrayConverted<int, tfloat>(int* h_array, size_t elements);
+template tfloat* CudaMallocFromHostArrayConverted<double, tfloat>(double* h_array, size_t elements);
 
 tfloat* CudaMallocZeroFilledFloat(size_t elements)
 {
@@ -224,4 +245,12 @@ template <class T, int fieldcount> __global__ void JoinInterleavedKernel(T** d_f
 				d_output[id * fieldcount + f] = d_field[id];
 		}
 	}
+}
+
+template <class T1, class T2> __global__ void TypeConversionKernel(T1* d_input, T2* d_output, size_t elements)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+		d_output[id] = (T2)d_input[id];
 }

@@ -14,9 +14,9 @@ void d_FFTR2C(tfloat* const d_input, tcomplex* const d_output, int const ndimens
 
 	CudaSafeCall((cudaError)cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE));
 	#ifdef TOM_DOUBLE
-		CUDA_MEASURE_TIME(CudaSafeCall((cudaError)cufftExecD2Z(plan, d_input, d_output)));
+		CudaSafeCall((cudaError)cufftExecD2Z(plan, d_input, d_output));
 	#else
-		CUDA_MEASURE_TIME(CudaSafeCall((cudaError)cufftExecR2C(plan, d_input, d_output)));
+		CudaSafeCall((cudaError)cufftExecR2C(plan, d_input, d_output));
 	#endif
 	
 	cudaDeviceSynchronize();
@@ -48,9 +48,9 @@ void d_FFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndime
 
 	CudaSafeCall((cudaError)cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE));
 	#ifdef TOM_DOUBLE
-		CUDA_MEASURE_TIME(CudaSafeCall((cudaError)cufftExecZ2Z(plan, d_input, d_output)));
+		CudaSafeCall((cudaError)cufftExecZ2Z(plan, d_input, d_output));
 	#else
-		CUDA_MEASURE_TIME(CudaSafeCall((cudaError)cufftExecC2C(plan, d_input, d_output, CUFFT_FORWARD)));
+		CudaSafeCall((cudaError)cufftExecC2C(plan, d_input, d_output, CUFFT_FORWARD));
 	#endif
 	
 	CudaSafeCall((cudaError)cufftDestroy(plan));

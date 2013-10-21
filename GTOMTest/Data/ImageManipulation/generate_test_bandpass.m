@@ -35,10 +35,10 @@ fwrite(fid,outdata,'single');
 fclose(fid);
 
 %Case 4:
-dimx=256;
-dimy=256;
+dimx=1855;
+dimy=1855;
 indata = single(rand(dimx,dimy));
-outdata = tom_bandpass(indata,0,128,10);
+outdata = tom_bandpass(indata,5,1855/5,20);
 fid = fopen('Input_Bandpass_4.bin','W');
 fwrite(fid,indata,'single');
 fclose(fid);

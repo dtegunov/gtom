@@ -33,18 +33,6 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 	if(ndims != DimensionCount(newdims))
 		throw;
 
-	//All dimendions have to be either odd or even, not mixed
-	int evenolddims = 0;
-	for(int i = 0; i < ndims; i++)
-		if(((int*)&olddims)[i] % 2 == 0)
-			evenolddims++;
-	int evennewdims = 0;
-	for(int i = 0; i < ndims; i++)
-		if(((int*)&newdims)[i] % 2 == 0)
-			evennewdims++;
-	if(!(evenolddims == 0 && evennewdims == 0) && !(evenolddims == ndims && evennewdims == ndims))
-		throw;
-
 	//All new dimensions must be either bigger than the old or smaller, not mixed
 	int biggerdims = 0;
 	for(int i = 0; i < ndims; i++)

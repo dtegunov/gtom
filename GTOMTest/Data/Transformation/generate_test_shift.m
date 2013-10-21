@@ -2,7 +2,7 @@
 dimx=16;
 dimy=16;
 indata = single(rand(dimx,dimy));
-outdata = FourierShift2D(indata,[1 2]);
+outdata = tom_shift_fixed(indata,[1 2]);
 fid = fopen('Input_Shift_1.bin','W');
 fwrite(fid,indata,'single');
 fclose(fid);
@@ -14,7 +14,7 @@ fclose(fid);
 dimx=16;
 dimy=16;
 indata = single(rand(dimx,dimy));
-outdata = FourierShift2D(indata,[1.5 2.5]);
+outdata = tom_shift_fixed(indata,[1.5 2.5]);
 fid = fopen('Input_Shift_2.bin','W');
 fwrite(fid,indata,'single');
 fclose(fid);

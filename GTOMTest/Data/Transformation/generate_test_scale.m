@@ -27,7 +27,7 @@ fclose(fid);
 %Case 3:
 dimx=16;
 dimy=16;
-newdims=[8 8];
+newdims=[7 7];
 indata = single(rand(dimx,dimy));
 outdata = tom_rescale(indata,newdims);
 fid = fopen('Input_Scale_3.bin','W');

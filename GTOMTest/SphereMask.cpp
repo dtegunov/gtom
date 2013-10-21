@@ -57,11 +57,11 @@ TEST(Masking, SphereMask)
 
 	//Case 4:
 	{
-		int3 dims = {256, 256, 1};
-		tfloat radius = 128;
+		int3 dims = {1855, 1855, 1};
+		tfloat radius = 5;
 		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\Masking\\Input_Spheremask_4.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Masking\\Output_Spheremask_4.bin");
-		d_SphereMask(d_input, d_input, dims, &radius, 10, (tfloat3*)NULL);
+		d_SphereMask(d_input, d_input, dims, &radius, 20, (tfloat3*)NULL);
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, dims.x * dims.y * dims.z * sizeof(tfloat));
 	
 		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, dims.x * dims.y * dims.z);

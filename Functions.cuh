@@ -78,6 +78,8 @@ tfloat* MallocZeroFilledFloat(size_t elements);
  */
 template <class T> T* MallocValueFilled(size_t elements, T value);
 
+template <class T1, class T2> T2* CudaMallocFromHostArrayConverted(T1* h_array, size_t elements);
+
 /**
  * \brief Creates an array of floats initialized to 0.0f in device memory with the specified element count.
  * \param[in] elements	Element count

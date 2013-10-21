@@ -89,14 +89,14 @@ __global__ void FFTCropEvenKernel(tcomplex* d_input, tcomplex* d_output, int3 ol
 	if(x >= newdims.x / 2 + 1)
 		return;
 
-	int newry = ((blockIdx.y + newdims.y / 2) % newdims.y);
-	int newrz = ((blockIdx.z + newdims.z / 2) % newdims.z);
+	int newry = ((blockIdx.y + (newdims.y + 1) / 2) % newdims.y);
+	int newrz = ((blockIdx.z + (newdims.z + 1) / 2) % newdims.z);
 
-	int oldry = (olddims.y - newdims.y) / 2 + newry;
-	int oldrz = (olddims.z - newdims.z) / 2 + newrz;
+	int oldry = (olddims.y - newdims.y + ((olddims.y & 1 - (newdims.y & 1)) % 2)) / 2 + newry;
+	int oldrz = (olddims.z - newdims.z + ((olddims.z & 1 - (newdims.z & 1)) % 2)) / 2 + newrz;
 
-	int oldy = ((oldry + (olddims.y + 1) / 2) % olddims.y);
-	int oldz = ((oldrz + (olddims.z + 1) / 2) % olddims.z);
+	int oldy = ((oldry + (olddims.y) / 2) % olddims.y);
+	int oldz = ((oldrz + (olddims.z) / 2) % olddims.z);
 
 	if(x == newdims.x / 2)
 	{
@@ -105,6 +105,10 @@ __global__ void FFTCropEvenKernel(tcomplex* d_input, tcomplex* d_output, int3 ol
 		if(oldz != 0)
 			oldz = olddims.z - oldz;
 	}
+	if(blockIdx.y == newdims.y / 2)
+		oldy = newdims.y / 2;
+	if(blockIdx.z == newdims.z / 2)
+		oldz = newdims.z / 2;
 
 	tcomplex val = d_input[(oldz * olddims.y + oldy) * (olddims.x / 2 + 1) + x];
 	if(x == newdims.x / 2)
@@ -119,14 +123,18 @@ __global__ void FFTCropOddKernel(tcomplex* d_input, tcomplex* d_output, int3 old
 	if(x >= newdims.x / 2 + 1)
 		return;
 
-	int newry = ((blockIdx.y + newdims.y / 2) % newdims.y);
-	int newrz = ((blockIdx.z + newdims.z / 2) % newdims.z);
+	int newry = ((blockIdx.y + (newdims.y + 1) / 2) % newdims.y);
+	int newrz = ((blockIdx.z + (newdims.z + 1) / 2) % newdims.z);
 
-	int oldry = (olddims.y - newdims.y) / 2 + newry;
-	int oldrz = (olddims.z - newdims.z) / 2 + newrz;
+	int oldry = (olddims.y - newdims.y + ((olddims.y & 1 - (newdims.y & 1)) % 2)) / 2 + newry;
+	int oldrz = (olddims.z - newdims.z + ((olddims.z & 1 - (newdims.z & 1)) % 2)) / 2 + newrz;
 
-	int oldy = ((oldry + (olddims.y + 1) / 2) % olddims.y);
-	int oldz = ((oldrz + (olddims.z + 1) / 2) % olddims.z);
+	int oldy = ((oldry + (olddims.y) / 2) % olddims.y);
+	int oldz = ((oldrz + (olddims.z) / 2) % olddims.z);
+	if(blockIdx.y == newdims.y / 2)
+		oldy = newdims.y / 2;
+	if(blockIdx.z == newdims.z / 2)
+		oldz = newdims.z / 2;
 
 	d_output[(blockIdx.z * newdims.y + blockIdx.y) * (newdims.x / 2 + 1) + x] = d_input[(oldz * olddims.y + oldy) * (olddims.x / 2 + 1) + x];
 }
@@ -137,17 +145,23 @@ __global__ void FFTFullCropKernel(tcomplex* d_input, tcomplex* d_output, int3 ol
 	if(x >= newdims.x)
 		return;
 	
-	int newrx = ((x + newdims.x / 2) % newdims.x);
-	int newry = ((blockIdx.y + newdims.y / 2) % newdims.y);
-	int newrz = ((blockIdx.z + newdims.z / 2) % newdims.z);
+	int newrx = ((x + (newdims.x + 1) / 2) % newdims.x);
+	int newry = ((blockIdx.y + (newdims.y + 1) / 2) % newdims.y);
+	int newrz = ((blockIdx.z + (newdims.z + 1) / 2) % newdims.z);
 	
-	int oldrx = (olddims.x - newdims.x) / 2 + newrx;
-	int oldry = (olddims.y - newdims.y) / 2 + newry;
-	int oldrz = (olddims.z - newdims.z) / 2 + newrz;
+	int oldrx = (olddims.x - newdims.x + ((olddims.x & 1 - (newdims.x & 1)) % 2)) / 2 + newrx;
+	int oldry = (olddims.y - newdims.y + ((olddims.y & 1 - (newdims.y & 1)) % 2)) / 2 + newry;
+	int oldrz = (olddims.z - newdims.z + ((olddims.z & 1 - (newdims.z & 1)) % 2)) / 2 + newrz;
 	
-	int oldx = ((oldrx + (olddims.x + 1) / 2) % olddims.x);
-	int oldy = ((oldry + (olddims.y + 1) / 2) % olddims.y);
-	int oldz = ((oldrz + (olddims.z + 1) / 2) % olddims.z);
+	int oldx = ((oldrx + (olddims.x) / 2) % olddims.x);
+	int oldy = ((oldry + (olddims.y) / 2) % olddims.y);
+	int oldz = ((oldrz + (olddims.z) / 2) % olddims.z);
+	if(x == newdims.x / 2)
+		oldx = newdims.x / 2;
+	if(blockIdx.y == newdims.y / 2)
+		oldy = newdims.y / 2;
+	if(blockIdx.z == newdims.z / 2)
+		oldz = newdims.z / 2;
 
 	d_output[(blockIdx.z * newdims.y + blockIdx.y) * newdims.x + x] = d_input[(oldz * olddims.y + oldy) * olddims.x + oldx];
 }
@@ -181,13 +195,13 @@ __global__ void FFTFullPadEvenKernel(tcomplex* d_input, tcomplex* d_output, int3
 	if(x >= newdims.x)
 		return;
 		
-	int newrx = ((x + newdims.x / 2) % newdims.x);
-	int newry = ((blockIdx.y + newdims.y / 2) % newdims.y);
-	int newrz = ((blockIdx.z + newdims.z / 2) % newdims.z);
+	int newrx = ((x + (newdims.x) / 2) % newdims.x);
+	int newry = ((blockIdx.y + (newdims.y) / 2) % newdims.y);
+	int newrz = ((blockIdx.z + (newdims.z) / 2) % newdims.z);
 	
-	int oldrx =  newrx + (olddims.x - newdims.x) / 2;
-	int oldry =  newry + (olddims.y - newdims.y) / 2;
-	int oldrz =  newrz + (olddims.z - newdims.z) / 2;
+	int oldrx =  newrx + (olddims.x - newdims.x - ((olddims.x & 1 - (newdims.x & 1)) % 2)) / 2;
+	int oldry =  newry + (olddims.y - newdims.y - ((olddims.y & 1 - (newdims.y & 1)) % 2)) / 2;
+	int oldrz =  newrz + (olddims.z - newdims.z - ((olddims.z & 1 - (newdims.z & 1)) % 2)) / 2;
 	
 	if(oldrx >= 0 && oldrx < olddims.x && oldry >= 0 && oldry < olddims.y && oldrz >= 0 && oldrz < olddims.z)
 	{

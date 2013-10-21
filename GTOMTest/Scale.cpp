@@ -49,7 +49,7 @@ TEST(Transformation, Scale)
 	//Case 3:
 	{
 		int3 olddims = {16, 16, 1};
-		int3 newdims = {8, 8, 1};
+		int3 newdims = {7, 7, 1};
 		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\Transformation\\Input_Scale_3.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Transformation\\Output_Scale_3.bin");
 		tfloat* d_output;
