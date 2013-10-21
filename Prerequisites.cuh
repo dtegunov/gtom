@@ -91,6 +91,12 @@ inline int3 toInt3(int x, int y, int z)
 	return value;
 }
 
+inline int3 toInt3(int2 val)
+{
+	int3 value = {val.x, val.y, 1};
+	return value;
+}
+
 struct imgstats5
 {
 	tfloat mean;
