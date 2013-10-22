@@ -91,7 +91,6 @@ inline int3 toInt3(int x, int y, int z)
 	return value;
 }
 
-<<<<<<< HEAD
 inline uint3 toUint3(uint x, uint y, uint z)
 {
 	uint3 value = {x, y, z};
@@ -107,11 +106,11 @@ inline uint3 toUint3(int x, int y, int z)
 inline ushort3 toShort3(int x, int y, int z)
 {
 	ushort3 value = {(ushort)x, (ushort)y, (ushort)z};
-=======
+}
+
 inline int3 toInt3(int2 val)
 {
 	int3 value = {val.x, val.y, 1};
->>>>>>> d7926d9122ace8f54458649e577b4e38aaae7e32
 	return value;
 }
 

@@ -293,6 +293,7 @@ void d_FFTFullPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newd
 //Norm.cu:
 enum T_NORM_MODE 
 { 
+	T_NORM_NONE = 0,
 	T_NORM_MEAN01STD = 1, 
 	T_NORM_PHASE = 2, 
 	T_NORM_STD1 = 3, 
