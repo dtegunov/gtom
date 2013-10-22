@@ -65,8 +65,6 @@ template <class T> void d_RectangleMask(T const* const d_input,
 		d_MultiplyByScalar(d_output, d_output, elements, (tfloat)1 / h_summask[0]);
 		cudaFree(d_intermediate);
 	}
-
-	cudaDeviceSynchronize();
 }
 template void d_RectangleMask<tfloat>(tfloat const* const d_input, tfloat* const d_output, int3 const size, int3 const rectsize, tfloat const sigma, int3 const* const center, int batch);
 

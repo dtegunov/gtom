@@ -94,6 +94,7 @@ template <class T> void MinReduce(T* d_input, tuple2<T, size_t>* d_output, size_
             case  1:
                 MinKernel<T,   1, false> <<<dimGrid, dimBlock, smemSize>>> (d_input, d_output, n); break;
         }
+	cudaStreamQuery(0);
 }
 
 template <class T> void MinReduce(T* d_input, T* d_output, size_t n, int blocks, int threads)
@@ -155,6 +156,7 @@ template <class T> void MinReduce(T* d_input, T* d_output, size_t n, int blocks,
             case  1:
                 MinKernel<T,   1, false> <<<dimGrid, dimBlock, smemSize>>> (d_input, d_output, n); break;
         }
+	cudaStreamQuery(0);
 }
 
 template <class T> void d_Min(T* d_input, tuple2<T, size_t>* d_output, size_t n, int batch)
@@ -196,8 +198,6 @@ template <class T> void d_Min(T* d_input, tuple2<T, size_t>* d_output, size_t n,
 
 		cudaMemcpy(d_output + b, &result, sizeof(tuple2<T, size_t>), cudaMemcpyHostToDevice);
 	}
-
-	cudaDeviceSynchronize();
 }
 template void d_Min<float>(float* d_input, tuple2<float, size_t>* d_output, size_t n, int batch);
 template void d_Min<double>(double* d_input, tuple2<double, size_t>* d_output, size_t n, int batch);
@@ -242,8 +242,6 @@ template <class T> void d_Min(T* d_input, T* d_output, size_t n, int batch)
 
 		cudaMemcpy(d_output + b, &result, sizeof(T), cudaMemcpyHostToDevice);
 	}
-
-	cudaDeviceSynchronize();
 }
 template void d_Min<float>(float* d_input, float* d_output, size_t n, int batch);
 template void d_Min<double>(double* d_input, double* d_output, size_t n, int batch);
@@ -313,6 +311,7 @@ template <class T> void MaxReduce(T* d_input, tuple2<T, size_t>* d_output, size_
             case  1:
                 MaxKernel<T,   1, false> <<<dimGrid, dimBlock, smemSize>>> (d_input, d_output, n); break;
         }
+	cudaStreamQuery(0);
 }
 
 template <class T> void MaxReduce(T* d_input, T* d_output, size_t n, int blocks, int threads)
@@ -374,6 +373,7 @@ template <class T> void MaxReduce(T* d_input, T* d_output, size_t n, int blocks,
             case  1:
                 MaxKernel<T,   1, false> <<<dimGrid, dimBlock, smemSize>>> (d_input, d_output, n); break;
         }
+	cudaStreamQuery(0);
 }
 
 template <class T> void d_Max(T* d_input, tuple2<T, size_t>* d_output, size_t n, int batch)
@@ -415,8 +415,6 @@ template <class T> void d_Max(T* d_input, tuple2<T, size_t>* d_output, size_t n,
 
 		cudaMemcpy(d_output + b, &result, sizeof(tuple2<T, size_t>), cudaMemcpyHostToDevice);
 	}
-
-	cudaDeviceSynchronize();
 }
 template void d_Max<float>(float* d_input, tuple2<float, size_t>* d_output, size_t n, int batch);
 template void d_Max<double>(double* d_input, tuple2<double, size_t>* d_output, size_t n, int batch);
@@ -461,8 +459,6 @@ template <class T> void d_Max(T* d_input, T* d_output, size_t n, int batch)
 
 		cudaMemcpy(d_output + b, &result, sizeof(T), cudaMemcpyHostToDevice);
 	}
-
-	cudaDeviceSynchronize();
 }
 template void d_Max<float>(float* d_input, float* d_output, size_t n, int batch);
 template void d_Max<double>(double* d_input, double* d_output, size_t n, int batch);

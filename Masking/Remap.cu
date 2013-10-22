@@ -19,8 +19,6 @@ template <class T> void d_Remap(T* d_input, intptr_t* d_map, T* d_output, size_t
 	size_t totalblocks = min((elementsmapped + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	RemapKernel<T> <<<grid, (uint)TpB>>> (d_input, d_map, d_output, elementsmapped, elementsoriginal, defvalue, batch);
-
-	cudaDeviceSynchronize();
 }
 template void d_Remap<tfloat>(tfloat* d_input, intptr_t* d_map, tfloat* d_output, size_t elementsmapped, size_t elementsoriginal, tfloat defvalue, int batch);
 template void d_Remap<int>(int* d_input, intptr_t* d_map, int* d_output, size_t elementsmapped, size_t elementsoriginal, int defvalue, int batch);

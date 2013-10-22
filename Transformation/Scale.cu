@@ -26,7 +26,7 @@ texture<tfloat, 3, cudaReadModeElementType> texScaleInput3d;
 //Combines the functionality of TOM's tom_rescale and MATLAB's interp* methods// 
 ////////////////////////////////////////////////////////////////////////////////
 
-void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, int batch)
+void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, cufftHandle* planforw, cufftHandle* planback, int batch)
 {
 	//Both sizes should have an equal number of dimensions
 	int ndims = DimensionCount(olddims);
@@ -95,7 +95,10 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 
 		for (int b = 0; b < batch; b++)
 		{
-			d_FFTR2C(d_input + elementsold * b, d_inputFFT, ndims, olddims);
+			if(planforw == NULL)
+				d_FFTR2C(d_input + elementsold * b, d_inputFFT, ndims, olddims);
+			else
+				d_FFTR2C(d_input + elementsold * b, d_inputFFT, planforw);
 			d_HermitianSymmetryPad(d_inputFFT, d_inputFFT2, olddims);
 			
 			if(newdims.x > olddims.x)
@@ -103,7 +106,10 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 			else
 				d_FFTFullCrop(d_inputFFT2, d_outputFFT, olddims, newdims);
 
-			d_IFFTC2C(d_outputFFT, d_outputFFT, ndims, newdims);
+			if(planback == NULL)
+				d_IFFTC2C(d_outputFFT, d_outputFFT, ndims, newdims);
+			else
+				d_IFFTC2C(d_outputFFT, d_outputFFT, planback, newdims);
 
 			d_Re(d_outputFFT, d_output + elementsnew * b, elementsnew);
 		}

@@ -55,13 +55,19 @@ void d_IFFTC2RFull(tcomplex* const d_input, tfloat* const d_output, int const nd
 	cudaMalloc((void**)&d_unpadded, (dimensions.x / 2 + 1) * dimensions.y * dimensions.z * sizeof(tcomplex));
 
 	d_HermitianSymmetryTrim(d_input, d_unpadded, dimensions, batch);
-	cudaDeviceSynchronize();
 	d_IFFTC2R(d_unpadded, d_output, ndimensions, dimensions, batch);
 
 	cudaFree(d_unpadded);
 }
 
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch)
+{
+	cufftHandle plan = d_IFFTC2CGetPlan(ndimensions, dimensions, batch);	
+	d_IFFTC2C(d_input, d_output, &plan, dimensions);
+	cufftDestroy(plan);
+}
+
+cufftHandle d_IFFTC2CGetPlan(int const ndimensions, int3 const dimensions, int batch)
 {
 	cufftHandle plan;
 	cufftType direction = IS_TFLOAT_DOUBLE ? CUFFT_Z2Z : CUFFT_C2C;
@@ -73,13 +79,18 @@ void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndim
 										  direction, batch));
 
 	CudaSafeCall((cudaError)cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE));
-	#ifdef TOM_DOUBLE
-		CudaSafeCall((cudaError)cufftExecZ2Z(plan, d_input, d_output));
-	#else
-		CudaSafeCall((cudaError)cufftExecC2C(plan, d_input, d_output, CUFFT_INVERSE));
-	#endif
 	
-	CudaSafeCall((cudaError)cufftDestroy(plan));
+	return plan;
+}
+
+void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, cufftHandle* plan, int3 const dimensions)
+{
+	#ifdef TOM_DOUBLE
+		CudaSafeCall((cudaError)cufftExecZ2Z(*plan, d_input, d_output));
+	#else
+		CudaSafeCall((cudaError)cufftExecC2C(*plan, d_input, d_output, CUFFT_INVERSE));
+	#endif
+	cudaStreamQuery(0);
 
 	size_t elements = dimensions.x * dimensions.y * dimensions.z ;
 	d_MultiplyByScalar((tfloat*)d_output, (tfloat*)d_output, elements * 2, 1.0f / (float)elements);

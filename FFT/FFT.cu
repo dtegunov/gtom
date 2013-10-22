@@ -3,6 +3,16 @@
 
 void d_FFTR2C(tfloat* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch)
 {
+	cufftHandle plan = d_FFTR2CGetPlan(ndimensions, dimensions, batch);
+	
+	d_FFTR2C(d_input, d_output, &plan);
+	
+	CudaSafeCall((cudaError)cufftDestroy(plan));
+	cudaStreamQuery(0);
+}
+
+cufftHandle d_FFTR2CGetPlan(int const ndimensions, int3 const dimensions, int batch)
+{
 	cufftHandle plan;
 	cufftType direction = IS_TFLOAT_DOUBLE ? CUFFT_D2Z : CUFFT_R2C;
 	int n[3] = { dimensions.z, dimensions.y, dimensions.x };
@@ -13,15 +23,18 @@ void d_FFTR2C(tfloat* const d_input, tcomplex* const d_output, int const ndimens
 										  direction, batch));
 
 	CudaSafeCall((cudaError)cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE));
+	
+	return plan;
+}
+
+void d_FFTR2C(tfloat* const d_input, tcomplex* const d_output, cufftHandle* plan)
+{
 	#ifdef TOM_DOUBLE
-		CudaSafeCall((cudaError)cufftExecD2Z(plan, d_input, d_output));
+		CudaSafeCall((cudaError)cufftExecD2Z(*plan, d_input, d_output));
 	#else
-		CudaSafeCall((cudaError)cufftExecR2C(plan, d_input, d_output));
+		CudaSafeCall((cudaError)cufftExecR2C(*plan, d_input, d_output));
 	#endif
-	
-	cudaDeviceSynchronize();
-	
-	CudaSafeCall((cudaError)cufftDestroy(plan));
+	cudaStreamQuery(0);
 }
 
 void d_FFTR2CFull(tfloat* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch)

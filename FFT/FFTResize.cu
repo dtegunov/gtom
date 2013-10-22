@@ -35,8 +35,6 @@ void d_FFTCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims
 	else
 		for(int b = 0; b < batch; b++)
 			FFTCropOddKernel <<<grid, TpB>>> (d_input + elementsold * b, d_output + elementsnew * b, olddims, newdims);
-
-	cudaDeviceSynchronize();
 }
 
 void d_FFTFullCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch)
@@ -48,8 +46,7 @@ void d_FFTFullCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 new
 	dim3 grid = dim3((newdims.x + TpB - 1) / TpB, newdims.y, newdims.z);
 	for(int b = 0; b < batch; b++)
 		FFTFullCropKernel <<<grid, TpB>>> (d_input + elementsold * b, d_output + elementsnew * b, olddims, newdims);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 
 void d_FFTPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch)
@@ -61,8 +58,6 @@ void d_FFTPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims,
 	dim3 grid = dim3((newdims.x / 2 + 1 + TpB - 1) / TpB, newdims.y, newdims.z);
 	for(int b = 0; b < batch; b++)
 		FFTPadEvenKernel <<<grid, TpB>>> (d_input + elementsold * b, d_output + elementsnew * b, olddims, newdims);
-
-	cudaDeviceSynchronize();
 }
 
 void d_FFTFullPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch)
@@ -74,8 +69,6 @@ void d_FFTFullPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newd
 	dim3 grid = dim3((newdims.x + TpB - 1) / TpB, newdims.y, newdims.z);
 	for(int b = 0; b < batch; b++)
 		FFTFullPadEvenKernel <<<grid, TpB>>> (d_input + elementsold * b, d_output + elementsnew * b, olddims, newdims);
-
-	cudaDeviceSynchronize();
 }
 
 

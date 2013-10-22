@@ -27,8 +27,6 @@ template <class T> void d_SphereMask(T const* const d_input,
 	int TpB = 256;
 	dim3 grid = dim3(size.y, size.z, batch);
 	SphereMaskKernel<T> <<<grid, TpB>>> (d_input, d_output, size, _radius, sigma, _center);
-
-	cudaDeviceSynchronize();
 }
 template void d_SphereMask<tfloat>(tfloat const* const d_input, tfloat* const d_output, int3 const size, tfloat const* const radius, tfloat const sigma, tfloat3 const* const center, int batch);
 //template void d_SphereMask<tcomplex>(tcomplex const* const d_input, tcomplex* const d_output, int3 const size, tfloat const radius, tfloat const sigma, tfloat3 const center, int batch);

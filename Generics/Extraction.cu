@@ -27,6 +27,7 @@ template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3
 	dim3 grid = dim3((regiondims.x + TpB - 1) / TpB, regiondims.y, regiondims.z);
 	for (int b = 0; b < batch; b++)
 		ExtractKernel <<<grid, (int)TpB>>> (d_input + elementssource * b, d_output + elementsregion * b, sourcedims, regiondims, regionorigin);
+	cudaStreamQuery(0);
 }
 template void d_Extract<tfloat>(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
 template void d_Extract<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);

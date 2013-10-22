@@ -114,7 +114,6 @@ template <class T> void d_ConvertToTFloat(T const* const d_original, tfloat* con
 	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
 	dim3 grid = dim3((uint)totalblocks);
 	ConvertToKernel<T, tfloat> <<<grid, (uint)TpB>>> (d_original, d_copy, n);
-	cudaDeviceSynchronize();
 }
 template void d_ConvertToTFloat<double>(double const* const d_original, tfloat* const d_copy, size_t const n);
 template void d_ConvertToTFloat<float>(float const* const d_original, tfloat* const d_copy, size_t const n);
@@ -125,7 +124,6 @@ template <class T> void d_ConvertTFloatTo(tfloat const* const d_original, T* con
 	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
 	dim3 grid = dim3((uint)totalblocks);
 	ConvertToKernel<tfloat, T> <<<grid, (uint)TpB>>> (d_original, d_copy, n);
-	cudaDeviceSynchronize();
 }
 template void d_ConvertTFloatTo<double>(tfloat const* const d_original, double* const d_copy, size_t const n);
 template void d_ConvertTFloatTo<float>(tfloat const* const d_original, float* const d_copy, size_t const n);
@@ -136,7 +134,6 @@ template <class T> void d_ConvertSplitComplexToTComplex(T const* const d_origina
 	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
 	dim3 grid = dim3((uint)totalblocks);
 	ConvertSplitComplexToTComplexKernel<T> <<<grid, (uint)TpB>>> (d_originalr, d_originali, d_copy, n);
-	cudaDeviceSynchronize();
 }
 template void d_ConvertSplitComplexToTComplex<double>(double const* const d_originalr, double const* const d_originali, tcomplex* const d_copy, size_t const n);
 template void d_ConvertSplitComplexToTComplex<float>(float const* const d_originalr, float const* const d_originali, tcomplex* const d_copy, size_t const n);
@@ -147,7 +144,6 @@ template <class T> void d_ConvertTComplexToSplitComplex(tcomplex const* const d_
 	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
 	dim3 grid = dim3((uint)totalblocks);
 	ConvertTComplexToSplitComplexKernel<T> <<<grid, (uint)TpB>>> (d_original, d_copyr, d_copyi, n);
-	cudaDeviceSynchronize();
 }
 template void d_ConvertTComplexToSplitComplex<double>(tcomplex const* const d_original, double* const d_copyr, double* const d_copyi, size_t const n);
 template void d_ConvertTComplexToSplitComplex<float>(tcomplex const* const d_original, float* const d_copyr, float* const d_copyi, size_t const n);
@@ -158,7 +154,7 @@ template <class T> void d_Re(tcomplex const* const d_input, T* const d_output, s
 	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
 	dim3 grid = dim3((uint)totalblocks);
 	ReKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, n);
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 template void d_Re<tfloat>(tcomplex const* const d_input, tfloat* const d_output, size_t const n);
 
@@ -168,7 +164,6 @@ template <class T> void d_Im(tcomplex const* const d_input, T* const d_output, s
 	size_t totalblocks = min((n + TpB - 1) / TpB, 128);
 	dim3 grid = dim3((uint)totalblocks);
 	ImKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, n);
-	cudaDeviceSynchronize();
 }
 template void d_Im<tfloat>(tcomplex const* const d_input, tfloat* const d_output, size_t const n);
 

@@ -87,8 +87,7 @@ template <class T> void SumReduce(T *d_input, T *d_output, size_t n, int blocks,
             case  1:
                 SumKernel<T,   1, false> <<<dimGrid, dimBlock, smemSize>>> (d_input, d_output, n); break;
         }
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 
 template <class T> void d_Sum(T* d_input, T* d_output, size_t n, int batch)

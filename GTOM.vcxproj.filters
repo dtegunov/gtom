@@ -854,5 +854,8 @@
     <CudaCompile Include="Helpers\Misc.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
+    <CudaCompile Include="Helpers\MDPointer.cu">
+      <Filter>Helpers</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

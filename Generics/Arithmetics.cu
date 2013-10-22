@@ -45,8 +45,7 @@ template <class T> void d_MultiplyByVector(T* d_input, T* d_multiplicators, T* d
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	MultiplyByVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements, batch);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 template void d_MultiplyByVector<tfloat>(tfloat* d_input, tfloat* d_multiplicators, tfloat* d_output, size_t elements, int batch);
 template void d_MultiplyByVector<int>(int* d_input, int* d_multiplicators, int* d_output, size_t elements, int batch);
@@ -57,8 +56,7 @@ template <class T> void d_MultiplyByScalar(T* d_input, T* d_output, size_t eleme
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	MultiplyByScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements, multiplicator);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 template void d_MultiplyByScalar<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat multiplicator);
 template void d_MultiplyByScalar<double>(double* d_input, double* d_output, size_t elements, double multiplicator);
@@ -70,8 +68,7 @@ template <class T> void d_MultiplyByScalar(T* d_input, T* d_multiplicators, T* d
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	MultiplyByScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 template void d_MultiplyByScalar<tfloat>(tfloat* d_input, tfloat* d_multiplicators, tfloat* d_output, size_t elements, int batch);
 template void d_MultiplyByScalar<int>(int* d_input, int* d_multiplicators, int* d_output, size_t elements, int batch);
@@ -122,8 +119,7 @@ void d_ComplexMultiplyByVector(tcomplex* d_input, tfloat* d_multiplicators, tcom
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements, batch);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
@@ -132,8 +128,7 @@ void d_ComplexMultiplyByVector(tcomplex* d_input, tcomplex* d_multiplicators, tc
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements, batch);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByConjVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
@@ -142,8 +137,7 @@ void d_ComplexMultiplyByConjVector(tcomplex* d_input, tcomplex* d_multiplicators
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByConjVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements, batch);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tfloat multiplicator)
@@ -152,8 +146,7 @@ void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t ele
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_output, elements, multiplicator);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator)
@@ -162,8 +155,7 @@ void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t ele
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_output, elements, multiplicator);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator)
@@ -172,8 +164,7 @@ void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_output, size_t
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByConjScalarKernel <<<grid, (uint)TpB>>> (d_input, d_output, elements, multiplicator);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
@@ -182,8 +173,7 @@ void d_ComplexMultiplyByScalar(tcomplex* d_input, tfloat* d_multiplicators, tcom
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
@@ -192,8 +182,7 @@ void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_multiplicators, tc
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
@@ -202,8 +191,7 @@ void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_multiplicators
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	ComplexMultiplyByConjScalarKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
-
-	cudaDeviceSynchronize();
+	cudaStreamQuery(0);
 }
 
 __global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
@@ -335,8 +323,6 @@ template <class T> void d_AddVector(T* d_input, T* d_summands, T* d_output, size
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	AddVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_summands, d_output, elements, batch);
-
-	cudaDeviceSynchronize();
 }
 template void d_AddVector<tfloat>(tfloat* d_input, tfloat* d_summands, tfloat* d_output, size_t elements, int batch);
 template void d_AddVector<int>(int* d_input, int* d_summands, int* d_output, size_t elements, int batch);
@@ -347,8 +333,6 @@ template <class T> void d_AddScalar(T* d_input, T* d_output, size_t elements, T 
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	AddScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements, summand);
-
-	cudaDeviceSynchronize();
 }
 template void d_AddScalar<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat summand);
 template void d_AddScalar<int>(int* d_input, int* d_output, size_t elements, int summand);
@@ -359,8 +343,6 @@ template <class T> void d_AddScalar(T* d_input, T* d_summands, T* d_output, size
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	AddScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_summands, d_output, elements);
-
-	cudaDeviceSynchronize();
 }
 template void d_AddScalar<tfloat>(tfloat* d_input, tfloat* d_summands, tfloat* d_output, size_t elements, int batch);
 template void d_AddScalar<int>(int* d_input, int* d_summands, int* d_output, size_t elements, int batch);
@@ -411,8 +393,6 @@ template <class T> void d_SubtractVector(T* d_input, T* d_subtrahends, T* d_outp
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	SubtractVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_subtrahends, d_output, elements, batch);
-
-	cudaDeviceSynchronize();
 }
 template void d_SubtractVector<tfloat>(tfloat* d_input, tfloat* d_subtrahends, tfloat* d_output, size_t elements, int batch);
 template void d_SubtractVector<int>(int* d_input, int* d_subtrahends, int* d_output, size_t elements, int batch);
@@ -423,8 +403,6 @@ template <class T> void d_SubtractScalar(T* d_input, T* d_output, size_t element
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	SubtractScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements, subtrahend);
-
-	cudaDeviceSynchronize();
 }
 template void d_SubtractScalar<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat subtrahend);
 template void d_SubtractScalar<int>(int* d_input, int* d_output, size_t elements, int subtrahend);
@@ -435,8 +413,6 @@ template <class T> void d_SubtractScalar(T* d_input, T* d_subtrahends, T* d_outp
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	SubtractScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_subtrahends, d_output, elements);
-
-	cudaDeviceSynchronize();
 }
 template void d_SubtractScalar<tfloat>(tfloat* d_input, tfloat* d_subtrahends, tfloat* d_output, size_t elements, int batch);
 template void d_SubtractScalar<int>(int* d_input, int* d_subtrahends, int* d_output, size_t elements, int batch);
@@ -489,8 +465,6 @@ template <class T> void d_Square(T* d_input, T* d_output, size_t elements, int b
 	dim3 grid = dim3((uint)totalblocks);
 	for(int b = 0; b < batch; b++)
 		SquareKernel<T> <<<grid, (uint)TpB>>> (d_input + elements * b, d_output + elements * b, elements);
-
-	cudaDeviceSynchronize();
 }
 template void d_Square<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, int batch);
 template void d_Square<int>(int* d_input, int* d_output, size_t elements, int batch);
@@ -519,8 +493,6 @@ template <class T> void d_Sqrt(T* d_input, T* d_output, size_t elements)
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
 	dim3 grid = dim3((uint)totalblocks);
 	SqrtKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements);
-
-	cudaDeviceSynchronize();
 }
 template void d_Sqrt<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements);
 //template void d_Sqrt<int>(int* d_input, int* d_output, size_t elements);
@@ -544,8 +516,6 @@ template <class T> void d_Pow(T* d_input, T* d_output, size_t elements, T expone
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
 	dim3 grid = dim3((uint)totalblocks);
 	PowKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements, exponent);
-
-	cudaDeviceSynchronize();
 }
 template void d_Pow<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat exponent);
 //template void d_Pow<int>(int* d_input, int* d_output, size_t elements, int exponent);

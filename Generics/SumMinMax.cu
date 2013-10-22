@@ -91,6 +91,7 @@ template <class T> void SumMinMaxReduce(T* d_input, T* d_sum, T* d_min, T* d_max
             case  1:
                 SumMinMaxKernel<T,   1, false> <<<dimGrid, dimBlock, smemSize>>> (d_input, d_sum, d_min, d_max, n); break;
         }
+	cudaStreamQuery(0);
 }
 
 template <class T> void d_SumMinMax(T* d_input, T* d_sum, T* d_min, T* d_max, size_t n, int batch)
@@ -146,8 +147,6 @@ template <class T> void d_SumMinMax(T* d_input, T* d_sum, T* d_min, T* d_max, si
 	cudaFree(d_intermediateSum);
 	cudaFree(d_intermediateMin);
 	cudaFree(d_intermediateMax);
-
-	cudaDeviceSynchronize();
 }
 template void d_SumMinMax<float>(float* d_input, float* d_sum, float* d_min, float* d_max, size_t n, int batch);
 template void d_SumMinMax<double>(double* d_input, double* d_sum, double* d_min, double* d_max, size_t n, int batch);

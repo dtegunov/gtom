@@ -91,6 +91,24 @@ inline int3 toInt3(int x, int y, int z)
 	return value;
 }
 
+inline uint3 toUint3(uint x, uint y, uint z)
+{
+	uint3 value = {x, y, z};
+	return value;
+}
+
+inline uint3 toUint3(int x, int y, int z)
+{
+	uint3 value = {(uint)x, (uint)y, (uint)z};
+	return value;
+}
+
+inline ushort3 toShort3(int x, int y, int z)
+{
+	ushort3 value = {(ushort)x, (ushort)y, (ushort)z};
+	return value;
+}
+
 struct imgstats5
 {
 	tfloat mean;

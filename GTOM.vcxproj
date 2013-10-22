@@ -272,6 +272,7 @@
     <CudaCompile Include="Generics\Dev.cu" />
     <CudaCompile Include="Generics\SumMinMax.cu" />
     <CudaCompile Include="Helpers\HermitianSymmetry.cu" />
+    <CudaCompile Include="Helpers\MDPointer.cu" />
     <CudaCompile Include="Helpers\Memory.cu" />
     <CudaCompile Include="Helpers\Misc.cu" />
     <CudaCompile Include="Helpers\TypeConversion.cu" />

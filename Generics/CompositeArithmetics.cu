@@ -21,8 +21,6 @@ template <class T> void d_SquaredDistanceFromVector(T* d_input, T* d_vector, T* 
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	SquaredDistanceFromVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_vector, d_output, elements, batch);
-
-	cudaDeviceSynchronize();
 }
 template void d_SquaredDistanceFromVector<tfloat>(tfloat* d_input, tfloat* d_vector, tfloat* d_output, size_t elements, int batch);
 template void d_SquaredDistanceFromVector<int>(int* d_input, int* d_vector, int* d_output, size_t elements, int batch);
@@ -33,8 +31,6 @@ template <class T> void d_SquaredDistanceFromScalar(T* d_input, T* d_output, siz
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	SquaredDistanceFromScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements, scalar);
-
-	cudaDeviceSynchronize();
 }
 template void d_SquaredDistanceFromScalar<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat scalar);
 template void d_SquaredDistanceFromScalar<int>(int* d_input, int* d_output, size_t elements, int scalar);
@@ -45,8 +41,6 @@ template <class T> void d_SquaredDistanceFromScalar(T* d_input, T* d_scalars, T*
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	SquaredDistanceFromScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_scalars, d_output, elements);
-
-	cudaDeviceSynchronize();
 }
 template void d_SquaredDistanceFromScalar<tfloat>(tfloat* d_input, tfloat* d_scalars, tfloat* d_output, size_t elements, int batch);
 template void d_SquaredDistanceFromScalar<int>(int* d_input, int* d_scalars, int* d_output, size_t elements, int batch);

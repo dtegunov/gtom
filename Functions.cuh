@@ -26,6 +26,35 @@ template <class T> void d_ConvertTComplexToSplitComplex(tcomplex const* const d_
 template <class T> void d_Re(tcomplex const* const d_input, T* const d_output, size_t const n);
 template <class T> void d_Im(tcomplex const* const d_input, T* const d_output, size_t const n);
 
+//MDPointer.cu:
+
+template <class T> class MDPointer
+{
+	int devicecount;
+
+public:
+	T** pointers;
+	MDPointer();
+	~MDPointer();
+	void Malloc(size_t size);
+	void Free();
+	void MallocFromHostArray(T* h_src, size_t size);
+	void MallocFromHostArray(T* h_src, size_t devicesize, size_t hostsize);
+	void Memcpy(T* h_src, size_t deviceoffset, size_t size);
+	void MallocValueFilled(size_t elements, T value);
+	bool operator == (const MDPointer<T> &other) const;
+};
+template class MDPointer<float>;
+template class MDPointer<double>;
+template class MDPointer<tcomplex>;
+template class MDPointer<char>;
+template class MDPointer<int>;
+template class MDPointer<short>;
+template class MDPointer<bool>;
+template class MDPointer<tfloat2>;
+template class MDPointer<tfloat3>;
+template class MDPointer<tfloat4>;
+
 //Memory.cu:
 
 /**
@@ -35,6 +64,14 @@ template <class T> void d_Im(tcomplex const* const d_input, T* const d_output, s
  * \returns Array pointer in host memory
  */
 void* MallocFromDeviceArray(void* d_array, size_t size);
+
+/**
+ * \brief Allocates an array in pinned host memory that is a copy of the array in device memory.
+ * \param[in] d_array	Array in device memory to be copied
+ * \param[in] size		Array size in bytes
+ * \returns Array pointer in host memory
+ */
+void* MallocPinnedFromDeviceArray(void* d_array, size_t size);
 
 /**
  * \brief Allocates an array in device memory with an alignment constraint (useful for odd-sized 2D textures).
@@ -79,6 +116,7 @@ tfloat* MallocZeroFilledFloat(size_t elements);
 template <class T> T* MallocValueFilled(size_t elements, T value);
 
 template <class T1, class T2> T2* CudaMallocFromHostArrayConverted(T1* h_array, size_t elements);
+template <class T1, class T2> void CudaMallocFromHostArrayConverted(T1* h_array, T2* d_output, size_t elements);
 
 /**
  * \brief Creates an array of floats initialized to 0.0f in device memory with the specified element count.
@@ -211,6 +249,7 @@ template<class T> void d_CubicBSplinePrefilter3D(T* d_volume, int pitch, int wid
 
 //FFT.cu:
 void d_FFTR2C(tfloat* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+void d_FFTR2C(tfloat* const d_input, tcomplex* const d_output, cufftHandle* plan);
 void d_IFFTZ2D(cufftDoubleComplex* const d_input, double* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_FFTR2CFull(tfloat* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_FFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
@@ -218,13 +257,18 @@ void FFTR2C(tfloat* const h_input, tcomplex* const h_output, int const ndimensio
 void FFTR2CFull(tfloat* const h_input, tcomplex* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void FFTC2C(tcomplex* const h_input, tcomplex* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
 
+cufftHandle d_FFTR2CGetPlan(int const ndimensions, int3 const dimensions, int batch = 1);
+
 //IFFT.cu:
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_IFFTC2RFull(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, cufftHandle* plan, int3 const dimensions);
 void IFFTC2R(tcomplex* const h_input, tfloat* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void IFFTC2RFull(tcomplex* const h_input, tfloat* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void IFFTC2C(tcomplex* const h_input, tcomplex* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+cufftHandle d_IFFTC2CGetPlan(int const ndimensions, int3 const dimensions, int batch = 1);
 
 //HermitianSymmetry.cu:
 void d_HermitianSymmetryPad(tcomplex* const d_input, tcomplex* const d_output, int3 const dimensions, int batch = 1);
@@ -295,4 +339,4 @@ int2 GetCart2PolarSize(int2 dims);
 void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, int batch = 1);
 
 //Scale.cu:
-void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, int batch = 1);
+void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, int batch = 1);
