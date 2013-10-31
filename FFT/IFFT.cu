@@ -3,6 +3,13 @@
 
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch)
 {
+	cufftHandle plan = d_IFFTC2RGetPlan(ndimensions, dimensions, batch);	
+	d_IFFTC2R(d_input, d_output, &plan, dimensions);
+	cufftDestroy(plan);
+}
+
+cufftHandle d_IFFTC2RGetPlan(int const ndimensions, int3 const dimensions, int batch)
+{
 	cufftHandle plan;
 	cufftType direction = IS_TFLOAT_DOUBLE ? CUFFT_Z2D : CUFFT_C2R;
 	int n[3] = { dimensions.z, dimensions.y, dimensions.x };
@@ -13,16 +20,19 @@ void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimen
 										  direction, batch));
 
 	CudaSafeCall((cudaError)cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE));
+	
+	return plan;
+}
+
+void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan, int3 dimensions)
+{
 	#ifdef TOM_DOUBLE
-		CudaSafeCall((cudaError)cufftExecZ2D(plan, d_input, d_output));
+		CudaSafeCall((cudaError)cufftExecZ2D(&plan, d_input, d_output));
 	#else
-		CudaSafeCall((cudaError)cufftExecC2R(plan, d_input, d_output));
+		CudaSafeCall((cudaError)cufftExecC2R(*plan, d_input, d_output));
 	#endif
 
-	CudaSafeCall((cudaError)cufftDestroy(plan));
-
-	size_t elements = dimensions.x * dimensions.y * dimensions.z;
-	d_MultiplyByScalar(d_output, d_output, elements, 1.0f / (float)elements);
+	d_MultiplyByScalar(d_output, d_output, Elements(dimensions), 1.0f / (float)Elements(dimensions));
 }
 
 void d_IFFTZ2D(cufftDoubleComplex* const d_input, double* const d_output, int const ndimensions, int3 const dimensions, int batch)

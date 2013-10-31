@@ -116,7 +116,8 @@ tfloat* MallocZeroFilledFloat(size_t elements);
 template <class T> T* MallocValueFilled(size_t elements, T value);
 
 template <class T1, class T2> T2* CudaMallocFromHostArrayConverted(T1* h_array, size_t elements);
-template <class T1, class T2> void CudaMallocFromHostArrayConverted(T1* h_array, T2* d_output, size_t elements);
+template <class T1, class T2> void CudaMemcpyFromHostArrayConverted(T1* h_array, T2* d_output, size_t elements);
+template <class T1, class T2> void CudaMallocFromHostArrayConverted(T1* h_array, T2** d_output, size_t elements);
 
 /**
  * \brief Creates an array of floats initialized to 0.0f in device memory with the specified element count.
@@ -261,6 +262,7 @@ cufftHandle d_FFTR2CGetPlan(int const ndimensions, int3 const dimensions, int ba
 
 //IFFT.cu:
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan, int3 const dimensions);
 void d_IFFTC2RFull(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, cufftHandle* plan, int3 const dimensions);
@@ -268,6 +270,7 @@ void IFFTC2R(tcomplex* const h_input, tfloat* const h_output, int const ndimensi
 void IFFTC2RFull(tcomplex* const h_input, tfloat* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void IFFTC2C(tcomplex* const h_input, tcomplex* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
 
+cufftHandle d_IFFTC2RGetPlan(int const ndimensions, int3 const dimensions, int batch = 1);
 cufftHandle d_IFFTC2CGetPlan(int const ndimensions, int3 const dimensions, int batch = 1);
 
 //HermitianSymmetry.cu:
@@ -337,7 +340,7 @@ void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE in
 int2 GetCart2PolarSize(int2 dims);
 
 //Shift.cu:
-void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, int batch = 1);
+void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, tcomplex* d_sharedintermediate = NULL, int batch = 1);
 
 //Scale.cu:
 void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, int batch = 1);

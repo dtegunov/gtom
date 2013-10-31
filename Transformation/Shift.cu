@@ -10,14 +10,17 @@ __global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 d
 __global__ void ShiftIntegerKernel(tfloat* d_input, tfloat* d_output, int3 dims, int3 delta);
 
 
-/////////////////////////////////////////////
-//Equivalent of TOM's tom_cart2polar method//
-/////////////////////////////////////////////
+////////////////////////////////////////
+//Equivalent of TOM's tom_shift method//
+////////////////////////////////////////
 
-void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, int batch)
+void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufftHandle* planforw, cufftHandle* planback, tcomplex* d_sharedintermediate, int batch)
 {
-	tcomplex* d_intermediate;
-	cudaMalloc((void**)&d_intermediate, ElementsFFT(dims) * sizeof(tcomplex));
+	tcomplex* d_intermediate = NULL;
+	if(d_sharedintermediate == NULL)
+		CudaSafeCall(cudaMalloc((void**)&d_intermediate, ElementsFFT(dims) * sizeof(tcomplex)));
+	else
+		d_intermediate = d_sharedintermediate;
 
 	for (int b = 0; b < batch; b++)
 	{
@@ -25,26 +28,35 @@ void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, int b
 		{
 			tfloat3 normdelta = tfloat3(delta[b].x / (tfloat)dims.x, delta[b].y / (tfloat)dims.y, delta[b].z / (tfloat)dims.z);
 
-			d_FFTR2C(d_input + Elements(dims) * b, d_intermediate, DimensionCount(dims), dims);
+			if(planforw == NULL)
+				d_FFTR2C(d_input + Elements(dims) * b, d_intermediate, DimensionCount(dims), dims);
+			else
+				d_FFTR2C(d_input + Elements(dims) * b, d_intermediate, planforw);
 
 			int TpB = min(256, NextMultipleOf(dims.x / 2 + 1, 32));
 			dim3 grid = dim3(((dims.x / 2 + 1) + TpB - 1) / TpB, dims.y, dims.z);
 			ShiftFourierKernel <<<grid, TpB>>> (d_intermediate, d_intermediate, dims, normdelta);
+			cudaStreamQuery(0);
 			
-			d_IFFTC2R(d_intermediate, d_output + Elements(dims) * b, DimensionCount(dims), dims);
+			if(planback == NULL)
+				d_IFFTC2R(d_intermediate, d_output + Elements(dims) * b, DimensionCount(dims), dims);
+			else
+				d_IFFTC2R(d_intermediate, d_output + Elements(dims) * b, planback, dims);
 		}
 		else
 		{
 			int TpB = min(256, NextMultipleOf(dims.x, 32));
 			dim3 grid = dim3((dims.x + TpB - 1) / TpB, dims.y, dims.z);
 			ShiftIntegerKernel <<<grid, TpB>>> (d_input + Elements(dims) * b, d_input == d_output ? (tfloat*)d_intermediate : (d_output + Elements(dims) * b), dims, toInt3((int)delta[b].x, (int)delta[b].y, (int)delta[b].z));
+			cudaStreamQuery(0);
 
 			if(d_input == d_output)
 				cudaMemcpy(d_output + Elements(dims) * b, d_intermediate, Elements(dims) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
 		}
 	}
 
-	cudaFree(d_intermediate);
+	if(d_sharedintermediate == NULL)
+		cudaFree(d_intermediate);
 }
 
 

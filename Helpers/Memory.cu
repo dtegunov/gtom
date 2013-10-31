@@ -99,9 +99,8 @@ void* CudaMallocFromHostArray(void* h_array, size_t devicesize, size_t hostsize)
 template <class T1, class T2> T2* CudaMallocFromHostArrayConverted(T1* h_array, size_t elements)
 {
 	T2* d_output;
-	cudaMalloc((void**)&d_output, elements * sizeof(T2));
 
-	CudaMallocFromHostArrayConverted(h_array, d_output, elements);
+	CudaMallocFromHostArrayConverted(h_array, &d_output, elements);
 
 	return d_output;
 }
@@ -110,7 +109,7 @@ template tfloat* CudaMallocFromHostArrayConverted<short, tfloat>(short* h_array,
 template tfloat* CudaMallocFromHostArrayConverted<int, tfloat>(int* h_array, size_t elements);
 template tfloat* CudaMallocFromHostArrayConverted<double, tfloat>(double* h_array, size_t elements);
 
-template <class T1, class T2> void CudaMallocFromHostArrayConverted(T1* h_array, T2* d_output, size_t elements)
+template <class T1, class T2> void CudaMemcpyFromHostArrayConverted(T1* h_array, T2* d_output, size_t elements)
 {
 	T1* d_input = (T1*)CudaMallocFromHostArray(h_array, elements * sizeof(T1));
 
@@ -122,10 +121,28 @@ template <class T1, class T2> void CudaMallocFromHostArrayConverted(T1* h_array,
 
 	cudaFree(d_input);
 }
-template void CudaMallocFromHostArrayConverted<char, tfloat>(char* h_array, tfloat* d_output, size_t elements);
-template void CudaMallocFromHostArrayConverted<short, tfloat>(short* h_array, tfloat* d_output, size_t elements);
-template void CudaMallocFromHostArrayConverted<int, tfloat>(int* h_array, tfloat* d_output, size_t elements);
-template void CudaMallocFromHostArrayConverted<double, tfloat>(double* h_array, tfloat* d_output, size_t elements);
+template void CudaMemcpyFromHostArrayConverted<char, tfloat>(char* h_array, tfloat* d_output, size_t elements);
+template void CudaMemcpyFromHostArrayConverted<short, tfloat>(short* h_array, tfloat* d_output, size_t elements);
+template void CudaMemcpyFromHostArrayConverted<int, tfloat>(int* h_array, tfloat* d_output, size_t elements);
+template void CudaMemcpyFromHostArrayConverted<double, tfloat>(double* h_array, tfloat* d_output, size_t elements);
+
+template <class T1, class T2> void CudaMallocFromHostArrayConverted(T1* h_array, T2** d_output, size_t elements)
+{
+	T1* d_input = (T1*)CudaMallocFromHostArray(h_array, elements * sizeof(T1));
+	cudaMalloc((void**)d_output, elements * sizeof(T2));
+
+	size_t TpB = min(768, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	dim3 grid = dim3((uint)totalblocks);
+	TypeConversionKernel<T1, T2> <<<grid, (uint)TpB>>> (d_input, *d_output, elements);
+	cudaStreamQuery(0);
+
+	cudaFree(d_input);
+}
+template void CudaMallocFromHostArrayConverted<char, tfloat>(char* h_array, tfloat** d_output, size_t elements);
+template void CudaMallocFromHostArrayConverted<short, tfloat>(short* h_array, tfloat** d_output, size_t elements);
+template void CudaMallocFromHostArrayConverted<int, tfloat>(int* h_array, tfloat** d_output, size_t elements);
+template void CudaMallocFromHostArrayConverted<double, tfloat>(double* h_array, tfloat** d_output, size_t elements);
 
 tfloat* CudaMallocZeroFilledFloat(size_t elements)
 {
