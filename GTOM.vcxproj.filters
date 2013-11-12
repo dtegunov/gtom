@@ -857,5 +857,8 @@
     <CudaCompile Include="Helpers\MDPointer.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
+    <CudaCompile Include="ImageManipulation\Xray.cu">
+      <Filter>Image Manipulation</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

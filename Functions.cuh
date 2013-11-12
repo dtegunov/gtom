@@ -310,6 +310,9 @@ template <class Tmask> void d_Norm(tfloat* d_input, tfloat* d_output, size_t ele
 //Bandpass.cu:
 void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch = 1);
 
+//Xray.cu:
+void d_Xray(tfloat* d_input, tfloat* d_output, int3 dims, tfloat ndev = (tfloat)4.6, int region = 2, int batch = 1);
+
 
 ///////////
 //Masking//

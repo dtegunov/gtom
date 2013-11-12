@@ -93,6 +93,9 @@
     <ClCompile Include="Extraction.cpp">
       <Filter>Source Files\Generics</Filter>
     </ClCompile>
+    <ClCompile Include="Xray.cpp">
+      <Filter>Source Files\Image Manipulation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">
