@@ -47,8 +47,6 @@ template <class Tmask> void d_Norm(tfloat* d_input, tfloat* d_output, size_t ele
 	}
 	else if(mode == T_NORM_MODE::T_NORM_CUSTOM)
 		NormCustomScfKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, scf);
-
-	tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_output, elements * sizeof(tfloat));
 }
 template void d_Norm<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat* d_mask, T_NORM_MODE mode, tfloat stddev, int batch);
 template void d_Norm<int>(tfloat* d_input, tfloat* d_output, size_t elements, int* d_mask, T_NORM_MODE mode, tfloat stddev, int batch);

@@ -162,6 +162,7 @@
     <ClCompile Include="Shift.cpp" />
     <ClCompile Include="SphereMask.cpp" />
     <ClCompile Include="Sum.cpp" />
+    <ClCompile Include="Xray.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\GoogleTest\GoogleTest.vcxproj">
