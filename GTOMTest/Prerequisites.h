@@ -15,8 +15,8 @@
 #include <cufft.h>
 #include <cublas_v2.h>
 
-#include "gtest\gtest.h"
-#include "..\Functions.cuh"
+#include "gtest/gtest.h"
+#include "../Functions.cuh"
 
 using namespace std;
 

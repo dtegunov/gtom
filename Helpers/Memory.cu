@@ -1,5 +1,5 @@
-#include "..\Prerequisites.cuh"
-#include "..\Functions.cuh"
+#include "../Prerequisites.cuh"
+#include "../Functions.cuh"
 
 
 ////////////////////////////
@@ -172,6 +172,25 @@ template bool* CudaMallocValueFilled<bool>(size_t elements, bool value);
 template tfloat2* CudaMallocValueFilled<tfloat2>(size_t elements, tfloat2 value);
 template tfloat3* CudaMallocValueFilled<tfloat3>(size_t elements, tfloat3 value);
 template tfloat4* CudaMallocValueFilled<tfloat4>(size_t elements, tfloat4 value);
+
+template <class T> void d_ValueFill(T* d_array, size_t elements, T value)
+{
+	size_t TpB = 256;
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	dim3 grid = dim3((uint)totalblocks);
+	ValueFillKernel<T> <<<grid, (uint)TpB>>> (d_array, elements, value);
+	cudaStreamQuery(0);
+}
+template void d_ValueFill<float>(float* d_array, size_t elements, float value);
+template void d_ValueFill<double>(double* d_array, size_t elements, double value);
+template void d_ValueFill<tcomplex>(tcomplex* d_array, size_t elements, tcomplex value);
+template void d_ValueFill<char>(char* d_array, size_t elements, char value);
+template void d_ValueFill<short>(short* d_array, size_t elements, short value);
+template void d_ValueFill<int>(int* d_array, size_t elements, int value);
+template void d_ValueFill<bool>(bool* d_array, size_t elements, bool value);
+template void d_ValueFill<tfloat2>(tfloat2* d_array, size_t elements, tfloat2 value);
+template void d_ValueFill<tfloat3>(tfloat3* d_array, size_t elements, tfloat3 value);
+template void d_ValueFill<tfloat4>(tfloat4* d_array, size_t elements, tfloat4 value);
 
 template <class T, int fieldcount> T* d_JoinInterleaved(T** d_fields, size_t elements)
 {

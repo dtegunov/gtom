@@ -1,5 +1,5 @@
-#include "..\Prerequisites.cuh"
-#include "..\Functions.cuh"
+#include "../Prerequisites.cuh"
+#include "../Functions.cuh"
 
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch)
 {

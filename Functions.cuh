@@ -134,6 +134,8 @@ float* CudaMallocZeroFilledFloat(size_t elements);
  */
 template <class T> T* CudaMallocValueFilled(size_t elements, T value);
 
+template <class T> void d_ValueFill(T* d_array, size_t elements, T value);
+
 /**
  * \brief Creates an array of T tuples with n fields and copies the scalar inputs to the corresponding fields, obtaining an interleaved memory layout.
  * \param[in] T				Data type

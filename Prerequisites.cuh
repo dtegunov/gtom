@@ -1,7 +1,7 @@
 #ifndef GTOM_PREREQUISITES_H
 #define GTOM_PREREQUISITES_H
 
-#include "CubicSplines\internal\cutil_math_bugfixes.h"
+#include "CubicSplines/internal/cutil_math_bugfixes.h"
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"

@@ -1,5 +1,5 @@
-#include "..\Prerequisites.cuh"
-#include "..\Functions.cuh"
+#include "../Prerequisites.cuh"
+#include "../Functions.cuh"
 
 
 ////////////////////////////

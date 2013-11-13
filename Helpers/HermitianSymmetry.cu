@@ -1,5 +1,5 @@
-#include "..\Prerequisites.cuh"
-#include "..\Functions.cuh"
+#include "../Prerequisites.cuh"
+#include "../Functions.cuh"
 
 __global__ void HermitianSymmetryPad2DFirstKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions);
 __global__ void HermitianSymmetryPad3DFirstKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions);
