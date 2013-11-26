@@ -246,6 +246,7 @@ template <class T> void d_Min(T* d_input, T* d_output, size_t n, int batch)
 template void d_Min<float>(float* d_input, float* d_output, size_t n, int batch);
 template void d_Min<double>(double* d_input, double* d_output, size_t n, int batch);
 template void d_Min<int>(int* d_input, int* d_output, size_t n, int batch);
+template void d_Min<char>(char* d_input, char* d_output, size_t n, int batch);
 
 
 ///////
@@ -419,6 +420,7 @@ template <class T> void d_Max(T* d_input, tuple2<T, size_t>* d_output, size_t n,
 template void d_Max<float>(float* d_input, tuple2<float, size_t>* d_output, size_t n, int batch);
 template void d_Max<double>(double* d_input, tuple2<double, size_t>* d_output, size_t n, int batch);
 template void d_Max<int>(int* d_input, tuple2<int, size_t>* d_output, size_t n, int batch);
+template void d_Max<char>(char* d_input, tuple2<char, size_t>* d_output, size_t n, int batch);
 
 template <class T> void d_Max(T* d_input, T* d_output, size_t n, int batch)
 {
@@ -463,6 +465,7 @@ template <class T> void d_Max(T* d_input, T* d_output, size_t n, int batch)
 template void d_Max<float>(float* d_input, float* d_output, size_t n, int batch);
 template void d_Max<double>(double* d_input, double* d_output, size_t n, int batch);
 template void d_Max<int>(int* d_input, int* d_output, size_t n, int batch);
+template void d_Max<char>(char* d_input, char* d_output, size_t n, int batch);
 
 
 ////////////////

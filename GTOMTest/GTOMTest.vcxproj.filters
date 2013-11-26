@@ -31,6 +31,9 @@
     <Filter Include="Source Files\Transformation">
       <UniqueIdentifier>{7c37fb68-3b80-4e1d-a90f-a13a22f03206}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Projection">
+      <UniqueIdentifier>{b45d69cd-9cb6-4e3e-8f4f-a360b41260c1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -95,6 +98,12 @@
     </ClCompile>
     <ClCompile Include="Xray.cpp">
       <Filter>Source Files\Image Manipulation</Filter>
+    </ClCompile>
+    <ClCompile Include="Backward.cpp">
+      <Filter>Source Files\Projection</Filter>
+    </ClCompile>
+    <ClCompile Include="Forward.cpp">
+      <Filter>Source Files\Projection</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

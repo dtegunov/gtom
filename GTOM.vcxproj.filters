@@ -49,6 +49,9 @@
     <Filter Include="Transformation">
       <UniqueIdentifier>{c8529e15-b02c-48f5-80e7-d695534f516f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Projection">
+      <UniqueIdentifier>{4487c3c6-ddb5-4c3d-b8b0-eaf39855fcd0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="glm\CMakeLists.txt">
@@ -859,6 +862,12 @@
     </CudaCompile>
     <CudaCompile Include="ImageManipulation\Xray.cu">
       <Filter>Image Manipulation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Projection\Backward.cu">
+      <Filter>Projection</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Projection\Forward.cu">
+      <Filter>Projection</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

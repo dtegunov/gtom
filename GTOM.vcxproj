@@ -283,6 +283,8 @@
     <CudaCompile Include="ImageManipulation\Bandpass.cu" />
     <CudaCompile Include="ImageManipulation\Norm.cu" />
     <CudaCompile Include="ImageManipulation\Xray.cu" />
+    <CudaCompile Include="Projection\Backward.cu" />
+    <CudaCompile Include="Projection\Forward.cu" />
     <CudaCompile Include="Transformation\Shift.cu" />
     <CudaCompile Include="Transformation\Bin.cu" />
     <CudaCompile Include="Transformation\Coordinates.cu" />

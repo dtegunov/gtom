@@ -333,6 +333,17 @@ template <class T> void d_MaskSparseToDense(T* d_input, intptr_t** d_mapforward,
 template <class T> void MaskSparseToDense(T* h_input, intptr_t** h_mapforward, intptr_t* h_mapbackward, size_t &elementsmapped, size_t elementsoriginal);
 
 
+//////////////
+//Projection//
+//////////////
+
+//Backward.cu:
+void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* angles, tfloat* weight, int batch = 1);
+
+//Forward.cu:
+void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* angles, int batch = 1);
+
+
 //////////////////
 //Transformation//
 //////////////////

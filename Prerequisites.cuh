@@ -56,6 +56,7 @@ struct tfloat3
 
 	tfloat3(tfloat x, tfloat y, tfloat z) : x(x), y(y), z(z) {}
 	tfloat3(int x, int y, int z) : x((tfloat)x), y((tfloat)y), z((tfloat)z) {}
+	tfloat3(tfloat val) : x(val), y(val), z(val) {}
 };
 
 struct tfloat4

@@ -142,6 +142,7 @@
     <ClInclude Include="Prerequisites.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Backward.cpp" />
     <ClCompile Include="Bandpass.cpp" />
     <ClCompile Include="Bin.cpp" />
     <ClCompile Include="CCF.cpp" />
@@ -151,6 +152,7 @@
     <ClCompile Include="FFTR2C.cpp" />
     <ClCompile Include="FFTRemap.cpp" />
     <ClCompile Include="FFTResize.cpp" />
+    <ClCompile Include="Forward.cpp" />
     <ClCompile Include="Helper.cpp" />
     <ClCompile Include="Peak.cpp" />
     <ClCompile Include="Scale.cpp" />
