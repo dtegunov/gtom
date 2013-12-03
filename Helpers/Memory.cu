@@ -44,7 +44,7 @@ template <class T> T* MallocValueFilled(size_t elements, T value)
 	T* h_array = (T*)malloc(elements * sizeof(T));
 
 	intptr_t s_elements = (intptr_t)elements;
-	#pragma omp for schedule(dynamic, 1024)
+	//#pragma omp for schedule(dynamic, 1024)
 	for(intptr_t i = 0; i < s_elements; i++)
 		h_array[i] = value;
 
