@@ -88,7 +88,7 @@ TEST(Projection, Backward)
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_inputvolume, Elements(dimsvolume) * sizeof(tfloat));
 	
 		double MeanAbsolute = GetMeanAbsoluteError((tfloat*)desired_output, (tfloat*)h_output, Elements(dimsvolume));
-		ASSERT_LE(MeanAbsolute, 2e-2);
+		ASSERT_LE(MeanAbsolute, 5e-2);
 
 		cudaFree(d_inputvolume);
 		cudaFree(d_inputimage);

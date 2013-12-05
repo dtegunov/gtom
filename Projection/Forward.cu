@@ -4,6 +4,7 @@
 #include "../glm/gtc/matrix_transform.hpp"
 #include "../glm/gtx/quaternion.hpp"
 #include "../glm/gtx/euler_angles.hpp"
+#include "../glm/gtc/type_ptr.hpp"
 
 texture<tfloat, 3, cudaReadModeElementType> texForwprojVolume;
 
@@ -56,6 +57,24 @@ void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dims
 		glm::mat4 rotationPhi = glm::eulerAngleX(angles[b].x);
 		glm::mat4 rotationTheta = glm::eulerAngleY(angles[b].y);
 		glm::mat4 rotationMat = rotationPhi * rotationTheta;
+
+		tfloat cphi = cos(angles[b].x);
+		tfloat sphi = sin(angles[b].x);
+		tfloat cthe = cos(angles[b].y);
+		tfloat sthe = sin(angles[b].y);
+
+		float* matvalues = (float*)glm::value_ptr(rotationMat);
+		matvalues[0] = cthe * cphi * cphi + sphi * sphi;
+		matvalues[3] = cthe * cphi * sphi - cphi * sphi;
+		matvalues[6] = -sthe * cphi;
+
+		matvalues[1] = matvalues[3];
+		matvalues[4] = cthe * sphi * sphi + cphi * cphi;
+		matvalues[7] = -sthe * sphi;
+
+		matvalues[2] = -matvalues[6];
+		matvalues[5] = -matvalues[7];
+		matvalues[8] = cthe;
 
 		glm::vec4 vecCamera4 = vecBackward * rotationMat;
 		glm::vec3 vecCamera3 = glm::vec3(vecCamera4.x, vecCamera4.y, vecCamera4.z);
