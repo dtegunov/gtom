@@ -54,9 +54,7 @@ void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dims
 		glm::vec4 vecX = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		glm::vec4 vecY = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
 
-		glm::mat4 rotationPhi = glm::eulerAngleX(angles[b].x);
-		glm::mat4 rotationTheta = glm::eulerAngleY(angles[b].y);
-		glm::mat4 rotationMat = rotationPhi * rotationTheta;
+		glm::mat4 rotationMat = glm::mat4(1.0f);
 
 		tfloat cphi = cos(angles[b].x);
 		tfloat sphi = sin(angles[b].x);
@@ -65,16 +63,16 @@ void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dims
 
 		float* matvalues = (float*)glm::value_ptr(rotationMat);
 		matvalues[0] = cthe * cphi * cphi + sphi * sphi;
-		matvalues[3] = cthe * cphi * sphi - cphi * sphi;
-		matvalues[6] = -sthe * cphi;
+		matvalues[4] = cthe * cphi * sphi - cphi * sphi;
+		matvalues[7] = -sthe * cphi;
 
-		matvalues[1] = matvalues[3];
-		matvalues[4] = cthe * sphi * sphi + cphi * cphi;
-		matvalues[7] = -sthe * sphi;
+		matvalues[1] = matvalues[4];
+		matvalues[5] = cthe * sphi * sphi + cphi * cphi;
+		matvalues[9] = -sthe * sphi;
 
-		matvalues[2] = -matvalues[6];
-		matvalues[5] = -matvalues[7];
-		matvalues[8] = cthe;
+		matvalues[2] = -matvalues[8];
+		matvalues[6] = -matvalues[9];
+		matvalues[10] = cthe;
 
 		glm::vec4 vecCamera4 = vecBackward * rotationMat;
 		glm::vec3 vecCamera3 = glm::vec3(vecCamera4.x, vecCamera4.y, vecCamera4.z);
@@ -113,7 +111,7 @@ __device__ bool intersectBox(glm::vec3 origin, glm::vec3 ray, glm::vec3 boxmin, 
     *tnear = largest_tmin;
     *tfar = smallest_tmax;
 
-    return smallest_tmax > largest_tmin;
+    return smallest_tmax >= largest_tmin;
 }
 
 __global__ void ProjForwardKernel(tfloat* d_projection, int3 dimsvolume, int3 dimsimage, glm::vec3 camera, glm::vec3 pixelX, glm::vec3 pixelY, glm::vec3 ray)
@@ -128,19 +126,20 @@ __global__ void ProjForwardKernel(tfloat* d_projection, int3 dimsvolume, int3 di
 	glm::vec3 origin = camera + ((float)(idx - dimsimage.x / 2) * pixelX) + ((float)((int)blockIdx.y - dimsimage.y / 2) * pixelY);
 	float tnear = 0.0f, tfar = 0.0f;
 
-	if(intersectBox(origin, ray, -halfVolume, halfVolume, &tnear, &tfar))
+	if(intersectBox(origin, ray, -halfVolume - glm::vec3(0.000001f, 0.000001f, 0.000001f), halfVolume, &tnear, &tfar))
 	{
-		int steps = ceil(tfar - tnear);
-		glm::vec3 stepRay = ray * ceil(tfar - tnear) / (tfar - tnear);
+		int steps = ceil(tfar - tnear - 0.00001f);
+		glm::vec3 stepRay = ray * (tfar - tnear) / (float)steps;
 
 		origin += ray * tnear + halfVolume + glm::vec3(0.5f);
 		tfloat raysum = (tfloat)0;
 		glm::vec3 raypos = glm::vec3(0);
-		for(int i = 0; i < steps; i++)
-		{
-			raypos = origin + (stepRay * ((float)i + 0.5f));
-			raysum += tex3D(texForwprojVolume, raypos.x, raypos.y, raypos.z);
-		}
+		if(origin.x >= 0.0f && origin.y >= 0.0f && origin.z >= 0.0f && origin.x <= dimsvolume.x && origin.y <= dimsvolume.y && origin.z <= dimsvolume.z)
+			for(int i = 0; i < steps; i++)
+			{
+				raypos = origin + (stepRay * (float)i);
+				raysum += tex3D(texForwprojVolume, raypos.x, raypos.y, raypos.z);
+			}
 
 		d_projection[blockIdx.y * dimsimage.x + idx] = raysum;
 	}

@@ -8,7 +8,7 @@ TEST(Projection, Forward)
 	{
 		int3 dimsvolume = {8, 8, 8};
 		int3 dimsimage = {8, 8, 1};
-		tfloat2 angles = tfloat2((tfloat)0 / (tfloat)2, (tfloat)0 / (tfloat)2);
+		tfloat2 angles = tfloat2((tfloat)PI / (tfloat)2, (tfloat)PI / (tfloat)2);
 		tfloat weight = (tfloat)1;
 		tfloat* d_inputvolume = (tfloat*)CudaMallocFromBinaryFile("Data\\Projection\\Input_Forward_1.bin");
 		tfloat* d_inputimage = (tfloat*)CudaMallocValueFilled(Elements(dimsimage), (tfloat)0);
