@@ -57,6 +57,37 @@ template char* MallocValueFilled<char>(size_t elements, char value);
 template bool* MallocValueFilled<bool>(size_t elements, bool value);
 template int* MallocValueFilled<int>(size_t elements, int value);
 
+tfloat* MixedToHostTfloat(void* h_input, EM_DATATYPE datatype, size_t elements)
+{
+	tfloat* h_output;
+	cudaMallocHost((void**)&h_output, elements * sizeof(tfloat));
+
+	if(datatype == EM_DATATYPE::EM_BYTE)
+		#pragma omp parallel for schedule(dynamic, 1024)
+		for(intptr_t i = 0; i < elements; i++)
+			h_output[i] = (tfloat)((char*)h_input)[i];
+	else if(datatype == EM_DATATYPE::EM_SHORT)
+		#pragma omp parallel for schedule(dynamic, 1024)
+		for(intptr_t i = 0; i < elements; i++)
+			h_output[i] = (tfloat)((short*)h_input)[i];
+	else if(datatype == EM_DATATYPE::EM_LONG)
+		#pragma omp parallel for schedule(dynamic, 1024)
+		for(intptr_t i = 0; i < elements; i++)
+			h_output[i] = (tfloat)((int*)h_input)[i];
+	else if(datatype == EM_DATATYPE::EM_SINGLE)
+		#pragma omp parallel for schedule(dynamic, 1024)
+		for(intptr_t i = 0; i < elements; i++)
+			h_output[i] = (tfloat)((float*)h_input)[i];
+	else if(datatype == EM_DATATYPE::EM_DOUBLE)
+		#pragma omp parallel for schedule(dynamic, 1024)
+		for(intptr_t i = 0; i < elements; i++)
+			h_output[i] = (tfloat)((double*)h_input)[i];
+	else
+		throw;
+	
+	return h_output;
+}
+
 
 /////////////////
 //Device memory//
@@ -234,6 +265,46 @@ template void d_JoinInterleaved<int, 3>(int** d_fields, int* d_output, size_t el
 template void d_JoinInterleaved<int, 4>(int** d_fields, int* d_output, size_t elements);
 template void d_JoinInterleaved<int, 5>(int** d_fields, int* d_output, size_t elements);
 template void d_JoinInterleaved<int, 6>(int** d_fields, int* d_output, size_t elements);
+
+
+void MixedToDeviceTfloat(void* h_input, tfloat* d_output, EM_DATATYPE datatype, size_t elements)
+{
+	if(datatype == EM_DATATYPE::EM_BYTE)
+		CudaMemcpyFromHostArrayConverted<char, tfloat>((char*)h_input, d_output, elements);
+	else if(datatype == EM_DATATYPE::EM_SHORT)
+		CudaMemcpyFromHostArrayConverted<short, tfloat>((short*)h_input, d_output, elements);
+	else if(datatype == EM_DATATYPE::EM_LONG)
+		CudaMemcpyFromHostArrayConverted<int, tfloat>((int*)h_input, d_output, elements);
+	else if(datatype == EM_DATATYPE::EM_SINGLE)
+		cudaMemcpy(d_output, h_input, elements * sizeof(tfloat), cudaMemcpyHostToDevice);
+	else if(datatype == EM_DATATYPE::EM_DOUBLE)
+		CudaMemcpyFromHostArrayConverted<double, tfloat>((double*)h_input, d_output, elements);
+	else
+		throw;
+}
+
+tfloat* MixedToDeviceTfloat(void* h_input, EM_DATATYPE datatype, size_t elements)
+{
+	tfloat* d_output;
+
+	if(datatype == EM_DATATYPE::EM_BYTE)
+		CudaMallocFromHostArrayConverted<char, tfloat>((char*)h_input, &d_output, elements);
+	else if(datatype == EM_DATATYPE::EM_SHORT)
+		CudaMallocFromHostArrayConverted<short, tfloat>((short*)h_input, &d_output, elements);
+	else if(datatype == EM_DATATYPE::EM_LONG)
+		CudaMallocFromHostArrayConverted<int, tfloat>((int*)h_input, &d_output, elements);
+	else if(datatype == EM_DATATYPE::EM_SINGLE)
+	{
+		cudaMalloc((void**)&d_output, elements * sizeof(tfloat));
+		cudaMemcpy(d_output, h_input, elements * sizeof(tfloat), cudaMemcpyHostToDevice);
+	}
+	else if(datatype == EM_DATATYPE::EM_DOUBLE)
+		CudaMallocFromHostArrayConverted<double, tfloat>((double*)h_input, &d_output, elements);
+	else
+		throw;
+
+	return d_output;
+}
 
 ////////////////
 //CUDA kernels//

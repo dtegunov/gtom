@@ -52,6 +52,9 @@
     <Filter Include="Projection">
       <UniqueIdentifier>{4487c3c6-ddb5-4c3d-b8b0-eaf39855fcd0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="IO">
+      <UniqueIdentifier>{85cbea72-f52e-4839-9e69-e816e62d7cbb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="glm\CMakeLists.txt">
@@ -432,6 +435,15 @@
   <ItemGroup>
     <ClCompile Include="glm\core\dummy.cpp">
       <Filter>glm\core</Filter>
+    </ClCompile>
+    <ClCompile Include="IO\em.cpp">
+      <Filter>IO</Filter>
+    </ClCompile>
+    <ClCompile Include="IO\mrc.cpp">
+      <Filter>IO</Filter>
+    </ClCompile>
+    <ClCompile Include="IO\raw.cpp">
+      <Filter>IO</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

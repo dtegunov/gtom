@@ -73,6 +73,8 @@ void* MallocFromDeviceArray(void* d_array, size_t size);
  */
 void* MallocPinnedFromDeviceArray(void* d_array, size_t size);
 
+tfloat* MixedToHostTfloat(void* h_input, EM_DATATYPE datatype, size_t elements);
+
 /**
  * \brief Allocates an array in device memory with an alignment constraint (useful for odd-sized 2D textures).
  * \param[in] widthbytes	Array width in bytes
@@ -157,8 +159,27 @@ template <class T, int fieldcount> T* d_JoinInterleaved(T** d_fields, size_t ele
 template <class T, int fieldcount> void d_JoinInterleaved(T** d_fields, T* d_output, size_t elements);
 
 
+void MixedToDeviceTfloat(void* h_input, tfloat* d_output, EM_DATATYPE datatype, size_t elements);
+tfloat* MixedToDeviceTfloat(void* h_input, EM_DATATYPE datatype, size_t elements);
+
 //Misc.cu:
  int pow(int base, int exponent);
+
+
+ //////
+ //IO//
+ //////
+
+ //mrc.cu:
+void ReadMRC(string path, void** data, EM_DATATYPE &datatype, int nframe = 0, bool flipx = false);
+void ReadMRCDims(string path, int3 &dims);
+
+//em.cu:
+void ReadEM(string path, void** data, EM_DATATYPE &datatype, int nframe = 0);
+void ReadEMDims(string path, int3 &dims);
+
+//raw.cu:
+void ReadRAW(string path, void** data, EM_DATATYPE datatype, int3 dims, int nframe = 0, size_t headerbytes = 0);
 
 ////////////
 //Generics//

@@ -250,6 +250,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glm\core\dummy.cpp" />
+    <ClCompile Include="IO\em.cpp" />
+    <ClCompile Include="IO\mrc.cpp" />
+    <ClCompile Include="IO\raw.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Alignment\Align2D.cu" />
