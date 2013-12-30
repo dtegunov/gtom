@@ -34,14 +34,14 @@ void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE in
 
 	tfloat* d_pitched = NULL;
 	int pitchedwidth = dims.x * sizeof(tfloat);
-	if((dims.x * sizeof(tfloat)) % 32 != 0)
+	//if((dims.x * sizeof(tfloat)) % 32 != 0)
 		d_pitched = (tfloat*)CudaMallocAligned2D(dims.x * sizeof(tfloat), dims.y, &pitchedwidth);
 
 	for (int b = 0; b < batch; b++)
 	{
 		cudaChannelFormatDesc desc = cudaCreateChannelDesc<tfloat>();
 		tfloat* d_offsetinput = d_input + elements * b;
-		if(d_pitched != NULL)
+		//if(d_pitched != NULL)
 		{
 			for (int y = 0; y < dims.y; y++)
 				cudaMemcpy((char*)d_pitched + y * pitchedwidth, 

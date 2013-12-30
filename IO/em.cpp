@@ -12,7 +12,7 @@ void ReadEM(string path, void** data, EM_DATATYPE &datatype, int nframe)
 	int3 dims;
 	dims.x = ((int*)header)[1];
 	dims.y = ((int*)header)[2];
-	dims.z = 1;
+	dims.z = nframe >= 0 ? 1 : ((int*)header)[3];
 	datatype = (EM_DATATYPE)header[3];
 
 	free(header);
@@ -30,7 +30,8 @@ void ReadEM(string path, void** data, EM_DATATYPE &datatype, int nframe)
 	size_t datasize = Elements(dims) * bytesperfield;
 	cudaMallocHost(data, datasize);
 
-	inputfile.seekg(datasize * nframe, ios::cur);
+	if(nframe >= 0)
+		inputfile.seekg(datasize * nframe, ios::cur);
 
 	inputfile.read((char*)*data, datasize);
 
