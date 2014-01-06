@@ -4,7 +4,7 @@
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch)
 {
 	cufftHandle plan = d_IFFTC2RGetPlan(ndimensions, dimensions, batch);	
-	d_IFFTC2R(d_input, d_output, &plan, dimensions);
+	d_IFFTC2R(d_input, d_output, &plan, dimensions, batch);
 	cufftDestroy(plan);
 }
 
@@ -24,7 +24,7 @@ cufftHandle d_IFFTC2RGetPlan(int const ndimensions, int3 const dimensions, int b
 	return plan;
 }
 
-void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan, int3 dimensions)
+void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan, int3 dimensions, int batch)
 {
 	#ifdef TOM_DOUBLE
 		CudaSafeCall((cudaError)cufftExecZ2D(&plan, d_input, d_output));
@@ -32,7 +32,7 @@ void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* pla
 		CudaSafeCall((cudaError)cufftExecC2R(*plan, d_input, d_output));
 	#endif
 
-	d_MultiplyByScalar(d_output, d_output, Elements(dimensions), 1.0f / (float)Elements(dimensions));
+	d_MultiplyByScalar(d_output, d_output, Elements(dimensions) * batch, 1.0f / (float)Elements(dimensions));
 }
 
 void d_IFFTZ2D(cufftDoubleComplex* const d_input, double* const d_output, int const ndimensions, int3 const dimensions, int batch)

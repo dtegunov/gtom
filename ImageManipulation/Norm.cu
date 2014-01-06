@@ -1,6 +1,8 @@
 #include "../Prerequisites.cuh"
 #include "../Functions.cuh"
 
+#define MonoTpB 160
+
 
 ////////////////////////////
 //CUDA kernel declarations//
@@ -10,6 +12,8 @@ __global__ void NormPhaseKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_
 __global__ void NormStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, tfloat stddevmultiple);
 __global__ void NormMeanStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements);
 __global__ void NormCustomScfKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, tfloat scf);
+
+__global__ void NormMeanStdDevMonoKernel(tfloat* d_input, tfloat* d_output, int elements, int batch);
 
 
 ///////////////////////////////////////
@@ -58,6 +62,15 @@ template void d_Norm<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements,
 template void d_Norm<int>(tfloat* d_input, tfloat* d_output, size_t elements, int* d_mask, T_NORM_MODE mode, tfloat stddev, int batch);
 template void d_Norm<char>(tfloat* d_input, tfloat* d_output, size_t elements, char* d_mask, T_NORM_MODE mode, tfloat stddev, int batch);
 template void d_Norm<bool>(tfloat* d_input, tfloat* d_output, size_t elements, bool* d_mask, T_NORM_MODE mode, tfloat stddev, int batch);
+
+void d_NormMonolithic(tfloat* d_input, tfloat* d_output, size_t elements, T_NORM_MODE mode, int batch)
+{
+	size_t TpB = MonoTpB;
+	size_t totalblocks = min(batch, 32768);
+	dim3 grid = dim3((uint)totalblocks);
+
+	NormMeanStdDevMonoKernel <<<grid, TpB>>> (d_input, d_output, elements, batch);
+}
 
 
 ////////////////
@@ -143,4 +156,59 @@ __global__ void NormCustomScfKernel(tfloat* d_input, tfloat* d_output, imgstats5
 			id < elements; 
 			id += blockDim.x * gridDim.x)
 			d_output[id + offset] = d_input[id + offset];
+}
+
+__global__ void NormMeanStdDevMonoKernel(tfloat* d_input, tfloat* d_output, int elements, int batch)
+{
+	__shared__ tfloat means[MonoTpB];
+	__shared__ tfloat mean;
+	__shared__ tfloat stddev;
+
+	for (int b = blockIdx.x; b < batch; b += gridDim.x)
+	{
+		tfloat localmean, localstddev;
+		means[threadIdx.x] = (tfloat)0;
+
+		tfloat* offsetinput = d_input + (size_t)elements * (size_t)b;
+		tfloat* offsetoutput = d_output + (size_t)elements * (size_t)b;
+
+		for (int i = threadIdx.x; i < elements; i += MonoTpB)
+			means[threadIdx.x] += offsetinput[i];
+
+		__syncthreads();
+
+		if(threadIdx.x == 0)
+		{
+			mean = (tfloat)0;
+			for (int i = 0; i < MonoTpB; i++)
+				mean += means[i];
+			mean /= (tfloat)elements;
+		}
+		__syncthreads();
+
+		localmean = mean;
+		means[threadIdx.x] = (tfloat)0;
+
+		tfloat diff;
+		for (int i = threadIdx.x; i < elements; i += MonoTpB)
+		{
+			diff = offsetinput[i] - localmean;
+			means[threadIdx.x] += diff * diff;
+		}
+		__syncthreads();
+
+		if(threadIdx.x == 0)
+		{
+			stddev = (tfloat)0;
+			for (int i = 0; i < MonoTpB; i++)
+				stddev += means[i];
+			stddev = sqrt(stddev / (tfloat)(elements - 1));
+		}
+		__syncthreads();
+
+		localstddev = stddev;
+		for (int i = threadIdx.x; i < elements; i += MonoTpB)
+			offsetoutput[i] = (offsetinput[i] - localmean) / localstddev;
+			//offsetoutput[i] = localmean;
+	}
 }

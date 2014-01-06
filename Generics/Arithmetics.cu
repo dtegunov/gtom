@@ -34,6 +34,9 @@ template <class T> __global__ void SquareKernel(T* d_input, T* d_output, size_t 
 template <class T> __global__ void SqrtKernel(T* d_input, T* d_output, size_t elements);
 template <class T> __global__ void PowKernel(T* d_input, T* d_output, size_t elements, T exponent);
 
+template <class T> __global__ void MaxOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements);
+template <class T> __global__ void MinOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements);
+
 
 //////////////////
 //Multiplication//
@@ -518,7 +521,6 @@ template <class T> void d_Pow(T* d_input, T* d_output, size_t elements, T expone
 	PowKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements, exponent);
 }
 template void d_Pow<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat exponent);
-//template void d_Pow<int>(int* d_input, int* d_output, size_t elements, int exponent);
 
 template <class T> __global__ void PowKernel(T* d_input, T* d_output, size_t elements, T exponent)
 {
@@ -526,6 +528,49 @@ template <class T> __global__ void PowKernel(T* d_input, T* d_output, size_t ele
 		id < elements; 
 		id += blockDim.x * gridDim.x)
 		d_output[id] = pow(d_input[id], exponent);
+}
+
+
+///////////////
+//Min/Max ops//
+///////////////
+
+template <class T> void d_MaxOp(T* d_input1, T* d_input2, T* d_output, size_t elements)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	dim3 grid = dim3((uint)totalblocks);
+	MaxOpKernel<T> <<<grid, (uint)TpB>>> (d_input1, d_input2, d_output, elements);
+}
+template void d_MaxOp<int>(int* d_input1, int* d_input2, int* d_output, size_t elements);
+template void d_MaxOp<float>(float* d_input1, float* d_input2, float* d_output, size_t elements);
+template void d_MaxOp<double>(double* d_input1, double* d_input2, double* d_output, size_t elements);
+
+template <class T> void d_MinOp(T* d_input1, T* d_input2, T* d_output, size_t elements)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	dim3 grid = dim3((uint)totalblocks);
+	MinOpKernel<T> <<<grid, (uint)TpB>>> (d_input1, d_input2, d_output, elements);
+}
+template void d_MinOp<int>(int* d_input1, int* d_input2, int* d_output, size_t elements);
+template void d_MinOp<float>(float* d_input1, float* d_input2, float* d_output, size_t elements);
+template void d_MinOp<double>(double* d_input1, double* d_input2, double* d_output, size_t elements);
+
+template <class T> __global__ void MaxOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+		d_output[id] = max(d_input1[id], d_input2[id]);
+}
+
+template <class T> __global__ void MinOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+		d_output[id] = min(d_input1[id], d_input2[id]);
 }
 
 

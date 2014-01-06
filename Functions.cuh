@@ -214,6 +214,9 @@ template <class T> void d_Sqrt(T* d_input, T* d_output, size_t elements);
 template <class T> void d_Square(T* d_input, T* d_output, size_t elements, int batch = 1);
 template <class T> void d_Pow(T* d_input, T* d_output, size_t elements, T exponent);
 
+template <class T> void d_MaxOp(T* d_input1, T* d_input2, T* d_output, size_t elements);
+template <class T> void d_MinOp(T* d_input1, T* d_input2, T* d_output, size_t elements);
+
 size_t NextPow2(size_t x);
 bool IsPow2(size_t x);
 
@@ -230,6 +233,12 @@ template <class T> void d_Min(T *d_input, tuple2<T, size_t> *d_output, size_t n,
 template <class T> void d_Min(T *d_input, T *d_output, size_t n, int batch = 1);
 template <class T> void d_Max(T *d_input, tuple2<T, size_t> *d_output, size_t n, int batch = 1);
 template <class T> void d_Max(T *d_input, T *d_output, size_t n, int batch = 1);
+
+//MinMaxMonolithic.cu:
+template <class T> void d_MinMonolithic(T* d_input, tuple2<T, int>* d_output, int n, int batch);
+template <class T> void d_MinMonolithic(T* d_input, T* d_output, int n, int batch);
+template <class T> void d_MaxMonolithic(T* d_input, tuple2<T, int>* d_output, int n, int batch);
+template <class T> void d_MaxMonolithic(T* d_input, T* d_output, int n, int batch);
 
 //SumMinMax.cu:
 template <class T> void d_SumMinMax(T* d_input, T* d_sum, T* d_min, T* d_max, size_t n, int batch = 1);
@@ -285,7 +294,7 @@ cufftHandle d_FFTR2CGetPlan(int const ndimensions, int3 const dimensions, int ba
 
 //IFFT.cu:
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
-void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan, int3 const dimensions);
+void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan, int3 const dimensions, int batch = 1);
 void d_IFFTC2RFull(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, cufftHandle* plan, int3 const dimensions);
@@ -329,6 +338,7 @@ enum T_NORM_MODE
 	T_NORM_CUSTOM = 7 
 };
 template <class Tmask> void d_Norm(tfloat* d_input, tfloat* d_output, size_t elements, Tmask* d_mask, T_NORM_MODE mode, tfloat scf, int batch = 1);
+void d_NormMonolithic(tfloat* d_input, tfloat* d_output, size_t elements, T_NORM_MODE mode, int batch);
 
 //Bandpass.cu:
 void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch = 1);

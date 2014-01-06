@@ -58,7 +58,7 @@ TEST(ImageManipulation, Norm)
 	cudaDeviceReset();
 
 	//Case 1:
-	{
+	/*{
 		int3 dims = {4, 3, 5};
 		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\ImageManipulation\\Input_Norm_1.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\ImageManipulation\\Output_Norm_1.bin");
@@ -66,13 +66,29 @@ TEST(ImageManipulation, Norm)
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, dims.x * dims.y * dims.z * sizeof(tfloat));
 	
 		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, dims.x * dims.y * dims.z);
-		ASSERT_LE(MeanRelative, 1e-5);
+		ASSERT_LE(MeanRelative, 1e-4);
+
+		cudaFree(d_input);
+		free(desired_output);
+		free(h_output);
+	}*/
+
+	//Case 2:
+	{
+		int3 dims = {128, 128, 1};
+		int batch = 4000;
+		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\ImageManipulation\\Input_Norm_2.bin");
+		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\ImageManipulation\\Output_Norm_2.bin");
+		d_NormMonolithic(d_input, d_input, Elements(dims), T_NORM_MODE::T_NORM_MEAN01STD, batch);
+		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, Elements(dims) * batch * sizeof(tfloat));
+	
+		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, Elements(dims) * batch);
+		ASSERT_LE(MeanRelative, 1e-3);
 
 		cudaFree(d_input);
 		free(desired_output);
 		free(h_output);
 	}
-
 
 	cudaDeviceReset();
 }

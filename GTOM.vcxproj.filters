@@ -881,5 +881,8 @@
     <CudaCompile Include="Projection\Forward.cu">
       <Filter>Projection</Filter>
     </CudaCompile>
+    <CudaCompile Include="Generics\MinMaxMonolithic.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
