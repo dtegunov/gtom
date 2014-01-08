@@ -257,6 +257,7 @@
   <ItemGroup>
     <CudaCompile Include="Alignment\Align2D.cu" />
     <CudaCompile Include="Correlation\CCF.cu" />
+    <CudaCompile Include="Correlation\LocalPeaks.cu" />
     <CudaCompile Include="Correlation\Peak.cu" />
     <CudaCompile Include="CubicSplines\cubicPrefilter2D.cu" />
     <CudaCompile Include="CubicSplines\cubicPrefilter3D.cu" />

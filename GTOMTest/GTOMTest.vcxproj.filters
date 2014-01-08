@@ -105,6 +105,9 @@
     <ClCompile Include="Forward.cpp">
       <Filter>Source Files\Projection</Filter>
     </ClCompile>
+    <ClCompile Include="LocalPeaks.cpp">
+      <Filter>Source Files\Correlation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">

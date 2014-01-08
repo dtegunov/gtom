@@ -266,6 +266,7 @@ enum T_PEAK_MODE
 	T_PEAK_SUBFINE = 3
 };
 void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, T_PEAK_MODE mode, int batch = 1);
+void d_LocalPeaks(tfloat* d_input, int3** h_peaks, int* h_peaksnum, int3 dims, int localextent, tfloat threshold, int batch = 1);
 
 
 ///////////////////////

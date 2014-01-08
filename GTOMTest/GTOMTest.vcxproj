@@ -154,6 +154,7 @@
     <ClCompile Include="FFTResize.cpp" />
     <ClCompile Include="Forward.cpp" />
     <ClCompile Include="Helper.cpp" />
+    <ClCompile Include="LocalPeaks.cpp" />
     <ClCompile Include="Peak.cpp" />
     <ClCompile Include="Scale.cpp" />
     <ClCompile Include="Max.cpp" />

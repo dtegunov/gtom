@@ -884,5 +884,8 @@
     <CudaCompile Include="Generics\MinMaxMonolithic.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
+    <CudaCompile Include="Correlation\LocalPeaks.cu">
+      <Filter>Correlation</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
