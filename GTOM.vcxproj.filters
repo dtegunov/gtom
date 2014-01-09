@@ -55,6 +55,9 @@
     <Filter Include="IO">
       <UniqueIdentifier>{85cbea72-f52e-4839-9e69-e816e62d7cbb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="BinaryManipulation">
+      <UniqueIdentifier>{532ff7b2-7efc-429c-b2e4-60e7003d8d65}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="glm\CMakeLists.txt">
@@ -886,6 +889,12 @@
     </CudaCompile>
     <CudaCompile Include="Correlation\LocalPeaks.cu">
       <Filter>Correlation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="BinaryManipulation\Dilate.cu">
+      <Filter>BinaryManipulation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="BinaryManipulation\Binarize.cu">
+      <Filter>BinaryManipulation</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

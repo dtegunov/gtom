@@ -256,6 +256,8 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Alignment\Align2D.cu" />
+    <CudaCompile Include="BinaryManipulation\Binarize.cu" />
+    <CudaCompile Include="BinaryManipulation\Dilate.cu" />
     <CudaCompile Include="Correlation\CCF.cu" />
     <CudaCompile Include="Correlation\LocalPeaks.cu" />
     <CudaCompile Include="Correlation\Peak.cu" />

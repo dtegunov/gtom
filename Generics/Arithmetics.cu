@@ -33,6 +33,7 @@ template <class T> __global__ void SubtractScalarKernel(T* d_input, T* d_subtrah
 template <class T> __global__ void SquareKernel(T* d_input, T* d_output, size_t elements);
 template <class T> __global__ void SqrtKernel(T* d_input, T* d_output, size_t elements);
 template <class T> __global__ void PowKernel(T* d_input, T* d_output, size_t elements, T exponent);
+template <class T> __global__ void AbsKernel(T* d_input, T* d_output, size_t elements);
 
 template <class T> __global__ void MaxOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements);
 template <class T> __global__ void MinOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements);
@@ -528,6 +529,28 @@ template <class T> __global__ void PowKernel(T* d_input, T* d_output, size_t ele
 		id < elements; 
 		id += blockDim.x * gridDim.x)
 		d_output[id] = pow(d_input[id], exponent);
+}
+
+
+///////
+//Abs//
+///////
+
+template <class T> void d_Abs(T* d_input, T* d_output, size_t elements)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	dim3 grid = dim3((uint)totalblocks);
+	AbsKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements);
+}
+template void d_Abs<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements);
+
+template <class T> __global__ void AbsKernel(T* d_input, T* d_output, size_t elements)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+		d_output[id] = abs(d_input[id]);
 }
 
 

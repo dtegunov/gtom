@@ -8,7 +8,7 @@ TEST(Correlation, LocalPeaks)
 	{
 		int3 dims = {8, 8, 1};
 		int upscalefactor = 8;
-		int3 updims = {dims.x * upscalefactor, dims.y * upscalefactor, 1};
+		int3 updims = {1769, 1769, 1};
 
 		tfloat* h_input = MallocValueFilled(Elements(dims), (tfloat)0);
 		h_input[1 * dims.x + 1] = (tfloat)1;
@@ -27,7 +27,7 @@ TEST(Correlation, LocalPeaks)
 		int3* h_peaks;
 		int h_peakcount;
 
-		d_LocalPeaks(d_upscaled, &h_peaks, &h_peakcount, updims, 10, (tfloat)2.2);
+		d_LocalPeaks(d_upscaled, &h_peaks, &h_peakcount, updims, 100, (tfloat)4.6);
 
 		cudaFree(d_upscaled);
 	}

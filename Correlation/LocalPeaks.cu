@@ -41,8 +41,11 @@ void d_LocalPeaks(tfloat* d_input, int3** h_peaks, int* h_peaksnum, int3 dims, i
 					if(h_output[(z * dims.y + y) * dims.x + x])
 						peaks.push_back(toInt3(x, y, z));
 
-		h_peaks[b] = (int3*)malloc(peaks.size() * sizeof(int3));
-		memcpy(h_peaks[b], &peaks[0], peaks.size() * sizeof(int3));
+		if(peaks.size() > 0)
+		{
+			h_peaks[b] = (int3*)malloc(peaks.size() * sizeof(int3));
+			memcpy(h_peaks[b], &peaks[0], peaks.size() * sizeof(int3));
+		}
 		h_peaksnum[b] = peaks.size();
 	}
 

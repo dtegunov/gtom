@@ -7,6 +7,7 @@
 ////////////////////////////
 
 template <class T> __global__ void RemapKernel(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch);
+template <class T> __global__ void RemapReverseKernel(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsdestination, T defvalue, int batch);
 
 
 //////////////////
@@ -22,6 +23,16 @@ template <class T> void d_Remap(T* d_input, intptr_t* d_map, T* d_output, size_t
 }
 template void d_Remap<tfloat>(tfloat* d_input, intptr_t* d_map, tfloat* d_output, size_t elementsmapped, size_t elementsoriginal, tfloat defvalue, int batch);
 template void d_Remap<int>(int* d_input, intptr_t* d_map, int* d_output, size_t elementsmapped, size_t elementsoriginal, int defvalue, int batch);
+
+template <class T> void d_RemapReverse(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsdestination, T defvalue, int batch)
+{
+	size_t TpB = 192;
+	size_t totalblocks = min((elementsmapped + TpB - 1) / TpB, 32768);
+	dim3 grid = dim3((uint)totalblocks);
+	RemapReverseKernel<T> <<<grid, (uint)TpB>>> (d_input, d_map, d_output, elementsmapped, elementsdestination, defvalue, batch);
+}
+template void d_RemapReverse<tfloat>(tfloat* d_input, intptr_t* d_map, tfloat* d_output, size_t elementsmapped, size_t elementsdestination, tfloat defvalue, int batch);
+template void d_RemapReverse<int>(int* d_input, intptr_t* d_map, int* d_output, size_t elementsmapped, size_t elementsdestination, int defvalue, int batch);
 
 template <class T> void Remap(T* h_input, intptr_t* h_map, T* h_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch)
 {
@@ -55,6 +66,19 @@ template <class T> __global__ void RemapKernel(T* d_input, intptr_t* d_map, T* d
 		else
 			for(size_t b = 0; b < batch; b++)
 				d_output[id + elementsmapped * b] = d_input[address + elementsoriginal * b];
+	}
+}
+
+template <class T> __global__ void RemapReverseKernel(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsdestination, T defvalue, int batch)
+{
+	intptr_t address;
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elementsmapped; 
+		id += blockDim.x * gridDim.x)
+	{
+		address = d_map[id];
+		for(size_t b = 0; b < batch; b++)
+			d_output[address + elementsdestination * b] = d_input[id + elementsmapped * b];
 	}
 }
 

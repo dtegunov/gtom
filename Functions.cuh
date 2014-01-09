@@ -213,6 +213,7 @@ template <class T> void d_SubtractVector(T* d_input, T* d_subtrahends, T* d_outp
 template <class T> void d_Sqrt(T* d_input, T* d_output, size_t elements);
 template <class T> void d_Square(T* d_input, T* d_output, size_t elements, int batch = 1);
 template <class T> void d_Pow(T* d_input, T* d_output, size_t elements, T exponent);
+template <class T> void d_Abs(T* d_input, T* d_output, size_t elements);
 
 template <class T> void d_MaxOp(T* d_input1, T* d_input2, T* d_output, size_t elements);
 template <class T> void d_MinOp(T* d_input1, T* d_input2, T* d_output, size_t elements);
@@ -348,6 +349,14 @@ void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat
 void d_Xray(tfloat* d_input, tfloat* d_output, int3 dims, tfloat ndev = (tfloat)4.6, int region = 2, int batch = 1);
 
 
+///////////////////////
+//Binary manipulation//
+///////////////////////
+
+template <class T> void d_Dilate(T* d_input, T* d_output, int3 dims, int batch = 1);
+template <class T> void d_Binarize(tfloat* d_input, T* d_output, size_t elements, tfloat threshold, int batch = 1);
+
+
 ///////////
 //Masking//
 ///////////
@@ -360,6 +369,7 @@ template <class T> void d_RectangleMask(T const* const d_input, T* const d_outpu
 
 //Remap.cu:
 template <class T> void d_Remap(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch = 1);
+template <class T> void d_RemapReverse(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsdestination, T defvalue, int batch = 1);
 template <class T> void Remap(T* h_input, intptr_t* h_map, T* h_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch = 1);
 template <class T> void d_MaskSparseToDense(T* d_input, intptr_t** d_mapforward, intptr_t* d_mapbackward, size_t &elementsmapped, size_t elementsoriginal);
 template <class T> void MaskSparseToDense(T* h_input, intptr_t** h_mapforward, intptr_t* h_mapbackward, size_t &elementsmapped, size_t elementsoriginal);
@@ -385,6 +395,7 @@ void d_Bin(tfloat* d_input, tfloat* d_output, int3 dims, int bincount, int batch
 
 //Coordinates.cu:
 void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE interpolation, int batch = 1);
+void d_CartAtlas2Polar(tfloat* d_input, tfloat* d_output, int2* d_offsets, int2 atlasdims, int2 dims, T_INTERP_MODE interpolation, int batch);
 int2 GetCart2PolarSize(int2 dims);
 
 //Shift.cu:
