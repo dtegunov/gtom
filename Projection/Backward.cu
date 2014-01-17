@@ -1,9 +1,5 @@
 #include "../Prerequisites.cuh"
 #include "../Functions.cuh"
-#include "../glm/glm.hpp"
-#include "../glm/gtc/matrix_transform.hpp"
-#include "../glm/gtx/quaternion.hpp"
-#include "../glm/gtx/euler_angles.hpp"
 
 texture<tfloat, 2> texBackprojImage;
 
