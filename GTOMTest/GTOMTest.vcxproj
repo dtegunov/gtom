@@ -144,6 +144,7 @@
   <ItemGroup>
     <ClCompile Include="Backward.cpp" />
     <ClCompile Include="Bandpass.cpp" />
+    <ClCompile Include="BandpassNeat.cpp" />
     <ClCompile Include="Bin.cpp" />
     <ClCompile Include="CCF.cpp" />
     <ClCompile Include="Coordinates.cpp" />
@@ -155,6 +156,7 @@
     <ClCompile Include="Forward.cpp" />
     <ClCompile Include="Helper.cpp" />
     <ClCompile Include="LocalPeaks.cpp" />
+    <ClCompile Include="Padding.cpp" />
     <ClCompile Include="Peak.cpp" />
     <ClCompile Include="Scale.cpp" />
     <ClCompile Include="Max.cpp" />

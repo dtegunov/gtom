@@ -77,6 +77,14 @@ void* CudaMallocFromBinaryFile(string path)
 	return d_array;
 }
 
+void CudaWriteToBinaryFile(string path, void* d_data, size_t elements)
+{
+	void* h_data = MallocFromDeviceArray(d_data, elements);
+	WriteToBinaryFile(path, h_data, elements);
+
+	free(h_data);
+}
+
 void* MallocFromBinaryFile(string path)
 {
 	ifstream inputfile(path, ios::in|ios::binary|ios::ate);
@@ -87,6 +95,13 @@ void* MallocFromBinaryFile(string path)
 	inputfile.close();
 
 	return output;
+}
+
+void WriteToBinaryFile(string path, void* data, size_t bytes)
+{
+	FILE* outputfile = fopen(path.c_str(), "wb");
+	fwrite(data, sizeof(char), bytes, outputfile);
+	fclose(outputfile);
 }
 
 double GetMeanAbsoluteError(tfloat* const expected, tfloat* const actual, size_t n)

@@ -145,7 +145,7 @@ typedef unsigned int uint;
 #define PI2 6.283185307179586476925286766559
 
 #define getOffset(x, y, stride) ((y) * (stride) + (x))
-#define getZigzag(x, stride) abs((((x) - (stride)) % ((stride) * 2)) - (stride))
+#define getZigzag(x, stride) ((stride - 1) <= 0 ? 0 : (abs((((x) + ((stride - 1) * 99999)) % ((stride - 1) * 2)) - (stride - 1))))
 #define DimensionCount(dims) (3 - max(2 - max((dims).z, 1), 0) - max(2 - max((dims).y, 1), 0) - max(2 - max((dims).x, 1), 0))
 #define NextMultipleOf(value, base) (((value) + (base) - 1) / (base) * (base))
 #define Elements(dims) ((dims).x * (dims).y * (dims).z)
