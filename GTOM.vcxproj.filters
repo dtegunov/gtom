@@ -204,5 +204,11 @@
     <CudaCompile Include="BinaryManipulation\Binarize.cu">
       <Filter>BinaryManipulation</Filter>
     </CudaCompile>
+    <CudaCompile Include="Generics\Padding.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Generics\LocalStdDev.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

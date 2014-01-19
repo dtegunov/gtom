@@ -97,12 +97,16 @@ int GetFileSize(string path);
  */
 void* MallocFromBinaryFile(string path);
 
+void WriteToBinaryFile(string path, void* data, size_t bytes);
+
 /**
  * \brief Creates an array in host memory that is filled with a binary file's content and has the same size.
  * \param[in] path	File path
  * \returns Array pointer in host memory
  */
 void* CudaMallocFromBinaryFile(string path);
+
+void CudaWriteToBinaryFile(string path, void* d_data, size_t elements);
 
 /**
  * \brief Calculates the mean difference between expected and actual values.

@@ -108,6 +108,12 @@
     <ClCompile Include="LocalPeaks.cpp">
       <Filter>Source Files\Correlation</Filter>
     </ClCompile>
+    <ClCompile Include="Padding.cpp">
+      <Filter>Source Files\Generics</Filter>
+    </ClCompile>
+    <ClCompile Include="BandpassNeat.cpp">
+      <Filter>Source Files\Image Manipulation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">

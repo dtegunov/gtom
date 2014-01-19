@@ -252,6 +252,15 @@ glm::mat4 GetTransform2D(tfloat2 scale, tfloat rotation, tfloat2 translation);
 template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch = 1);
 void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, tfloat2* h_scale, tfloat* h_rotation, tfloat2* h_translation, T_INTERP_MODE mode, int batch = 1);
 
+//Padding.cu:
+enum T_PAD_MODE 
+{ 
+	T_PAD_VALUE = 1,
+	T_PAD_MIRROR = 2,
+	T_PAD_TILE = 3
+};
+template <class T> void d_Pad(T* d_input, T* d_output, int3 inputdims, int3 outputdims, T_PAD_MODE mode, T value, int batch = 1);
+
 
 ///////////////
 //Correlation//
@@ -346,6 +355,7 @@ void d_NormMonolithic(tfloat* d_input, tfloat* d_output, size_t elements, T_NORM
 
 //Bandpass.cu:
 void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch = 1);
+void d_BandpassNeat(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch = 1);
 
 //Xray.cu:
 void d_Xray(tfloat* d_input, tfloat* d_output, int3 dims, tfloat ndev = (tfloat)4.6, int region = 2, int batch = 1);

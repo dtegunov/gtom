@@ -50,8 +50,10 @@
     <CudaCompile Include="Generics\Arithmetics.cu" />
     <CudaCompile Include="Generics\CompositeArithmetics.cu" />
     <CudaCompile Include="Generics\Extraction.cu" />
+    <CudaCompile Include="Generics\LocalStdDev.cu" />
     <CudaCompile Include="Generics\MinMax.cu" />
     <CudaCompile Include="Generics\MinMaxMonolithic.cu" />
+    <CudaCompile Include="Generics\Padding.cu" />
     <CudaCompile Include="Generics\Sum.cu" />
     <CudaCompile Include="Generics\Dev.cu" />
     <CudaCompile Include="Generics\SumMinMax.cu" />
