@@ -111,9 +111,6 @@
     <ClCompile Include="LocalPeaks.cpp">
       <Filter>Source Files\Correlation</Filter>
     </ClCompile>
-    <ClCompile Include="Align2D.cpp">
-      <Filter>Source Files\Alignment</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">
