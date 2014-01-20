@@ -142,6 +142,7 @@
     <ClInclude Include="Prerequisites.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Align2D.cpp" />
     <ClCompile Include="Backward.cpp" />
     <ClCompile Include="Bandpass.cpp" />
     <ClCompile Include="Bin.cpp" />

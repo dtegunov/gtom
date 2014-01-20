@@ -253,6 +253,28 @@ template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3
 void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, tfloat2* h_scale, tfloat* h_rotation, tfloat2* h_translation, T_INTERP_MODE mode, int batch = 1);
 
 
+/////////////
+//Alignment//
+/////////////
+
+//Align2D.cu:
+enum T_ALIGN_MODE
+{
+	T_ALIGN_ROT = 1 << 0,
+	T_ALIGN_TRANS = 1 << 1,
+	T_ALIGN_BOTH = 3
+};
+void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat3* d_params, tfloat* d_scores, int maxtranslation, tfloat maxrotation, int iterations, T_ALIGN_MODE mode, int batch);
+
+
+///////////////////////
+//Binary manipulation//
+///////////////////////
+
+template <class T> void d_Dilate(T* d_input, T* d_output, int3 dims, int batch = 1);
+template <class T> void d_Binarize(tfloat* d_input, T* d_output, size_t elements, tfloat threshold, int batch = 1);
+
+
 ///////////////
 //Correlation//
 ///////////////
@@ -349,14 +371,6 @@ void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat
 
 //Xray.cu:
 void d_Xray(tfloat* d_input, tfloat* d_output, int3 dims, tfloat ndev = (tfloat)4.6, int region = 2, int batch = 1);
-
-
-///////////////////////
-//Binary manipulation//
-///////////////////////
-
-template <class T> void d_Dilate(T* d_input, T* d_output, int3 dims, int batch = 1);
-template <class T> void d_Binarize(tfloat* d_input, T* d_output, size_t elements, tfloat threshold, int batch = 1);
 
 
 ///////////

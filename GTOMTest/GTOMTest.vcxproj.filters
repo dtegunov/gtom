@@ -34,6 +34,9 @@
     <Filter Include="Source Files\Projection">
       <UniqueIdentifier>{b45d69cd-9cb6-4e3e-8f4f-a360b41260c1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Alignment">
+      <UniqueIdentifier>{a82d7b36-0c32-47a3-9322-d0f20d7890cc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -107,6 +110,9 @@
     </ClCompile>
     <ClCompile Include="LocalPeaks.cpp">
       <Filter>Source Files\Correlation</Filter>
+    </ClCompile>
+    <ClCompile Include="Align2D.cpp">
+      <Filter>Source Files\Alignment</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

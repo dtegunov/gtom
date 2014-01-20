@@ -147,6 +147,8 @@ typedef unsigned int uint;
 
 #define PI 3.1415926535897932384626433832795
 #define PI2 6.283185307179586476925286766559
+#define ToRad(x) ((tfloat)(x) / (tfloat)180 * (tfloat)PI)
+#define ToDeg(x) ((tfloat)(x) / (tfloat)PI * (tfloat)180)
 
 #define getOffset(x, y, stride) ((y) * (stride) + (x))
 #define getZigzag(x, stride) abs((((x) - (stride)) % ((stride) * 2)) - (stride))
