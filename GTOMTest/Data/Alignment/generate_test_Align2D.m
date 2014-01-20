@@ -1,8 +1,8 @@
 rng(123);
 dim = 32;
 count = 20;
-maxtrans = 5;
-maxrot = 0;
+maxtrans = 0;
+maxrot = 10;
 
 targets = zeros(dim * 2, dim * 2, count);
 for t=1:count

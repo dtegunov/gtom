@@ -6,7 +6,7 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-__global__ void LocalStdKernel(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, size_t regionelements, int3 regionorigin);
+template <class T> __global__ void ExtractKernel(tfloat* d_input, tfloat* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3 regionorigin);
 
 
 /////////////////////////////////////////////////////////////////////

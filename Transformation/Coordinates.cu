@@ -10,8 +10,8 @@
 
 __global__ void Cart2PolarLinearKernel(tfloat* d_output, int2 polardims, tfloat radius);
 __global__ void Cart2PolarCubicKernel(tfloat* d_output, int2 polardims, tfloat radius);
-__global__ void CartAtlas2PolarLinearKernel(tfloat* d_output, int2* d_offsets, int2 polardims, tfloat radius);
-__global__ void CartAtlas2PolarCubicKernel(tfloat* d_output, int2* d_offsets, int2 polardims, tfloat radius);
+__global__ void CartAtlas2PolarLinearKernel(tfloat* d_output, tfloat2* d_offsets, int2 polardims, tfloat radius);
+__global__ void CartAtlas2PolarCubicKernel(tfloat* d_output, tfloat2* d_offsets, int2 polardims, tfloat radius);
 
 
 ///////////
@@ -80,7 +80,7 @@ void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE in
 }
 
 
-void d_CartAtlas2Polar(tfloat* d_input, tfloat* d_output, int2* d_offsets, int2 atlasdims, int2 dims, T_INTERP_MODE interpolation, int batch)
+void d_CartAtlas2Polar(tfloat* d_input, tfloat* d_output, tfloat2* d_offsets, int2 atlasdims, int2 dims, T_INTERP_MODE interpolation, int batch)
 {
 	int2 polardims = GetCart2PolarSize(dims);
 
@@ -176,7 +176,7 @@ __global__ void Cart2PolarCubicKernel(tfloat* d_output, int2 polardims, tfloat r
 												  sin(phi) * r + radius + (tfloat)0.5);
 }
 
-__global__ void CartAtlas2PolarLinearKernel(tfloat* d_output, int2* d_offsets, int2 polardims, tfloat radius)
+__global__ void CartAtlas2PolarLinearKernel(tfloat* d_output, tfloat2* d_offsets, int2 polardims, tfloat radius)
 {
 	int idy = blockIdx.x * blockDim.x + threadIdx.x;
 	if(idy >= polardims.y)
@@ -187,11 +187,11 @@ __global__ void CartAtlas2PolarLinearKernel(tfloat* d_output, int2* d_offsets, i
 	tfloat phi = (tfloat)(idy) * PI2 / (tfloat)polardims.y;
 
 	d_output[blockIdx.z * polardims.x * polardims.y + idy * polardims.x + idx] = tex2D(texCoordinatesInput2d, 
-																					  (tfloat)d_offsets[blockIdx.z].x + (phi) * r + radius + (tfloat)0.5, 
-																					  (tfloat)d_offsets[blockIdx.z].y + sin(phi) * r + radius + (tfloat)0.5);
+																					  d_offsets[blockIdx.z].x + cos(phi) * r + radius + (tfloat)0.5, 
+																					  d_offsets[blockIdx.z].y + sin(phi) * r + radius + (tfloat)0.5);
 }
 
-__global__ void CartAtlas2PolarCubicKernel(tfloat* d_output, int2* d_offsets, int2 polardims, tfloat radius)
+__global__ void CartAtlas2PolarCubicKernel(tfloat* d_output, tfloat2* d_offsets, int2 polardims, tfloat radius)
 {
 	int idy = blockIdx.x * blockDim.x + threadIdx.x;
 	if(idy >= polardims.y)
@@ -202,6 +202,6 @@ __global__ void CartAtlas2PolarCubicKernel(tfloat* d_output, int2* d_offsets, in
 	tfloat phi = (tfloat)(idy) * PI2 / (tfloat)polardims.y;
 
 	d_output[blockIdx.z * polardims.x * polardims.y + idy * polardims.x + idx] = cubicTex2D(texCoordinatesInput2d, 
-																							(tfloat)d_offsets[blockIdx.z].x + (phi) * r + radius + (tfloat)0.5, 
-																							(tfloat)d_offsets[blockIdx.z].y + sin(phi) * r + radius + (tfloat)0.5);
+																							d_offsets[blockIdx.z].x + cos(phi) * r + radius + (tfloat)0.5, 
+																							d_offsets[blockIdx.z].y + sin(phi) * r + radius + (tfloat)0.5);
 }
