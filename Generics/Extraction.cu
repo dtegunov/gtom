@@ -1,5 +1,6 @@
 #include "../Prerequisites.cuh"
 #include "../Functions.cuh"
+#include "../DeviceFunctions.cuh"
 
 
 ////////////////////////////
@@ -8,7 +9,7 @@
 
 template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3 regionorigin);
 __global__ void Extract2DTransformedLinearKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::vec2* vecx, glm::vec2* vecy, glm::vec2* veccenter);
-__global__ void Extract2DTransformedCubicKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::mat4* d_transform);
+__global__ void Extract2DTransformedCubicKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::vec2* vecx, glm::vec2* vecy, glm::vec2* veccenter);
 
 
 ///////////
@@ -90,11 +91,11 @@ void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int3 sourcedims, 
 
 	size_t TpB = min(256, NextMultipleOf(regiondims.x, 32));
 	dim3 grid = dim3((regiondims.x + TpB - 1) / TpB, regiondims.y, batch);
-
+	
 	if(mode == T_INTERP_MODE::T_INTERP_LINEAR)
 		Extract2DTransformedLinearKernel <<<grid, (int)TpB>>> (d_output, sourcedims, regiondims, d_vecx, d_vecy, d_veccenter);
-	/*else if(mode == T_INTERP_MODE::T_INTERP_CUBIC)
-		Extract2DTransformedCubicKernel <<<grid, (int)TpB>>> (d_output, sourcedims, regiondims, d_transform);*/
+	else if(mode == T_INTERP_MODE::T_INTERP_CUBIC)
+		Extract2DTransformedCubicKernel <<<grid, (int)TpB>>> (d_output, sourcedims, regiondims, d_vecx, d_vecy, d_veccenter);
 
 	cudaStreamQuery(0);
 
@@ -147,11 +148,26 @@ __global__ void Extract2DTransformedLinearKernel(tfloat* d_output, int3 sourcedi
 	{
 		*d_output = tex2D(texExtractInput2d, pos.x, pos.y);
 	}
-
-	//*d_output = pos.y;
 }
 
-__global__ void Extract2DTransformedCubicKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::mat4* d_transform)
+__global__ void Extract2DTransformedCubicKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::vec2* vecx, glm::vec2* vecy, glm::vec2* veccenter)
 {
-	
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if(idx >= regiondims.x)
+		return;
+	int idy = blockIdx.y;
+
+	d_output += blockIdx.z * Elements(regiondims) + getOffset(idx, idy, regiondims.x);
+
+	glm::vec2 pos = veccenter[blockIdx.z] + (vecx[blockIdx.z] * (float)(idx - regiondims.x / 2)) + (vecy[blockIdx.z] * (float)(idy - regiondims.y / 2)) + glm::vec2(0.5f, 0.5f);
+
+	if(pos.x < 0.0f || pos.x > (float)sourcedims.x || pos.y < 0.0f || pos.y > (float)sourcedims.y)
+	{
+		*d_output = (tfloat)0;
+		return;
+	}
+	else
+	{
+		*d_output = cubicTex2D(texExtractInput2d, pos.x, pos.y);
+	}
 }
