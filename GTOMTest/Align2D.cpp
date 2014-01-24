@@ -6,9 +6,9 @@ TEST(Alignment, Align2D)
 
 	//Case 1:
 	{
-		int3 dims = {32, 32, 1};
-		int numdata = 20;
-		int numtargets = 20;
+		int3 dims = {128, 128, 1};
+		int numdata = 10;
+		int numtargets = 10;
 		tfloat* d_inputdata = (tfloat*)CudaMallocFromBinaryFile("Data\\Alignment\\Input_Align2DData_1.bin");
 		tfloat* d_inputtargets = (tfloat*)CudaMallocFromBinaryFile("Data\\Alignment\\Input_Align2DTargets_1.bin");
 		tfloat* h_desiredparams = (tfloat*)MallocFromBinaryFile("Data\\Alignment\\Input_Align2DParams_1.bin");
@@ -17,7 +17,7 @@ TEST(Alignment, Align2D)
 		int* d_outputmembership = CudaMallocValueFilled(numdata, 0);
 		tfloat* d_outputscores = CudaMallocValueFilled(numdata * numtargets, (tfloat)0);
 
-		d_Align2D(d_inputdata, d_inputtargets, dims, numtargets, d_outputparams, d_outputmembership, d_outputscores, 0, ToRad(10), 5, T_ALIGN_MODE::T_ALIGN_ROT, numdata);
+		d_Align2D(d_inputdata, d_inputtargets, dims, numtargets, d_outputparams, d_outputmembership, d_outputscores, 15, ToRad(10), 3, T_ALIGN_MODE::T_ALIGN_BOTH, numdata);
 
 		cudaFree(d_outputscores);
 		cudaFree(d_outputparams);

@@ -8,6 +8,7 @@
 
 void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat3* d_params, int* d_membership, tfloat* d_scores, int maxtranslation, tfloat maxrotation, int iterations, T_ALIGN_MODE mode, int batch)
 {
+	int polarboost = 100;	//Sub-pixel precision for polar correlation peak
 	int padding = max(dims.x / 2 - (int)((tfloat)1 / (sin(min(ToRad(90), ToRad(45) + maxrotation)) / sin(ToRad(45))) * (tfloat)(dims.x / 2)), maxtranslation);
 	int3 effdims = toInt3(dims.x - padding * 2, dims.y - padding * 2, 1);
 	int3 polardims = toInt3(GetCart2PolarSize(toInt2(effdims.x, effdims.y)));
@@ -63,12 +64,20 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 
 	tfloat* d_maskcart = CudaMallocValueFilled(Elements(effdims), (tfloat)1 / (tfloat)Elements(effdims));
 	tfloat* d_maskpolar;
-	cudaMalloc((void**)&d_maskpolar, Elements(polardims) * sizeof(tfloat));
+	cudaMalloc((void**)&d_maskpolar, polardims.y * polarboost * sizeof(tfloat));
 	{
 		tfloat fmaxtranslation = (tfloat)(maxtranslation + 1);
 		d_SphereMask(d_maskcart, d_maskcart, effdims, &fmaxtranslation, (tfloat)1, (tfloat3*)NULL);
-		tfloat* h_maskcart = (tfloat*)MallocFromDeviceArray(d_maskcart, Elements(effdims) * sizeof(tfloat));
-		free(h_maskcart);
+		
+		tfloat* h_maskpolar = MallocValueFilled(polardims.y * polarboost, (tfloat)0);
+		h_maskpolar[0] = (tfloat)1;
+		for(int a = 1; a < (int)ceil(maxrotation / PI2 * (tfloat)(polardims.y * polarboost)); a++)
+		{
+			h_maskpolar[a] = (tfloat)1;
+			h_maskpolar[polardims.y * polarboost - a] = (tfloat)1;
+		}
+		cudaMemcpy(d_maskpolar, h_maskpolar, polardims.y * polarboost * sizeof(tfloat), cudaMemcpyHostToDevice);
+		free(h_maskpolar);
 	}
 
 	#pragma endregion
@@ -83,6 +92,8 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 	cudaMalloc((void**)&d_datapolarFFT, ElementsFFT(polardims) * batch * sizeof(tcomplex));
 	tfloat* d_polarextract;
 	cudaMalloc((void**)&d_polarextract, polardims.y * batch * sizeof(tfloat));
+	tfloat* d_polarextractboost;
+	cudaMalloc((void**)&d_polarextractboost, polardims.y * polarboost * batch * sizeof(tfloat));
 	tfloat3* d_peakpos;
 	cudaMalloc((void**)&d_peakpos, batch * sizeof(tfloat3));
 	tfloat* d_peakvalues;
@@ -90,7 +101,8 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 
 	tfloat3* h_params = (tfloat3*)malloc(batch * sizeof(tfloat3));
 	int* h_membership = (int*)malloc(batch * sizeof(int));
-	tfloat* h_scores = MallocValueFilled(batch * numtargets, (tfloat)0);
+	tfloat* h_scoresrot = MallocValueFilled(batch * numtargets, (tfloat)0);
+	tfloat* h_scorestrans = MallocValueFilled(batch * numtargets, (tfloat)0);
 	tfloat3* h_intermedparams = (tfloat3*)malloc(batch * numtargets * sizeof(tfloat3));
 	for (int t = 0; t < numtargets; t++)
 		cudaMemcpy(h_intermedparams + t * batch, d_params, batch * sizeof(tfloat3), cudaMemcpyDeviceToHost);
@@ -122,18 +134,28 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 				d_ComplexMultiplyByConjVector(d_datapolarFFT, d_targetspolarFFT + ElementsFFT(polardims) * t, d_datapolarFFT, ElementsFFT(polardims), batch);
 				d_IFFTC2R(d_datapolarFFT, d_datapolar, 2, polardims, batch);
 				d_Extract(d_datapolar, d_polarextract, polardims, toInt3(1, polardims.y, 1), toInt3(0, polardims.y / 2, 0), batch);
+				d_Scale(d_polarextract, d_polarextractboost, toInt3(polardims.y, 1, 1), toInt3(polardims.y * polarboost, 1, 1), T_INTERP_FOURIER, NULL, NULL, batch);
 
-				d_Peak(d_polarextract, d_peakpos, d_peakvalues, toInt3(polardims.y, 1, 1), T_PEAK_SUBCOARSE, batch);
+				tfloat* h_polarextractboost = (tfloat*)MallocFromDeviceArray(d_polarextractboost, polardims.y * polarboost * batch * sizeof(tfloat));
+				free(h_polarextractboost);
+
+				d_MultiplyByVector(d_polarextractboost, d_maskpolar, d_polarextractboost, polardims.y * polarboost, batch);
+
+				d_Peak(d_polarextractboost, d_peakpos, d_peakvalues, toInt3(polardims.y * polarboost, 1, 1), T_PEAK_INTEGER, batch);
 
 				cudaMemcpy(h_peakpos, d_peakpos, batch * sizeof(tfloat3), cudaMemcpyDeviceToHost);
 				cudaMemcpy(h_peakvalues, d_peakvalues, batch * sizeof(tfloat), cudaMemcpyDeviceToHost);
 
 				for (int b = 0; b < batch; b++)
 				{
-					if(h_peakvalues[b] > h_scores[batch * t + b])
+					h_peakvalues[b] /= (tfloat)Elements(polardims);
+					if(h_peakvalues[b] > h_scoresrot[batch * t + b])
 					{
-						h_intermedparams[batch * t + b].z = h_peakpos[b].x / (tfloat)polardims.y * PI2;
-						h_scores[batch * t + b] = h_peakvalues[b];
+						if(abs(h_peakpos[b].x - (tfloat)(polardims.y * polarboost)) < h_peakpos[b].x)
+							h_peakpos[b].x = h_peakpos[b].x - (tfloat)(polardims.y * polarboost);
+
+						h_intermedparams[batch * t + b].z = h_peakpos[b].x / (tfloat)(polardims.y * polarboost) * PI2;
+						h_scoresrot[batch * t + b] = h_peakvalues[b];
 					}
 				}
 			}
@@ -166,11 +188,12 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 
 				for (int b = 0; b < batch; b++)
 				{
-					if(h_peakvalues[b] > h_scores[batch * t + b])
+					h_peakvalues[b] /= (tfloat)Elements(effdims);
+					if(h_peakvalues[b] > h_scorestrans[batch * t + b])
 					{
 						h_intermedparams[batch * t + b].x = h_peakpos[b].x;
 						h_intermedparams[batch * t + b].y = h_peakpos[b].y;
-						h_scores[batch * t + b] = h_peakvalues[b];
+						h_scorestrans[batch * t + b] = h_peakvalues[b];
 					}
 				}
 			}
@@ -187,9 +210,9 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 		tfloat bestscore = (tfloat)-999;
 		for (int t = 0; t < numtargets; t++)
 		{
-			if(h_scores[batch * t + b] > bestscore)
+			if(max(h_scoresrot[batch * t + b], h_scorestrans[batch * t + b]) > bestscore)
 			{
-				bestscore = h_scores[batch * t + b];
+				bestscore = max(h_scoresrot[batch * t + b], h_scorestrans[batch * t + b]);
 				h_params[b] = h_intermedparams[batch * t + b];
 				h_membership[b] = t;
 			}
@@ -206,12 +229,14 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 	free(h_peakvalues);
 	free(h_peakpos);
 	free(h_intermedparams);
-	free(h_scores);
+	free(h_scorestrans);
+	free(h_scoresrot);
 	free(h_membership);
 	free(h_params);
 
 	cudaFree(d_peakvalues);
 	cudaFree(d_peakpos);
+	cudaFree(d_polarextractboost);
 	cudaFree(d_polarextract);
 	cudaFree(d_datapolarFFT);
 	cudaFree(d_datacartFFT);

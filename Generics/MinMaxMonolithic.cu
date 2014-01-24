@@ -7,9 +7,9 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-template <class T> __global__ void MinMonoKernel(T* d_input, tuple2<T, int>* d_output, int n, int batch);
+template <class T> __global__ void MinMonoKernel(T* d_input, tuple2<T, size_t>* d_output, int n, int batch);
 template <class T> __global__ void MinMonoKernel(T* d_input, T* d_output, int n, int batch);
-template <class T> __global__ void MaxMonoKernel(T* d_input, tuple2<T, int>* d_output, int n, int batch);
+template <class T> __global__ void MaxMonoKernel(T* d_input, tuple2<T, size_t>* d_output, int n, int batch);
 template <class T> __global__ void MaxMonoKernel(T* d_input, T* d_output, int n, int batch);
 
 
@@ -17,7 +17,7 @@ template <class T> __global__ void MaxMonoKernel(T* d_input, T* d_output, int n,
 //Min//
 ///////
 
-template <class T> void d_MinMonolithic(T* d_input, tuple2<T, int>* d_output, int n, int batch)
+template <class T> void d_MinMonolithic(T* d_input, tuple2<T, size_t>* d_output, int n, int batch)
 {
 	size_t TpB = MonoTpB;
 	size_t totalblocks = min(batch, 32768);
@@ -25,9 +25,9 @@ template <class T> void d_MinMonolithic(T* d_input, tuple2<T, int>* d_output, in
 
 	MinMonoKernel <<<grid, TpB>>> (d_input, d_output, n, batch);
 }
-template void d_MinMonolithic<int>(int* d_input, tuple2<int, int>* d_output, int n, int batch);
-template void d_MinMonolithic<float>(float* d_input, tuple2<float, int>* d_output, int n, int batch);
-template void d_MinMonolithic<double>(double* d_input, tuple2<double, int>* d_output, int n, int batch);
+template void d_MinMonolithic<int>(int* d_input, tuple2<int, size_t>* d_output, int n, int batch);
+template void d_MinMonolithic<float>(float* d_input, tuple2<float, size_t>* d_output, int n, int batch);
+template void d_MinMonolithic<double>(double* d_input, tuple2<double, size_t>* d_output, int n, int batch);
 
 template <class T> void d_MinMonolithic(T* d_input, T* d_output, int n, int batch)
 {
@@ -46,7 +46,7 @@ template void d_MinMonolithic<double>(double* d_input, double* d_output, int n, 
 //Max//
 ///////
 
-template <class T> void d_MaxMonolithic(T* d_input, tuple2<T, int>* d_output, int n, int batch)
+template <class T> void d_MaxMonolithic(T* d_input, tuple2<T, size_t>* d_output, int n, int batch)
 {
 	size_t TpB = MonoTpB;
 	size_t totalblocks = min(batch, 32768);
@@ -54,9 +54,9 @@ template <class T> void d_MaxMonolithic(T* d_input, tuple2<T, int>* d_output, in
 
 	MaxMonoKernel <<<grid, TpB>>> (d_input, d_output, n, batch);
 }
-template void d_MaxMonolithic<int>(int* d_input, tuple2<int, int>* d_output, int n, int batch);
-template void d_MaxMonolithic<float>(float* d_input, tuple2<float, int>* d_output, int n, int batch);
-template void d_MaxMonolithic<double>(double* d_input, tuple2<double, int>* d_output, int n, int batch);
+template void d_MaxMonolithic<int>(int* d_input, tuple2<int, size_t>* d_output, int n, int batch);
+template void d_MaxMonolithic<float>(float* d_input, tuple2<float, size_t>* d_output, int n, int batch);
+template void d_MaxMonolithic<double>(double* d_input, tuple2<double, size_t>* d_output, int n, int batch);
 
 template <class T> void d_MaxMonolithic(T* d_input, T* d_output, int n, int batch)
 {
@@ -75,7 +75,7 @@ template void d_MaxMonolithic<double>(double* d_input, double* d_output, int n, 
 //CUDA kernels//
 ////////////////
 
-template <class T> __global__ void MinMonoKernel(T* d_input, tuple2<T, int>* d_output, int n, int batch)
+template <class T> __global__ void MinMonoKernel(T* d_input, tuple2<T, size_t>* d_output, int n, int batch)
 {
 	__shared__ T values[MonoTpB];
 	__shared__ int locations[MonoTpB];
@@ -103,7 +103,7 @@ template <class T> __global__ void MinMonoKernel(T* d_input, tuple2<T, int>* d_o
 				if(values[i] < values[0])
 				{
 					values[0] = values[i];
-					locations[0] = values[i];
+					locations[0] = locations[i];
 				}
 
 			d_output[b].t1 = values[0];
@@ -137,7 +137,7 @@ template <class T> __global__ void MinMonoKernel(T* d_input, T* d_output, int n,
 	}
 }
 
-template <class T> __global__ void MaxMonoKernel(T* d_input, tuple2<T, int>* d_output, int n, int batch)
+template <class T> __global__ void MaxMonoKernel(T* d_input, tuple2<T, size_t>* d_output, int n, int batch)
 {
 	__shared__ T values[MonoTpB];
 	__shared__ int locations[MonoTpB];
@@ -165,7 +165,7 @@ template <class T> __global__ void MaxMonoKernel(T* d_input, tuple2<T, int>* d_o
 				if(values[i] > values[0])
 				{
 					values[0] = values[i];
-					locations[0] = values[i];
+					locations[0] = locations[i];
 				}
 
 			d_output[b].t1 = values[0];

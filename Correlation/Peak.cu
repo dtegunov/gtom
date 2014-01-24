@@ -18,7 +18,10 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 	tuple2<tfloat, size_t>* d_integerindices;
 	cudaMalloc((void**)&d_integerindices, batch * sizeof(tuple2<tfloat, size_t>));
 
-	d_Max(d_input, d_integerindices, dims.x * dims.y * dims.z, batch);
+	if(batch <= 1)
+		d_Max(d_input, d_integerindices, Elements(dims), batch);
+	else
+		d_MaxMonolithic(d_input, d_integerindices, Elements(dims), batch);
 	tuple2<tfloat, size_t>* h_integerindices = (tuple2<tfloat, size_t>*)MallocFromDeviceArray(d_integerindices, batch * sizeof(tuple2<tfloat, size_t>));
 
 	tfloat3* h_positions = (tfloat3*)malloc(batch * sizeof(tfloat3));

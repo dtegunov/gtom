@@ -99,6 +99,7 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 				d_FFTR2C(d_input + elementsold * b, d_inputFFT, ndims, olddims);
 			else
 				d_FFTR2C(d_input + elementsold * b, d_inputFFT, planforw);
+
 			d_HermitianSymmetryPad(d_inputFFT, d_inputFFT2, olddims);
 			
 			if(newdims.x > olddims.x)

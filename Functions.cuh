@@ -236,9 +236,9 @@ template <class T> void d_Max(T *d_input, tuple2<T, size_t> *d_output, size_t n,
 template <class T> void d_Max(T *d_input, T *d_output, size_t n, int batch = 1);
 
 //MinMaxMonolithic.cu:
-template <class T> void d_MinMonolithic(T* d_input, tuple2<T, int>* d_output, int n, int batch);
+template <class T> void d_MinMonolithic(T* d_input, tuple2<T, size_t>* d_output, int n, int batch);
 template <class T> void d_MinMonolithic(T* d_input, T* d_output, int n, int batch);
-template <class T> void d_MaxMonolithic(T* d_input, tuple2<T, int>* d_output, int n, int batch);
+template <class T> void d_MaxMonolithic(T* d_input, tuple2<T, size_t>* d_output, int n, int batch);
 template <class T> void d_MaxMonolithic(T* d_input, T* d_output, int n, int batch);
 
 //SumMinMax.cu:

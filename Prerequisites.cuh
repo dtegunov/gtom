@@ -145,10 +145,15 @@ template <class T1, class T2> struct tuple2
 
 typedef unsigned int uint;
 
+#ifdef TOM_DOUBLE
 #define PI 3.1415926535897932384626433832795
 #define PI2 6.283185307179586476925286766559
-#define ToRad(x) ((tfloat)(x) / (tfloat)180 * (tfloat)PI)
-#define ToDeg(x) ((tfloat)(x) / (tfloat)PI * (tfloat)180)
+#else
+#define PI 3.1415926535897932384626433832795f
+#define PI2 6.283185307179586476925286766559f
+#endif
+#define ToRad(x) ((tfloat)(x) / (tfloat)180 * PI)
+#define ToDeg(x) ((tfloat)(x) / PI * (tfloat)180)
 
 #define getOffset(x, y, stride) ((y) * (stride) + (x))
 #define getZigzag(x, stride) ((stride - 1) <= 0 ? 0 : (abs((((x) + ((stride - 1) * 99999)) % ((stride - 1) * 2)) - (stride - 1))))
