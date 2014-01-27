@@ -85,34 +85,34 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 	else if(mode == T_INTERP_MODE::T_INTERP_FOURIER)
 	{
 		tcomplex* d_inputFFT;
-		cudaMalloc((void**)&d_inputFFT, elementsoldFFT * sizeof(tcomplex));
+		cudaMalloc((void**)&d_inputFFT, elementsoldFFT * batch * sizeof(tcomplex));
 		tcomplex* d_inputFFT2;
-		cudaMalloc((void**)&d_inputFFT2, elementsold * sizeof(tcomplex));
+		cudaMalloc((void**)&d_inputFFT2, elementsold * batch * sizeof(tcomplex));
 		tcomplex* d_outputFFT;
-		cudaMalloc((void**)&d_outputFFT, elementsnew * sizeof(tcomplex));
+		cudaMalloc((void**)&d_outputFFT, elementsnew * batch * sizeof(tcomplex));
 
 		tfloat normfactor = (tfloat)newdims.x / (tfloat)olddims.x * (tfloat)newdims.y / (tfloat)olddims.y * (tfloat)newdims.z / (tfloat)olddims.z;
 
-		for (int b = 0; b < batch; b++)
+		//for (int b = 0; b < batch; b++)
 		{
 			if(planforw == NULL)
-				d_FFTR2C(d_input + elementsold * b, d_inputFFT, ndims, olddims);
+				d_FFTR2C(d_input, d_inputFFT, ndims, olddims, batch);
 			else
-				d_FFTR2C(d_input + elementsold * b, d_inputFFT, planforw);
+				d_FFTR2C(d_input, d_inputFFT, planforw);
 
-			d_HermitianSymmetryPad(d_inputFFT, d_inputFFT2, olddims);
+			d_HermitianSymmetryPad(d_inputFFT, d_inputFFT2, olddims, batch);
 			
 			if(newdims.x > olddims.x)
-				d_FFTFullPad(d_inputFFT2, d_outputFFT, olddims, newdims);
+				d_FFTFullPad(d_inputFFT2, d_outputFFT, olddims, newdims, batch);
 			else
-				d_FFTFullCrop(d_inputFFT2, d_outputFFT, olddims, newdims);
+				d_FFTFullCrop(d_inputFFT2, d_outputFFT, olddims, newdims, batch);
 
 			if(planback == NULL)
-				d_IFFTC2C(d_outputFFT, d_outputFFT, ndims, newdims);
+				d_IFFTC2C(d_outputFFT, d_outputFFT, ndims, newdims, batch);
 			else
 				d_IFFTC2C(d_outputFFT, d_outputFFT, planback, newdims);
 
-			d_Re(d_outputFFT, d_output + elementsnew * b, elementsnew);
+			d_Re(d_outputFFT, d_output, elementsnew * batch);
 		}
 
 		d_MultiplyByScalar(d_output, d_output, elementsnew * batch, normfactor);

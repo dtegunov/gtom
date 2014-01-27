@@ -17,7 +17,7 @@ TEST(Alignment, Align2D)
 		int* d_outputmembership = CudaMallocValueFilled(numdata, 0);
 		tfloat* d_outputscores = CudaMallocValueFilled(numdata * numtargets, (tfloat)0);
 
-		d_Align2D(d_inputdata, d_inputtargets, dims, numtargets, d_outputparams, d_outputmembership, d_outputscores, 15, ToRad(10), 3, T_ALIGN_MODE::T_ALIGN_BOTH, numdata);
+		d_Align2D(d_inputdata, d_inputtargets, dims, numtargets, d_outputparams, d_outputmembership, d_outputscores, 24, ToRad(10), 3, T_ALIGN_MODE::T_ALIGN_BOTH, numdata);
 
 		cudaFree(d_outputscores);
 		cudaFree(d_outputparams);

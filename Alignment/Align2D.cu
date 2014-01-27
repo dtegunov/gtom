@@ -114,93 +114,147 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 	tfloat2* h_translation = (tfloat2*)malloc(batch * sizeof(tfloat2));
 	tfloat2* d_translation = (tfloat2*)CudaMallocValueFilled(batch * 2, (tfloat)0);
 
-	for (int iteration = 0; iteration < iterations; iteration++)
+	cufftHandle planforwTrans, planbackTrans;
+	cufftHandle planforwRot, planbackRot;
+	if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
 	{
-		if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
-		{
-			for (int t = 0; t < numtargets; t++)
-			{
-				memcpy(h_params, h_intermedparams + batch * t, batch * sizeof(tfloat3));
-				for (int b = 0; b < batch; b++)
-					h_translation[b] = tfloat2((tfloat)(h_atlascoords[b].x + padding) + h_params[b].x, (tfloat)(h_atlascoords[b].y + padding) + h_params[b].y);
-				cudaMemcpy(d_translation, h_translation, batch * sizeof(tfloat2), cudaMemcpyHostToDevice);
+		planforwRot = d_FFTR2CGetPlan(2, polardims, batch);
+		planbackRot = d_IFFTC2RGetPlan(2, polardims, batch);
+	}
+	if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
+	{
+		planforwTrans = d_FFTR2CGetPlan(2, effdims, batch);
+		planbackTrans = d_IFFTC2RGetPlan(2, effdims, batch);
+	}
 
-				d_CartAtlas2Polar(d_atlas, d_datapolar, d_translation, toInt2(atlasdims.x, atlasdims.y), toInt2(effdims.x, effdims.y), T_INTERP_LINEAR, batch);
-				tfloat* h_datapolar = (tfloat*)MallocFromDeviceArray(d_datapolar, Elements(polardims) * batch * sizeof(tfloat));
-				free(h_datapolar);
-
-				d_NormMonolithic(d_datapolar, d_datapolar, Elements(polardims), T_NORM_MEAN01STD, batch);
-				d_FFTR2C(d_datapolar, d_datapolarFFT, 2, polardims, batch);
-				d_ComplexMultiplyByConjVector(d_datapolarFFT, d_targetspolarFFT + ElementsFFT(polardims) * t, d_datapolarFFT, ElementsFFT(polardims), batch);
-				d_IFFTC2R(d_datapolarFFT, d_datapolar, 2, polardims, batch);
-				d_Extract(d_datapolar, d_polarextract, polardims, toInt3(1, polardims.y, 1), toInt3(0, polardims.y / 2, 0), batch);
-				d_Scale(d_polarextract, d_polarextractboost, toInt3(polardims.y, 1, 1), toInt3(polardims.y * polarboost, 1, 1), T_INTERP_FOURIER, NULL, NULL, batch);
-
-				tfloat* h_polarextractboost = (tfloat*)MallocFromDeviceArray(d_polarextractboost, polardims.y * polarboost * batch * sizeof(tfloat));
-				free(h_polarextractboost);
-
-				d_MultiplyByVector(d_polarextractboost, d_maskpolar, d_polarextractboost, polardims.y * polarboost, batch);
-
-				d_Peak(d_polarextractboost, d_peakpos, d_peakvalues, toInt3(polardims.y * polarboost, 1, 1), T_PEAK_INTEGER, batch);
-
-				cudaMemcpy(h_peakpos, d_peakpos, batch * sizeof(tfloat3), cudaMemcpyDeviceToHost);
-				cudaMemcpy(h_peakvalues, d_peakvalues, batch * sizeof(tfloat), cudaMemcpyDeviceToHost);
-
-				for (int b = 0; b < batch; b++)
-				{
-					h_peakvalues[b] /= (tfloat)Elements(polardims);
-					if(h_peakvalues[b] > h_scoresrot[batch * t + b])
-					{
-						if(abs(h_peakpos[b].x - (tfloat)(polardims.y * polarboost)) < h_peakpos[b].x)
-							h_peakpos[b].x = h_peakpos[b].x - (tfloat)(polardims.y * polarboost);
-
-						h_intermedparams[batch * t + b].z = h_peakpos[b].x / (tfloat)(polardims.y * polarboost) * PI2;
-						h_scoresrot[batch * t + b] = h_peakvalues[b];
-					}
-				}
-			}
-		}
-
-		if(mode & T_ALIGN_MODE::T_ALIGN_TRANS)
+	if(iterations == 0 && mode == T_ALIGN_BOTH)
+	{
+		for(double a = (double)-maxrotation; a < (double)maxrotation; a += (double)ToRad(0.5))
 		{
 			for (int t = 0; t < numtargets; t++)
 			{
 				memcpy(h_params, h_intermedparams + batch * t, batch * sizeof(tfloat3));
 				for (int b = 0; b < batch; b++)
 				{
-					h_rotation[b] = h_params[b].z;
+					h_rotation[b] = (tfloat)a;
 					h_translation[b] = tfloat2((tfloat)h_atlascoords[b].x + (tfloat)(dims.x / 2), (tfloat)h_atlascoords[b].y + (tfloat)(dims.y / 2));
 				}
 
 				d_Extract2DTransformed(d_atlas, d_datacart, atlasdims, effdims, h_scale, h_rotation, h_translation, T_INTERP_LINEAR, batch);
 				d_NormMonolithic(d_datacart, d_datacart, Elements(effdims), T_NORM_MEAN01STD, batch);
-				d_FFTR2C(d_datacart, d_datacartFFT, 2, effdims, batch);
+				d_FFTR2C(d_datacart, d_datacartFFT, &planforwTrans);
 				d_ComplexMultiplyByConjVector(d_datacartFFT, d_targetscartFFT + ElementsFFT(effdims) * t, d_datacartFFT, ElementsFFT(effdims), batch);
-				d_IFFTC2R(d_datacartFFT, d_datacart, 2, effdims, batch);
+				d_IFFTC2R(d_datacartFFT, d_datacart, &planbackTrans, effdims);
 				d_RemapFullFFT2Full(d_datacart, d_datacart, effdims, batch);
 				d_MultiplyByVector(d_datacart, d_maskcart, d_datacart, Elements(effdims), batch);
 
-				d_Peak(d_datacart, d_peakpos, d_peakvalues, effdims, T_PEAK_SUBCOARSE, batch);
+				d_Peak(d_datacart, d_peakpos, d_peakvalues, effdims, T_PEAK_INTEGER, batch);
 				d_SubtractScalar((tfloat*)d_peakpos, (tfloat*)d_peakpos, batch * 3, (tfloat)(effdims.x / 2));
+				d_MultiplyByScalar(d_peakvalues, d_peakvalues, batch, (tfloat)1 / (tfloat)Elements(effdims));
 
 				cudaMemcpy(h_peakpos, d_peakpos, batch * sizeof(tfloat3), cudaMemcpyDeviceToHost);
 				cudaMemcpy(h_peakvalues, d_peakvalues, batch * sizeof(tfloat), cudaMemcpyDeviceToHost);
 
 				for (int b = 0; b < batch; b++)
 				{
-					h_peakvalues[b] /= (tfloat)Elements(effdims);
 					if(h_peakvalues[b] > h_scorestrans[batch * t + b])
 					{
 						h_intermedparams[batch * t + b].x = h_peakpos[b].x;
 						h_intermedparams[batch * t + b].y = h_peakpos[b].y;
+						h_intermedparams[batch * t + b].z = (tfloat)a;
 						h_scorestrans[batch * t + b] = h_peakvalues[b];
 					}
 				}
 			}
 		}
+	}
+	else
+	{
+		for (int iteration = 0; iteration < iterations; iteration++)
+		{
+			if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
+			{
+				for (int t = 0; t < numtargets; t++)
+				{
+					memcpy(h_params, h_intermedparams + batch * t, batch * sizeof(tfloat3));
+					for (int b = 0; b < batch; b++)
+						h_translation[b] = tfloat2((tfloat)(h_atlascoords[b].x + padding) + h_params[b].x, (tfloat)(h_atlascoords[b].y + padding) + h_params[b].y);
+					cudaMemcpy(d_translation, h_translation, batch * sizeof(tfloat2), cudaMemcpyHostToDevice);
 
-		if(mode != T_ALIGN_BOTH)
-			break;
+					d_CartAtlas2Polar(d_atlas, d_datapolar, d_translation, toInt2(atlasdims.x, atlasdims.y), toInt2(effdims.x, effdims.y), T_INTERP_LINEAR, batch);
+					tfloat* h_datapolar = (tfloat*)MallocFromDeviceArray(d_datapolar, Elements(polardims) * batch * sizeof(tfloat));
+					free(h_datapolar);
+
+					d_NormMonolithic(d_datapolar, d_datapolar, Elements(polardims), T_NORM_MEAN01STD, batch);
+					d_FFTR2C(d_datapolar, d_datapolarFFT, &planforwRot);
+					d_ComplexMultiplyByConjVector(d_datapolarFFT, d_targetspolarFFT + ElementsFFT(polardims) * t, d_datapolarFFT, ElementsFFT(polardims), batch);
+					d_IFFTC2R(d_datapolarFFT, d_datapolar, &planbackRot, polardims);
+					d_Extract(d_datapolar, d_polarextract, polardims, toInt3(1, polardims.y, 1), toInt3(0, polardims.y / 2, 0), batch);
+					d_Scale(d_polarextract, d_polarextractboost, toInt3(polardims.y, 1, 1), toInt3(polardims.y * polarboost, 1, 1), T_INTERP_FOURIER, NULL, NULL, batch);
+
+					d_MultiplyByVector(d_polarextractboost, d_maskpolar, d_polarextractboost, polardims.y * polarboost, batch);
+					d_Peak(d_polarextractboost, d_peakpos, d_peakvalues, toInt3(polardims.y * polarboost, 1, 1), T_PEAK_INTEGER, batch);
+					d_MultiplyByScalar(d_peakvalues, d_peakvalues, batch, (tfloat)1 / (tfloat)Elements(polardims));
+
+					cudaMemcpy(h_peakpos, d_peakpos, batch * sizeof(tfloat3), cudaMemcpyDeviceToHost);
+					cudaMemcpy(h_peakvalues, d_peakvalues, batch * sizeof(tfloat), cudaMemcpyDeviceToHost);
+
+					for (int b = 0; b < batch; b++)
+					{
+						h_peakvalues[b] /= (tfloat)Elements(polardims);
+						if(h_peakvalues[b] > h_scoresrot[batch * t + b])
+						{
+							if(abs(h_peakpos[b].x - (tfloat)(polardims.y * polarboost)) < h_peakpos[b].x)
+								h_peakpos[b].x = h_peakpos[b].x - (tfloat)(polardims.y * polarboost);
+
+							h_intermedparams[batch * t + b].z = h_peakpos[b].x / (tfloat)(polardims.y * polarboost) * PI2;
+							h_scoresrot[batch * t + b] = h_peakvalues[b];
+						}
+					}
+				}
+			}
+
+			if(mode & T_ALIGN_MODE::T_ALIGN_TRANS)
+			{
+				for (int t = 0; t < numtargets; t++)
+				{
+					memcpy(h_params, h_intermedparams + batch * t, batch * sizeof(tfloat3));
+					for (int b = 0; b < batch; b++)
+					{
+						h_rotation[b] = h_params[b].z;
+						h_translation[b] = tfloat2((tfloat)h_atlascoords[b].x + (tfloat)(dims.x / 2), (tfloat)h_atlascoords[b].y + (tfloat)(dims.y / 2));
+					}
+
+					d_Extract2DTransformed(d_atlas, d_datacart, atlasdims, effdims, h_scale, h_rotation, h_translation, T_INTERP_LINEAR, batch);
+					d_NormMonolithic(d_datacart, d_datacart, Elements(effdims), T_NORM_MEAN01STD, batch);
+					d_FFTR2C(d_datacart, d_datacartFFT, &planforwTrans);
+					d_ComplexMultiplyByConjVector(d_datacartFFT, d_targetscartFFT + ElementsFFT(effdims) * t, d_datacartFFT, ElementsFFT(effdims), batch);
+					d_IFFTC2R(d_datacartFFT, d_datacart, &planbackTrans, effdims);
+					d_RemapFullFFT2Full(d_datacart, d_datacart, effdims, batch);
+					d_MultiplyByVector(d_datacart, d_maskcart, d_datacart, Elements(effdims), batch);
+
+					d_Peak(d_datacart, d_peakpos, d_peakvalues, effdims, T_PEAK_SUBCOARSE, batch);
+					d_SubtractScalar((tfloat*)d_peakpos, (tfloat*)d_peakpos, batch * 3, (tfloat)(effdims.x / 2));
+					d_MultiplyByScalar(d_peakvalues, d_peakvalues, batch, (tfloat)1 / (tfloat)Elements(effdims));
+
+					cudaMemcpy(h_peakpos, d_peakpos, batch * sizeof(tfloat3), cudaMemcpyDeviceToHost);
+					cudaMemcpy(h_peakvalues, d_peakvalues, batch * sizeof(tfloat), cudaMemcpyDeviceToHost);
+
+					for (int b = 0; b < batch; b++)
+					{
+						if(h_peakvalues[b] > h_scorestrans[batch * t + b])
+						{
+							h_intermedparams[batch * t + b].x = h_peakpos[b].x;
+							h_intermedparams[batch * t + b].y = h_peakpos[b].y;
+							h_scorestrans[batch * t + b] = h_peakvalues[b];
+						}
+					}
+				}
+			}
+
+			if(mode != T_ALIGN_BOTH)
+				break;
+		}
 	}
 
 	#pragma region AssignMembership
@@ -233,6 +287,17 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 	free(h_scoresrot);
 	free(h_membership);
 	free(h_params);
+	
+	if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
+	{
+		cufftDestroy(planforwRot);
+		cufftDestroy(planbackRot);
+	}
+	if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
+	{
+		cufftDestroy(planforwTrans);
+		cufftDestroy(planbackTrans);
+	}
 
 	cudaFree(d_peakvalues);
 	cudaFree(d_peakpos);

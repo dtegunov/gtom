@@ -345,7 +345,7 @@ void d_HermitianSymmetryPad(tcomplex* const d_input, tcomplex* const d_output, i
 void d_HermitianSymmetryTrim(tcomplex* const d_input, tcomplex* const d_output, int3 const dimensions, int batch = 1);
 
 //FFTRemap.cu:
-template <class T> void d_RemapFull2HalfFFT(T* d_input, T* d_output, int3 dims);
+template <class T> void d_RemapFull2HalfFFT(T* d_input, T* d_output, int3 dims, int batch = 1);
 template <class T> void d_RemapFullFFT2Full(T* d_input, T* d_output, int3 dims, int batch = 1);
 template <class T> void d_RemapFull2FullFFT(T* d_input, T* d_output, int3 dims, int batch = 1);
 

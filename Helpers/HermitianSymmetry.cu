@@ -1,11 +1,11 @@
 #include "../Prerequisites.cuh"
 #include "../Functions.cuh"
 
-__global__ void HermitianSymmetryPad2DFirstKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions);
-__global__ void HermitianSymmetryPad3DFirstKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions);
-__global__ void HermitianSymmetryPad2DSecondKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions);
-__global__ void HermitianSymmetryPad3DSecondKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions);
-__global__ void HermitianSymmetryTrimKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions);
+__global__ void HermitianSymmetryPad2DFirstKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull);
+__global__ void HermitianSymmetryPad3DFirstKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull);
+__global__ void HermitianSymmetryPad2DSecondKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull);
+__global__ void HermitianSymmetryPad3DSecondKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull);
+__global__ void HermitianSymmetryTrimKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull);
 
 
 ////////////////////
@@ -17,87 +17,75 @@ void d_HermitianSymmetryPad(tcomplex* const d_input, tcomplex* const d_output, i
 	size_t elementsFull = Elements(dims);
 	size_t elementsTrimmed = ElementsFFT(dims);
 
-	int TpB = 256;
-	dim3 grid = dim3((dims.x / 2 + 1 + TpB - 1) / TpB, dims.y, dims.z);
-	for (int b = 0; b < batch; b++)
-		if(dims.z > 1)
-			HermitianSymmetryPad3DFirstKernel <<<grid, TpB>>> (d_input + elementsTrimmed * b, d_output + elementsFull * b, toUint3(dims.x, dims.y, dims.z));
-		else
-			HermitianSymmetryPad2DFirstKernel <<<grid, TpB>>> (d_input + elementsTrimmed * b, d_output + elementsFull * b, toUint3(dims.x, dims.y, dims.z));
+	int TpB = min(128, NextMultipleOf(dims.x / 2 + 1, 32));
+	dim3 grid = dim3(dims.y, dims.z, batch);
+	if(dims.z > 1)
+		HermitianSymmetryPad3DFirstKernel <<<grid, TpB>>> (d_input, d_output, toUint3(dims.x, dims.y, dims.z), elementsTrimmed, elementsFull);
+	else
+		HermitianSymmetryPad2DFirstKernel <<<grid, TpB>>> (d_input, d_output, toUint3(dims.x, dims.y, dims.z), elementsTrimmed, elementsFull);
 	cudaStreamQuery(0);
-	grid = dim3((dims.x / 2 + TpB - 1) / TpB, dims.y, dims.z);
-	for (int b = 0; b < batch; b++)
-		if(dims.z > 1)
-			HermitianSymmetryPad3DSecondKernel <<<grid, TpB>>> (d_input + elementsTrimmed * b, d_output + elementsFull * b, toUint3(dims.x, dims.y, dims.z));
-		else
-			HermitianSymmetryPad2DSecondKernel <<<grid, TpB>>> (d_input + elementsTrimmed * b, d_output + elementsFull * b, toUint3(dims.x, dims.y, dims.z));
+
+	TpB = min(128, NextMultipleOf(dims.x / 2, 32));
+	grid = dim3(dims.y, dims.z, batch);
+	if(dims.z > 1)
+		HermitianSymmetryPad3DSecondKernel <<<grid, TpB>>> (d_input, d_output, toUint3(dims.x, dims.y, dims.z), elementsTrimmed, elementsFull);
+	else
+		HermitianSymmetryPad2DSecondKernel <<<grid, TpB>>> (d_input, d_output, toUint3(dims.x, dims.y, dims.z), elementsTrimmed, elementsFull);
 	cudaStreamQuery(0);
 }
 
-__global__ void HermitianSymmetryPad2DFirstKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions)
+__global__ void HermitianSymmetryPad2DFirstKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull)
 {
-	uint x = blockIdx.x * blockDim.x + threadIdx.x;
-	if(x >= dimensions.x / 2 + 1)
-		return;
-	uint y = blockIdx.y;
+	d_input += elementsTrimmed * blockIdx.z;
+	d_output += elementsFull * blockIdx.z;
 
-	d_output[y * dimensions.x + x] = d_input[y * (dimensions.x / 2 + 1) + x];
+	for(uint x = threadIdx.x; x < elementsTrimmed; x += blockDim.x)
+		d_output[blockIdx.x * dimensions.x + x] = d_input[blockIdx.x * (dimensions.x / 2 + 1) + x];
 }
 
-__global__ void HermitianSymmetryPad3DFirstKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions)
+__global__ void HermitianSymmetryPad3DFirstKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull)
 {
-	uint x = blockIdx.x * blockDim.x + threadIdx.x;
-	if(x >= dimensions.x / 2 + 1)
-		return;
-	uint y = blockIdx.y;
-	uint z = blockIdx.z;
+	d_input += elementsTrimmed * blockIdx.z;
+	d_output += elementsFull * blockIdx.z;
 
-	d_output[(z * dimensions.y + y) * dimensions.x + x] = d_input[(z * dimensions.y + y) * (dimensions.x / 2 + 1) + x];
-}
-
-__global__ void HermitianSymmetryPad2DSecondKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions)
-{
-	uint x = blockIdx.x * blockDim.x + threadIdx.x + (dimensions.x / 2 + 1);
-	if(x >= dimensions.x)
-		return;
-	uint y = blockIdx.y;
-	
-	__shared__ uint warpoutputoffset;
-	__shared__ uint warpinputoffset;
-
-	if(threadIdx.x == 0)
+	for(uint x = threadIdx.x; x < elementsTrimmed; x += blockDim.x)
 	{
-		warpoutputoffset = y * dimensions.x;
-		warpinputoffset = ((dimensions.y - y) % dimensions.y) * (dimensions.x / 2 + 1);
-	}
-	__syncthreads();
+		uint y = blockIdx.x;
+		uint z = blockIdx.y;
 
-	tcomplex val = d_input[warpinputoffset + (dimensions.x - x)];
-	val.y = -val.y;
-	d_output[warpoutputoffset + x] = val;
+		d_output[(z * dimensions.y + y) * dimensions.x + x] = d_input[(z * dimensions.y + y) * (dimensions.x / 2 + 1) + x];
+	}
 }
 
-__global__ void HermitianSymmetryPad3DSecondKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions)
+__global__ void HermitianSymmetryPad2DSecondKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull)
 {
-	uint x = blockIdx.x * blockDim.x + threadIdx.x + (dimensions.x / 2 + 1);
-	if(x >= dimensions.x)
-		return;
-	uint y = blockIdx.y;
-	uint z = blockIdx.z;
-	
-	__shared__ uint warpoutputoffset;
-	__shared__ uint warpinputoffset;
+	d_input += elementsTrimmed * blockIdx.z;
+	d_output += elementsFull * blockIdx.z;
 
-	if(threadIdx.x == 0)
+	for(uint x = threadIdx.x + (dimensions.x / 2 + 1); x < dimensions.x; x += blockDim.x)
 	{
-		warpoutputoffset = (z * dimensions.y + y) * dimensions.x;
-		warpinputoffset = (((dimensions.z - z) % dimensions.z) * dimensions.y + ((dimensions.y - y) % dimensions.y)) * (dimensions.x / 2 + 1);
-	}
-	__syncthreads();
+		uint y = blockIdx.x;
 
-	tcomplex val = d_input[warpinputoffset + (dimensions.x - x)];
-	val.y = -val.y;
-	d_output[warpoutputoffset + x] = val;
+		tcomplex val = d_input[((dimensions.y - y) % dimensions.y) * (dimensions.x / 2 + 1) + (dimensions.x - x)];
+		val.y = -val.y;
+		d_output[y * dimensions.x + x] = val;
+	}
+}
+
+__global__ void HermitianSymmetryPad3DSecondKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull)
+{
+	d_input += elementsTrimmed * blockIdx.z;
+	d_output += elementsFull * blockIdx.z;
+
+	for(uint x = threadIdx.x + (dimensions.x / 2 + 1); x < dimensions.x; x += blockDim.x)
+	{
+		uint y = blockIdx.x;
+		uint z = blockIdx.y;
+
+		tcomplex val = d_input[(((dimensions.z - z) % dimensions.z) * dimensions.y + ((dimensions.y - y) % dimensions.y)) * (dimensions.x / 2 + 1) + (dimensions.x - x)];
+		val.y = -val.y;
+		d_output[(z * dimensions.y + y) * dimensions.x + x] = val;
+	}
 }
 
 
@@ -107,21 +95,24 @@ __global__ void HermitianSymmetryPad3DSecondKernel(tcomplex* const d_input, tcom
 
 void d_HermitianSymmetryTrim(tcomplex* const d_input, tcomplex* const d_output, int3 const dims, int batch)
 {
-	int TpB = 256;
-	dim3 grid = dim3(((dims.x / 2 + 1) + TpB - 1) / TpB, dims.y, dims.z);
+	int TpB = min(256, NextMultipleOf(dims.x / 2 + 1, 32));
+	dim3 grid = dim3(dims.y, dims.z, batch);
 	size_t elementsFull = Elements(dims);
 	size_t elementsTrimmed = ElementsFFT(dims);
-	for (int b = 0; b < batch; b++)
-		HermitianSymmetryTrimKernel <<<grid, TpB>>> (d_input + elementsFull * b, d_output + elementsTrimmed * b, toUint3(dims.x, dims.y, dims.z));
+
+	HermitianSymmetryTrimKernel <<<grid, TpB>>> (d_input, d_output, toUint3(dims.x, dims.y, dims.z), elementsTrimmed, elementsFull);
 }
 
-__global__ void HermitianSymmetryTrimKernel(tcomplex* const d_input, tcomplex* const d_output, uint3 const dimensions)
+__global__ void HermitianSymmetryTrimKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull)
 {
-	uint x = blockIdx.x * blockDim.x + threadIdx.x;
-	if(x >= dimensions.x / 2 + 1)
-		return;
-	uint y = blockIdx.y;
-	uint z = blockIdx.z;
+	d_input += elementsFull * blockIdx.z;
+	d_output += elementsTrimmed * blockIdx.z;
+
+	for(uint x = threadIdx.x; x < dimensions.x / 2 + 1; x += blockDim.x)
+	{
+		uint y = blockIdx.x;
+		uint z = blockIdx.y;
 	
-	d_output[(z * dimensions.y + y) * (dimensions.x / 2 + 1) + x] = d_input[(z * dimensions.y + y) * dimensions.x + x];
+		d_output[(z * dimensions.y + y) * (dimensions.x / 2 + 1) + x] = d_input[(z * dimensions.y + y) * dimensions.x + x];
+	}
 }
