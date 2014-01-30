@@ -39,7 +39,7 @@ __global__ void HermitianSymmetryPad2DFirstKernel(tcomplex* d_input, tcomplex* d
 	d_input += elementsTrimmed * blockIdx.z;
 	d_output += elementsFull * blockIdx.z;
 
-	for(uint x = threadIdx.x; x < elementsTrimmed; x += blockDim.x)
+	for(uint x = threadIdx.x; x < dimensions.x / 2 + 1; x += blockDim.x)
 		d_output[blockIdx.x * dimensions.x + x] = d_input[blockIdx.x * (dimensions.x / 2 + 1) + x];
 }
 
@@ -48,7 +48,7 @@ __global__ void HermitianSymmetryPad3DFirstKernel(tcomplex* d_input, tcomplex* d
 	d_input += elementsTrimmed * blockIdx.z;
 	d_output += elementsFull * blockIdx.z;
 
-	for(uint x = threadIdx.x; x < elementsTrimmed; x += blockDim.x)
+	for(uint x = threadIdx.x; x < dimensions.x / 2 + 1; x += blockDim.x)
 	{
 		uint y = blockIdx.x;
 		uint z = blockIdx.y;
