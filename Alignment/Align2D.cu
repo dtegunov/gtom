@@ -6,7 +6,7 @@
 //Equivalent of tom_os3_alignStack//
 ////////////////////////////////////
 
-void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat3* d_params, int* d_membership, tfloat* d_scores, int maxtranslation, tfloat maxrotation, int iterations, T_ALIGN_MODE mode, int batch)
+void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat3* h_params, int* h_membership, tfloat* h_scores, int maxtranslation, tfloat maxrotation, int iterations, T_ALIGN_MODE mode, int batch)
 {
 	int polarboost = 100;	//Sub-pixel precision for polar correlation peak
 	int padding = max(dims.x / 2 - (int)((tfloat)1 / (sin(min(ToRad(90), ToRad(45) + maxrotation)) / sin(ToRad(45))) * (tfloat)(dims.x / 2)), maxtranslation);
@@ -99,13 +99,11 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 	tfloat* d_peakvalues;
 	cudaMalloc((void**)&d_peakvalues, batch * sizeof(tfloat));
 
-	tfloat3* h_params = (tfloat3*)malloc(batch * sizeof(tfloat3));
-	int* h_membership = (int*)malloc(batch * sizeof(int));
 	tfloat* h_scoresrot = MallocValueFilled(batch * numtargets, (tfloat)0);
 	tfloat* h_scorestrans = MallocValueFilled(batch * numtargets, (tfloat)0);
 	tfloat3* h_intermedparams = (tfloat3*)malloc(batch * numtargets * sizeof(tfloat3));
 	for (int t = 0; t < numtargets; t++)
-		cudaMemcpy(h_intermedparams + t * batch, d_params, batch * sizeof(tfloat3), cudaMemcpyDeviceToHost);
+		memcpy(h_intermedparams + t * batch, h_params, batch * sizeof(tfloat3));
 	tfloat3* h_peakpos = (tfloat3*)malloc(batch * sizeof(tfloat3));
 	tfloat* h_peakvalues = (tfloat*)malloc(batch * sizeof(tfloat));
 
@@ -271,6 +269,7 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 				h_membership[b] = t;
 			}
 		}
+		h_scores[b] = bestscore;
 	}
 
 	#pragma endregion
@@ -285,8 +284,6 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 	free(h_intermedparams);
 	free(h_scorestrans);
 	free(h_scoresrot);
-	free(h_membership);
-	free(h_params);
 	
 	if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
 	{
