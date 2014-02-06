@@ -166,7 +166,9 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 			}
 		}
 	}
-	else
+	//else
+	if(iterations == 0)
+		iterations = 1;
 	{
 		for (int iteration = 0; iteration < iterations; iteration++)
 		{

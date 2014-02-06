@@ -272,7 +272,7 @@ enum T_ALIGN_MODE
 	T_ALIGN_TRANS = 1 << 1,
 	T_ALIGN_BOTH = 3
 };
-void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat3* d_params, int* d_membership, tfloat* d_scores, int maxtranslation, tfloat maxrotation, int iterations, T_ALIGN_MODE mode, int batch);
+void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat3* h_params, int* h_membership, tfloat* h_scores, int maxtranslation, tfloat maxrotation, int iterations, T_ALIGN_MODE mode, int batch);
 
 
 ///////////////////////
