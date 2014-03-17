@@ -8,6 +8,7 @@
 template <class T> __global__ void RemapFull2HalfFFTKernel(T* d_input, T* d_output, int3 dims);
 template <class T> __global__ void RemapFullFFT2FullKernel(T* d_input, T* d_output, int3 dims);
 template <class T> __global__ void RemapFull2FullFFTKernel(T* d_input, T* d_output, int3 dims);
+template <class T> __global__ void RemapHalfFFT2HalfKernel(T* d_input, T* d_output, ushort3 dims, uint elements, uint elementsxy);
 
 
 ////////////////
@@ -81,6 +82,34 @@ template void d_RemapFull2FullFFT<tfloat>(tfloat* d_input, tfloat* d_output, int
 template void d_RemapFull2FullFFT<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 dims, int batch);
 template void d_RemapFull2FullFFT<int>(int* d_input, int* d_output, int3 dims, int batch);
 
+template <class T> void d_RemapHalfFFT2Half(T* d_input, T* d_output, int3 dims, int batch)
+{
+	size_t elements = ElementsFFT(dims);
+	T* d_intermediate = NULL;
+	if(d_input == d_output)
+		cudaMalloc((void**)&d_intermediate, elements * batch * sizeof(T));
+
+	int TpB = 192;
+	dim3 grid = dim3(min(32768, (ElementsFFT(dims) + TpB - 1) / TpB), 1, batch);
+	if(d_input != d_output)
+	{
+		RemapHalfFFT2HalfKernel <<<grid, TpB>>> (d_input, d_output, make_ushort3(dims.x / 2 + 1, dims.y, dims.z), ElementsFFT(dims), (dims.x / 2 + 1) * dims.y);
+		cudaStreamQuery(0);
+	}
+	else		
+	{
+		RemapHalfFFT2HalfKernel <<<grid, TpB>>> (d_input, d_intermediate, make_ushort3(dims.x / 2 + 1, dims.y, dims.z), ElementsFFT(dims), (dims.x / 2 + 1) * dims.y);
+		cudaMemcpy(d_output, d_intermediate, elements * batch * sizeof(T), cudaMemcpyDeviceToDevice);
+		cudaStreamQuery(0);
+	}
+
+	if(d_input == d_output)
+		cudaFree(d_intermediate);
+}
+template void d_RemapHalfFFT2Half<tfloat>(tfloat* d_input, tfloat* d_output, int3 dims, int batch);
+template void d_RemapHalfFFT2Half<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 dims, int batch);
+template void d_RemapHalfFFT2Half<int>(int* d_input, int* d_output, int3 dims, int batch);
+
 
 ////////////////
 //CUDA kernels//
@@ -128,5 +157,20 @@ template <class T> __global__ void RemapFull2FullFFTKernel(T* d_input, T* d_outp
 		uint rz = ((blockIdx.y + (dims.z + 1) / 2) % dims.z);
 
 		d_output[(rz * dims.y + ry) * dims.x + rx] = d_input[(blockIdx.y * dims.y + blockIdx.x) * dims.x + x];
+	}
+}
+
+template <class T> __global__ void RemapHalfFFT2HalfKernel(T* d_input, T* d_output, ushort3 dims, uint elements, uint elementsxy)
+{
+	d_input += elements * blockIdx.z;
+	d_output += elements * blockIdx.z;
+
+	for(uint id = blockIdx.x * blockDim.x + threadIdx.x; id < elements; id += 32768 * 192)
+	{	
+		/*ushort rx = (dims.x - 1 - (id % (uint)dims.x));
+		ushort ry = (((id - elementsxy * (id / elementsxy)) / dims.x + dims.y / 2) % dims.y);
+		ushort rz = ((id / elementsxy + dims.z / 2) % dims.z);*/
+
+		d_output[(((id / elementsxy + dims.z / 2) % dims.z) * dims.y + (((id - elementsxy * (id / elementsxy)) / dims.x + dims.y / 2) % dims.y)) * dims.x + (dims.x - 1 - (id % (uint)dims.x))] = d_input[id];
 	}
 }

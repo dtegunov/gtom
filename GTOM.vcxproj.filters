@@ -43,6 +43,9 @@
     <Filter Include="BinaryManipulation">
       <UniqueIdentifier>{532ff7b2-7efc-429c-b2e4-60e7003d8d65}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resolution">
+      <UniqueIdentifier>{f7ebed85-3baa-426a-be58-68d516779eff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CubicSplines\internal\cutil_math_bugfixes.h">
@@ -68,6 +71,9 @@
       <Filter>Headers</Filter>
     </None>
     <None Include="DeviceFunctions.cuh">
+      <Filter>Headers</Filter>
+    </None>
+    <None Include="GLMFunctions.cuh">
       <Filter>Headers</Filter>
     </None>
   </ItemGroup>
@@ -209,6 +215,33 @@
     </CudaCompile>
     <CudaCompile Include="Generics\LocalStdDev.cu">
       <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Masking\Windows.cu">
+      <Filter>Masking</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Resolution\FSC.cu">
+      <Filter>Resolution</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Generics\Reductions.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Generics\IndexOf.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Resolution\LocalFSC.cu">
+      <Filter>Resolution</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Generics\Histogram.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="ImageManipulation\LocalLowpass.cu">
+      <Filter>Image Manipulation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Alignment\Align3D.cu">
+      <Filter>Alignment</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Transformation\Rotation.cu">
+      <Filter>Transformation</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

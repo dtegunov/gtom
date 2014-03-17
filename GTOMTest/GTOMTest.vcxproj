@@ -155,7 +155,10 @@
     <ClCompile Include="FFTRemap.cpp" />
     <ClCompile Include="FFTResize.cpp" />
     <ClCompile Include="Forward.cpp" />
+    <ClCompile Include="FSC.cpp" />
     <ClCompile Include="Helper.cpp" />
+    <ClCompile Include="Histogram.cpp" />
+    <ClCompile Include="LocalFSC.cpp" />
     <ClCompile Include="LocalPeaks.cpp" />
     <ClCompile Include="Padding.cpp" />
     <ClCompile Include="Peak.cpp" />

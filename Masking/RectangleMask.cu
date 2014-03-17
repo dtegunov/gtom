@@ -6,19 +6,19 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-template <class T> __global__ void RectangleMaskKernel(T const* const d_input, T* const d_output, int3 const size, int2 const limx, int2 const limy, int2 const limz);
+template <class T> __global__ void RectangleMaskKernel(T* d_input, T* d_output, int3 size, int2 limx, int2 limy, int2 limz);
 
 
 ////////////////
 //Host methods//
 ////////////////
 
-template <class T> void d_RectangleMask(T const* const d_input, 
-										T* const d_output, 
-										int3 const size,
-										int3 const rectsize,
-										tfloat const sigma,
-										int3 const* const center,
+template <class T> void d_RectangleMask(T* d_input, 
+										T* d_output, 
+										int3 size,
+										int3 rectsize,
+										tfloat sigma,
+										int3* center,
 										int batch)
 {
 	size_t elements = size.x * size.y * size.z;
@@ -66,14 +66,14 @@ template <class T> void d_RectangleMask(T const* const d_input,
 		cudaFree(d_intermediate);
 	}
 }
-template void d_RectangleMask<tfloat>(tfloat const* const d_input, tfloat* const d_output, int3 const size, int3 const rectsize, tfloat const sigma, int3 const* const center, int batch);
+template void d_RectangleMask<tfloat>(tfloat* d_input, tfloat* d_output, int3 size, int3 rectsize, tfloat sigma, int3* center, int batch);
 
 
 ////////////////
 //CUDA kernels//
 ////////////////
 
-template <class T> __global__ void RectangleMaskKernel(T const* const d_input, T* const d_output, int3 const size, int2 const limx, int2 const limy, int2 const limz)
+template <class T> __global__ void RectangleMaskKernel(T* d_input, T* d_output, int3 size, int2 limx, int2 limy, int2 limz)
 {
 	if(threadIdx.x >= size.x)
 		return;

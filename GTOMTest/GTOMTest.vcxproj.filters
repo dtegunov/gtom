@@ -37,6 +37,9 @@
     <Filter Include="Source Files\Alignment">
       <UniqueIdentifier>{a82d7b36-0c32-47a3-9322-d0f20d7890cc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Resolution">
+      <UniqueIdentifier>{ffebf946-675e-4bcb-b6e4-dc3c96271e7f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -119,6 +122,15 @@
     </ClCompile>
     <ClCompile Include="Align2D.cpp">
       <Filter>Source Files\Alignment</Filter>
+    </ClCompile>
+    <ClCompile Include="FSC.cpp">
+      <Filter>Source Files\Resolution</Filter>
+    </ClCompile>
+    <ClCompile Include="LocalFSC.cpp">
+      <Filter>Source Files\Resolution</Filter>
+    </ClCompile>
+    <ClCompile Include="Histogram.cpp">
+      <Filter>Source Files\Generics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

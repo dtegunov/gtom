@@ -17,6 +17,7 @@
   <ItemGroup>
     <None Include="DeviceFunctions.cuh" />
     <None Include="Functions.cuh" />
+    <None Include="GLMFunctions.cuh" />
     <None Include="Prerequisites.cuh" />
   </ItemGroup>
   <ItemGroup>
@@ -29,6 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Alignment\Align2D.cu" />
+    <CudaCompile Include="Alignment\Align3D.cu" />
     <CudaCompile Include="BinaryManipulation\Binarize.cu" />
     <CudaCompile Include="BinaryManipulation\Dilate.cu" />
     <CudaCompile Include="Correlation\CCF.cu" />
@@ -50,10 +52,13 @@
     <CudaCompile Include="Generics\Arithmetics.cu" />
     <CudaCompile Include="Generics\CompositeArithmetics.cu" />
     <CudaCompile Include="Generics\Extraction.cu" />
+    <CudaCompile Include="Generics\Histogram.cu" />
+    <CudaCompile Include="Generics\IndexOf.cu" />
     <CudaCompile Include="Generics\LocalStdDev.cu" />
     <CudaCompile Include="Generics\MinMax.cu" />
     <CudaCompile Include="Generics\MinMaxMonolithic.cu" />
     <CudaCompile Include="Generics\Padding.cu" />
+    <CudaCompile Include="Generics\Reductions.cu" />
     <CudaCompile Include="Generics\Sum.cu" />
     <CudaCompile Include="Generics\Dev.cu" />
     <CudaCompile Include="Generics\SumMinMax.cu" />
@@ -63,10 +68,15 @@
     <CudaCompile Include="Helpers\Misc.cu" />
     <CudaCompile Include="Helpers\TypeConversion.cu" />
     <CudaCompile Include="ImageManipulation\Bandpass.cu" />
+    <CudaCompile Include="ImageManipulation\LocalLowpass.cu" />
     <CudaCompile Include="ImageManipulation\Norm.cu" />
     <CudaCompile Include="ImageManipulation\Xray.cu" />
+    <CudaCompile Include="Masking\Windows.cu" />
     <CudaCompile Include="Projection\Backward.cu" />
     <CudaCompile Include="Projection\Forward.cu" />
+    <CudaCompile Include="Resolution\FSC.cu" />
+    <CudaCompile Include="Resolution\LocalFSC.cu" />
+    <CudaCompile Include="Transformation\Rotation.cu" />
     <CudaCompile Include="Transformation\Shift.cu" />
     <CudaCompile Include="Transformation\Bin.cu" />
     <CudaCompile Include="Transformation\Coordinates.cu" />
@@ -145,6 +155,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <AdditionalCompilerOptions>/openmp</AdditionalCompilerOptions>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <Warning>W0</Warning>
+      <GenerateLineInfo>true</GenerateLineInfo>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
@@ -199,7 +210,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_20,sm_20</CodeGeneration>
+      <CodeGeneration>compute_35,sm_35</CodeGeneration>
       <PtxAsOptionV>true</PtxAsOptionV>
       <AdditionalCompilerOptions>/openmp</AdditionalCompilerOptions>
       <FastMath>false</FastMath>

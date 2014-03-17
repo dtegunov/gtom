@@ -38,7 +38,7 @@ rem ********************************************************************
 rem Compiler parameters
 rem ********************************************************************
 set COMPILER=nvcc
-set COMPFLAGS=-gencode=arch=compute_13,code=sm_13 -gencode=arch=compute_20,code=sm_20 -gencode=arch=compute_30,code=\"sm_30,compute_30\" -c --compiler-options=/GR,/W0,/EHs,/D_CRT_SECURE_NO_DEPRECATE,/D_SCL_SECURE_NO_DEPRECATE,/D_SECURE_SCL=0,/DMATLAB_MEX_FILE,/nologo,/openmp,/MDd,/D_SECURE_SCL=1,/D_ITERATOR_DEBUG_LEVEL=2
+set COMPFLAGS=-gencode=arch=compute_35,code=sm_35 -c --compiler-options=/GR,/W0,/EHs,/D_CRT_SECURE_NO_DEPRECATE,/D_SCL_SECURE_NO_DEPRECATE,/D_SECURE_SCL=0,/DMATLAB_MEX_FILE,/nologo,/openmp,/MDd,/D_SECURE_SCL=1,/D_ITERATOR_DEBUG_LEVEL=2
 set OPTIMFLAGS=--compiler-options=/O2,/Oy-,/DNDEBUG
 set DEBUGFLAGS=--compiler-options=/Z7
 

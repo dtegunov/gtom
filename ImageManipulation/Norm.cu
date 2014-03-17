@@ -209,6 +209,5 @@ __global__ void NormMeanStdDevMonoKernel(tfloat* d_input, tfloat* d_output, int 
 		localstddev = stddev;
 		for (int i = threadIdx.x; i < elements; i += MonoTpB)
 			offsetoutput[i] = (offsetinput[i] - localmean) / localstddev;
-			//offsetoutput[i] = localmean;
 	}
 }
