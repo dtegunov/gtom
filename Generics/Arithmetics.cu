@@ -23,6 +23,7 @@ __global__ void ComplexMultiplyByConjScalarKernel(tcomplex* d_input, tcomplex* d
 __global__ void ComplexMultiplyByConjScalarKernel(tcomplex* d_input, tcomplex* multiplicators, tcomplex* d_output, size_t elements);
 
 template <class T> __global__ void DivideByVectorKernel(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch);
+template <class T> __global__ void DivideSafeByVectorKernel(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch);
 template <class T> __global__ void DivideByScalarKernel(T* d_input, T* d_output, size_t elements, T divisor);
 template <class T> __global__ void DivideByScalarKernel(T* d_input, T* d_divisors, T* d_output, size_t elements);
 
@@ -336,6 +337,17 @@ template <class T> void d_DivideByVector(T* d_input, T* d_divisors, T* d_output,
 template void d_DivideByVector<tfloat>(tfloat* d_input, tfloat* d_divisors, tfloat* d_output, size_t elements, int batch);
 template void d_DivideByVector<int>(int* d_input, int* d_divisors, int* d_output, size_t elements, int batch);
 
+template <class T> void d_DivideSafeByVector(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	dim3 grid = dim3((uint)totalblocks);
+	DivideSafeByVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_divisors, d_output, elements, batch);
+	cudaStreamQuery(0);
+}
+template void d_DivideSafeByVector<tfloat>(tfloat* d_input, tfloat* d_divisors, tfloat* d_output, size_t elements, int batch);
+template void d_DivideSafeByVector<int>(int* d_input, int* d_divisors, int* d_output, size_t elements, int batch);
+
 template <class T> void d_DivideByScalar(T* d_input, T* d_output, size_t elements, T divisor)
 {
 	size_t TpB = min(256, elements);
@@ -372,6 +384,23 @@ template <class T> __global__ void DivideByVectorKernel(T* d_input, T* d_divisor
 	}
 }
 
+template <class T> __global__ void DivideSafeByVectorKernel(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch)
+{
+	T val;
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+	{
+		val = d_divisors[id];
+		if(val != (T)0)
+			for(size_t n = 0; n < batch; n++)
+				d_output[id + elements * n] = d_input[id + elements * n] / val;
+		else
+			for(size_t n = 0; n < batch; n++)
+				d_output[id + elements * n] = (T)0;
+	}
+}
+
 template <class T> __global__ void DivideByScalarKernel(T* d_input, T* d_output, size_t elements, T divisor)
 {
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
@@ -393,7 +422,6 @@ template <class T> __global__ void DivideByScalarKernel(T* d_input, T* d_divisor
 		id += blockDim.x * gridDim.x)
 		d_output[id + offset] = d_input[id + offset] / scalar;
 }
-
 
 ////////////
 //Addition//

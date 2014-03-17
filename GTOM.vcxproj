@@ -55,6 +55,7 @@
     <CudaCompile Include="Generics\Histogram.cu" />
     <CudaCompile Include="Generics\IndexOf.cu" />
     <CudaCompile Include="Generics\LocalStdDev.cu" />
+    <CudaCompile Include="Generics\MakeAtlas.cu" />
     <CudaCompile Include="Generics\MinMax.cu" />
     <CudaCompile Include="Generics\MinMaxMonolithic.cu" />
     <CudaCompile Include="Generics\Padding.cu" />
@@ -77,6 +78,7 @@
     <CudaCompile Include="Resolution\FSC.cu" />
     <CudaCompile Include="Resolution\LocalFSC.cu" />
     <CudaCompile Include="Transformation\Rotation.cu" />
+	<CudaCompile Include="Reconstruction\ART.cu" />
     <CudaCompile Include="Transformation\Shift.cu" />
     <CudaCompile Include="Transformation\Bin.cu" />
     <CudaCompile Include="Transformation\Coordinates.cu" />

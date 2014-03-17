@@ -40,6 +40,9 @@
     <Filter Include="Source Files\Resolution">
       <UniqueIdentifier>{ffebf946-675e-4bcb-b6e4-dc3c96271e7f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Reconstruction">
+      <UniqueIdentifier>{a2043cad-fb84-4935-9f83-732fe4d6d90b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -131,6 +134,9 @@
     </ClCompile>
     <ClCompile Include="Histogram.cpp">
       <Filter>Source Files\Generics</Filter>
+    </ClCompile>
+    <ClCompile Include="ART.cpp">
+      <Filter>Source Files\Reconstruction</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

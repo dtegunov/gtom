@@ -1,10 +1,12 @@
 #include "../Prerequisites.cuh"
 #include "../Functions.cuh"
+#include "../DeviceFunctions.cuh"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_INLINE
 #define GLM_FORCE_CUDA
 #include "../glm/glm.hpp"
+#include "../glm/gtx/transform.hpp"
 #include "../glm/gtc/matrix_transform.hpp"
 #include "../glm/gtx/quaternion.hpp"
 #include "../glm/gtx/euler_angles.hpp"
@@ -18,21 +20,28 @@ texture<tfloat, 3, cudaReadModeElementType> texForwprojVolume;
 //CUDA kernel declarations//
 ////////////////////////////
 
-__global__ void ProjForwardKernel(tfloat* d_projection, int3 dimsvolume, int3 dimsimage, glm::vec3 camera, glm::vec3 pixelX, glm::vec3 pixelY, glm::vec3 ray);
+__global__ void ProjForwardKernel(tfloat* d_projection, tfloat* d_samples, int3 dimsvolume, int3 dimsimage, glm::mat4 rotation, glm::vec3 ray);
 
 
 /////////////////////////////////////////
 //Equivalent of TOM's tom_proj3d method//
 /////////////////////////////////////////
 
-void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* angles, int batch)
+void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, tfloat* d_samples, int3 dimsimage, tfloat2* h_angles, int batch)
 {
 	cudaExtent volumeSize = make_cudaExtent(dimsvolume.x, dimsvolume.y, dimsvolume.z);
 	cudaArray *d_volumeArray = 0; //for tex
 
+	/*tfloat* d_prefiltvolume;
+	cudaMalloc((void**)&d_prefiltvolume, Elements(dimsvolume) * sizeof(tfloat));
+	cudaMemcpy(d_prefiltvolume, d_volume, Elements(dimsvolume) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+	d_CubicBSplinePrefilter3D(d_prefiltvolume, dimsvolume.x * sizeof(tfloat), dimsvolume.x, dimsvolume.y, dimsvolume.z);*/
+
 	//initialize the 3D texture with a 3D array
 	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<tfloat>();
 	cudaMalloc3DArray(&d_volumeArray, &channelDesc, volumeSize); 
+
+	//d_CubicBSplinePrefilter3D(d_volume, (int)(dimsvolume.x * sizeof(tfloat)), dimsvolume.x, dimsvolume.y, dimsvolume.z);
 	
 	//copy d_volumeMem to 3DArray
 	cudaMemcpy3DParms copyParams = {0};
@@ -41,6 +50,7 @@ void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dims
 	copyParams.extent = volumeSize;
 	copyParams.kind = cudaMemcpyDeviceToDevice;
 	cudaMemcpy3D(&copyParams); 
+	//cudaFree(d_prefiltvolume);
 
 	// set texture parameters
 	texForwprojVolume.normalized = false;
@@ -54,40 +64,40 @@ void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dims
 	dim3 grid = dim3((dimsimage.x + TpB - 1) / TpB, dimsimage.y, 1);
 	for (int b = 0; b < batch; b++)
 	{
-		glm::vec4 vecForward = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-		glm::vec4 vecBackward = glm::vec4(0.0f, 0.0f, -(dimsvolume.z * 2), 1.0f);
-		glm::vec4 vecX = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-		glm::vec4 vecY = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+		glm::vec4 vecForward = glm::vec4(0.0f, 0.0f, 0.5f, 1.0f);
 
-		glm::mat4 rotationMat = glm::mat4(1.0f);
+		float phi = PI / 2.0f - h_angles[b].x;
+		float psi = h_angles[b].x - PI / 2.0f;
+		float theta = h_angles[b].y;
 
-		tfloat cphi = cos(angles[b].x);
-		tfloat sphi = sin(angles[b].x);
-		tfloat cthe = cos(angles[b].y);
-		tfloat sthe = sin(angles[b].y);
+		float cosphi = cos(phi), sinphi = sin(phi);
+		float cospsi = cos(psi), sinpsi = sin(psi);
+		float costheta = cos(theta), sintheta = sin(theta);
 
-		float* matvalues = (float*)glm::value_ptr(rotationMat);
-		matvalues[0] = cthe * cphi * cphi + sphi * sphi;
-		matvalues[4] = cthe * cphi * sphi - cphi * sphi;
-		matvalues[7] = -sthe * cphi;
+		glm::mat4 rotationMat;
 
-		matvalues[1] = matvalues[4];
-		matvalues[5] = cthe * sphi * sphi + cphi * cphi;
-		matvalues[9] = -sthe * sphi;
+		rotationMat[0][0] = cospsi * cosphi - costheta * sinpsi * sinphi;
+		rotationMat[1][0] = sinpsi * cosphi + costheta * cospsi * sinphi;
+		rotationMat[2][0] = sintheta * sinphi;
+		rotationMat[3][0] = 0.0f;
+		rotationMat[0][1] = -cospsi * sinphi - costheta * sinpsi * cosphi;
+		rotationMat[1][1] = -sinpsi * sinphi + costheta * cospsi * cosphi;
+		rotationMat[2][1] = sintheta * cosphi;
+		rotationMat[3][1] = 0.0f;
+		rotationMat[0][2] = sintheta * sinpsi;
+		rotationMat[1][2] = -sintheta * cospsi;
+		rotationMat[2][2] = costheta;
+		rotationMat[3][2] = 0.0f;
+		rotationMat[0][3] = 0.0f;
+		rotationMat[1][3] = 0.0f;
+		rotationMat[2][3] = 0.0f;
+		rotationMat[3][3] = 1.0f;
 
-		matvalues[2] = -matvalues[8];
-		matvalues[6] = -matvalues[9];
-		matvalues[10] = cthe;
+		rotationMat = glm::inverse(rotationMat);
 
-		glm::vec4 vecCamera4 = vecBackward * rotationMat;
-		glm::vec3 vecCamera3 = glm::vec3(vecCamera4.x, vecCamera4.y, vecCamera4.z);
-		glm::vec4 vecPixelX4 = vecX * rotationMat;
-		glm::vec3 vecPixelX3 = glm::vec3(vecPixelX4.x, vecPixelX4.y, vecPixelX4.z);
-		glm::vec4 vecPixelY4 = vecY * rotationMat;
-		glm::vec3 vecPixelY3 = glm::vec3(vecPixelY4.x, vecPixelY4.y, vecPixelY4.z);
 		glm::vec4 vecRay4 = vecForward * rotationMat;
 		glm::vec3 vecRay3 = glm::vec3(vecRay4.x, vecRay4.y, vecRay4.z);
-		ProjForwardKernel <<<grid, TpB>>> (d_image + Elements(dimsimage) * b, dimsvolume, dimsimage, vecCamera3, vecPixelX3, vecPixelY3, vecRay3);
+		ProjForwardKernel <<<grid, TpB>>> (d_image + Elements(dimsimage) * b, d_samples == NULL ? NULL : d_samples + Elements(dimsimage) * b, dimsvolume, dimsimage, rotationMat, vecRay3);
 	}
 
 	cudaUnbindTexture(texForwprojVolume);
@@ -119,35 +129,50 @@ __device__ bool intersectBox(glm::vec3 origin, glm::vec3 ray, glm::vec3 boxmin, 
     return smallest_tmax >= largest_tmin;
 }
 
-__global__ void ProjForwardKernel(tfloat* d_projection, int3 dimsvolume, int3 dimsimage, glm::vec3 camera, glm::vec3 pixelX, glm::vec3 pixelY, glm::vec3 ray)
+__global__ void ProjForwardKernel(tfloat* d_projection, tfloat* d_samples, int3 dimsvolume, int3 dimsimage, glm::mat4 rotation, glm::vec3 ray)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if(idx >= dimsimage.x)
 		return;
 
 	glm::vec3 halfVolume = glm::vec3(dimsvolume.x / 2, dimsvolume.y / 2, dimsvolume.z / 2);
-	//glm::vec3 halfImage = glm::vec3(dimsimage.x / 2, dimsimage.y / 2, 0);
 
-	glm::vec3 origin = camera + ((float)(idx - dimsimage.x / 2) * pixelX) + ((float)((int)blockIdx.y - dimsimage.y / 2) * pixelY);
+	glm::vec4 origin = glm::vec4((float)(idx - dimsimage.x / 2), (float)((int)blockIdx.y - dimsimage.y / 2), (float)(-dimsvolume.z), 1.0f);
+	origin = origin * rotation;
+	glm::vec3 origin3 = glm::vec3(origin.x, origin.y, origin.z);
+
 	float tnear = 0.0f, tfar = 0.0f;
 
-	if(intersectBox(origin, ray, -halfVolume - glm::vec3(0.000001f, 0.000001f, 0.000001f), halfVolume, &tnear, &tfar))
+	if(intersectBox(origin3, 
+					ray, 
+					-halfVolume - glm::vec3(0.49999f, 0.49999f, 0.49999f), 
+					halfVolume - glm::vec3(0.49999f, 0.49999f, 0.49999f), 
+					&tnear, 
+					&tfar))
 	{
-		int steps = ceil(tfar - tnear - 0.00001f);
-		glm::vec3 stepRay = ray * (tfar - tnear) / (float)steps;
+		int steps = ceil(tfar - tnear - 0.01f);
+		glm::vec3 stepRay = ray * (tfar - tnear) / (float)(steps);
 
-		origin += ray * tnear + halfVolume + glm::vec3(0.5f);
+		origin3 += ray * tnear + halfVolume + glm::vec3(0.5f);
 		tfloat raysum = (tfloat)0;
 		glm::vec3 raypos = glm::vec3(0);
-		if(origin.x >= 0.0f && origin.y >= 0.0f && origin.z >= 0.0f && origin.x <= dimsvolume.x && origin.y <= dimsvolume.y && origin.z <= dimsvolume.z)
-			for(int i = 0; i < steps; i++)
+		//if(origin3.x >= 0.0f && origin3.y >= 0.0f && origin3.z >= 0.0f && origin3.x <= dimsvolume.x && origin3.y <= dimsvolume.y && origin3.z <= dimsvolume.z)
+			for(int i = 0; i <= steps; i++)
 			{
-				raypos = origin + (stepRay * (float)i);
+				raypos = origin3 + (stepRay * (float)i);
 				raysum += tex3D(texForwprojVolume, raypos.x, raypos.y, raypos.z);
 			}
+		//else
+			//raysum = -111;
 
-		d_projection[blockIdx.y * dimsimage.x + idx] = raysum;
+		d_projection[blockIdx.y * dimsimage.x + idx] = raysum / 2.5f;
+		if(d_samples != NULL)
+			d_samples[blockIdx.y * dimsimage.x + idx] = (tfloat)(steps + 1) / 2.5f;
 	}
 	else
-		d_projection[blockIdx.y * dimsimage.x + idx] = 0;
+	{
+		d_projection[blockIdx.y * dimsimage.x + idx] = (tfloat)0;
+		if(d_samples != NULL)
+			d_samples[blockIdx.y * dimsimage.x + idx] = (tfloat)0;
+	}
 }

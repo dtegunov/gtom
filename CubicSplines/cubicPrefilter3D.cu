@@ -103,6 +103,14 @@ __global__ void SamplesToCoefficients3DZ(
 	ConvertToInterpolationCoefficients(ptr + x, depth, slice);
 }
 
+inline __device__ __host__ uint PowTwoDivider(uint n)
+{
+	if (n == 0) return 0;
+	uint divider = 1;
+	while ((n & divider) == 0) divider <<= 1; 
+	return divider;
+}
+
 //--------------------------------------------------------------------------
 // Exported functions
 //--------------------------------------------------------------------------
@@ -113,7 +121,7 @@ __global__ void SamplesToCoefficients3DZ(
 //! @param width   volume width in number of voxels
 //! @param height  volume height in number of voxels
 //! @param depth   volume depth in number of voxels
-template<class floatN> void CubicBSplinePrefilter3D(floatN* volume, int pitch, int width, int height, int depth)
+template<class floatN> void d_CubicBSplinePrefilter3D(floatN* volume, int pitch, int width, int height, int depth)
 {
 	// Try to determine the optimal block dimensions
 	uint dimX = min(min(PowTwoDivider(width), PowTwoDivider(height)), 64);
@@ -130,5 +138,6 @@ template<class floatN> void CubicBSplinePrefilter3D(floatN* volume, int pitch, i
 	dim3 dimGridZ(width / dimBlock.x, height / dimBlock.y);
 	SamplesToCoefficients3DZ<floatN><<<dimGridZ, dimBlock>>>(volume, pitch, width, height, depth);
 }
+template void d_CubicBSplinePrefilter3D<float>(float* volume, int pitch, int width, int height, int depth);
 
 #endif  //_3D_CUBIC_BSPLINE_PREFILTER_H_

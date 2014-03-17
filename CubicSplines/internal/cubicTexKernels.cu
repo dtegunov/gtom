@@ -161,10 +161,10 @@ __device__ float cubicTex2D(texture<float, cudaTextureType2D> tex, float x, floa
 //! Fast implementation, using 8 trilinear lookups.
 //! @param tex  3D texture
 //! @param coord  unnormalized 3D texture coordinate
-__device__ float cubicTexture3D(texture<float, cudaTextureType3D> tex, float3 coord)
+__device__ float cubicTex3D(texture<float, cudaTextureType3D> tex, float x, float y, float z)
 {
 	// shift the coordinate from [0,extent] to [-0.5, extent-0.5]
-	const float3 coord_grid = coord - 0.5f;
+	const float3 coord_grid = make_float3(x, y, z) - 0.5f;
 	const float3 index = floor(coord_grid);
 	const float3 fraction = coord_grid - index;
 	float3 w0, w1, w2, w3;
