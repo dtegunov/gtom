@@ -202,6 +202,11 @@ void d_ComplexMultiplyByConjVector(tcomplex* d_input, tcomplex* d_multiplicators
 void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator);
 void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
 
+template <class T> void d_DivideByVector(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch = 1);
+template <class T> void d_DivideSafeByVector(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch = 1);
+template <class T> void d_DivideByScalar(T* d_input, T* d_output, size_t elements, T divisor);
+template <class T> void d_DivideByScalar(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch = 1);
+
 template <class T> void d_AddScalar(T* d_input, T* d_output, size_t elements, T summand);
 template <class T> void d_AddScalar(T* d_input, T* d_summands, T* d_output, size_t elements, int batch = 1);
 template <class T> void d_AddVector(T* d_input, T* d_summands, T* d_output, size_t elements, int batch = 1);
@@ -221,13 +226,13 @@ template <class T> void d_MinOp(T* d_input1, T* d_input2, T* d_output, size_t el
 size_t NextPow2(size_t x);
 bool IsPow2(size_t x);
 
-//CompositeArithmetics.cu
+//CompositeArithmetics.cu:
 template <class T> void d_SquaredDistanceFromVector(T* d_input, T* d_vector, T* d_output, size_t elements, int batch = 1);
 template <class T> void d_SquaredDistanceFromScalar(T* d_input, T* d_output, size_t elements, T scalar);
 template <class T> void d_SquaredDistanceFromScalar(T* d_input, T* d_scalars, T* d_output, size_t elements, int batch = 1);
 
-//Sum.cu:
-template <class T> void d_Sum(T *d_input, T *d_output, size_t n, int batch = 1);
+//MakeAtlas.cu:
+template <class T> T* d_MakeAtlas(T* d_input, int3 inputdims, int3 &outputdims, int2 &primitivesperdim, int2* h_primitivecoords);
 
 //MinMax.cu:
 template <class T> void d_Min(T *d_input, tuple2<T, size_t> *d_output, size_t n, int batch = 1);
@@ -240,6 +245,9 @@ template <class T> void d_MinMonolithic(T* d_input, tuple2<T, size_t>* d_output,
 template <class T> void d_MinMonolithic(T* d_input, T* d_output, int n, int batch);
 template <class T> void d_MaxMonolithic(T* d_input, tuple2<T, size_t>* d_output, int n, int batch);
 template <class T> void d_MaxMonolithic(T* d_input, T* d_output, int n, int batch);
+
+//Sum.cu:
+template <class T> void d_Sum(T *d_input, T *d_output, size_t n, int batch = 1);
 
 //SumMinMax.cu:
 template <class T> void d_SumMinMax(T* d_input, T* d_sum, T* d_min, T* d_max, size_t n, int batch = 1);
@@ -329,6 +337,7 @@ cufftHandle d_FFTR2CGetPlan(int const ndimensions, int3 const dimensions, int ba
 //IFFT.cu:
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan, int3 const dimensions, int batch = 1);
+void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan);
 void d_IFFTC2RFull(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, cufftHandle* plan, int3 const dimensions);
@@ -375,7 +384,7 @@ template <class Tmask> void d_Norm(tfloat* d_input, tfloat* d_output, size_t ele
 void d_NormMonolithic(tfloat* d_input, tfloat* d_output, size_t elements, T_NORM_MODE mode, int batch);
 
 //Bandpass.cu:
-void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch = 1);
+void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, tfloat* d_mask = NULL, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, int batch = 1);
 void d_BandpassNeat(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch = 1);
 
 //Xray.cu:
@@ -405,10 +414,17 @@ template <class T> void MaskSparseToDense(T* h_input, intptr_t** h_mapforward, i
 //////////////
 
 //Backward.cu:
-void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* angles, tfloat* weight, int batch = 1);
+void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* h_angles, tfloat* h_weights, int batch = 1);
 
 //Forward.cu:
-void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* angles, int batch = 1);
+void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, tfloat* d_samples, int3 dimsimage, tfloat2* h_angles, int batch = 1);
+
+
+//////////////////
+//Reconstruction//
+//////////////////
+
+void d_ART(tfloat* d_projections, int3 dimsproj, char* d_masks, tfloat* d_volume, tfloat* d_volumeerrors, int3 dimsvolume, tfloat2* h_angles, int iterations);
 
 
 //////////////////

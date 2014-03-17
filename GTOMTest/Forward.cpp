@@ -14,7 +14,7 @@ TEST(Projection, Forward)
 		tfloat* d_inputimage = (tfloat*)CudaMallocValueFilled(Elements(dimsimage), (tfloat)0);
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Projection\\Output_Forward_1.bin");
 		
-		d_ProjForward(d_inputvolume, dimsvolume, d_inputimage, dimsimage, &angles);
+		d_ProjForward(d_inputvolume, dimsvolume, d_inputimage, (tfloat*)NULL, dimsimage, &angles);
 
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_inputimage, Elements(dimsimage) * sizeof(tfloat));
 	

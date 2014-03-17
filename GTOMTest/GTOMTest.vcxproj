@@ -143,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Align2D.cpp" />
+    <ClCompile Include="ART.cpp" />
     <ClCompile Include="Backward.cpp" />
     <ClCompile Include="Bandpass.cpp" />
     <ClCompile Include="BandpassNeat.cpp" />

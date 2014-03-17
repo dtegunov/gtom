@@ -42,21 +42,12 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 
 	#pragma region Atlas
 
-	int sidelength = NextPow2((size_t)ceil(sqrt((tfloat)batch)) * (size_t)dims.x);
-	int3 atlasdims = toInt3(sidelength, sidelength, 1);
-	int atlasrow = atlasdims.x / dims.x;
+	int3 atlasdims = toInt3(1, 1, 1);
+	int2 atlasprimitives = toInt2(1, 1);
 
-	tfloat* d_atlas = CudaMallocValueFilled(Elements(atlasdims), (tfloat)0);
 	int2* h_atlascoords = (int2*)malloc(batch * sizeof(int2));
-
-	for (int b = 0; b < batch; b++)
-	{
-		int offsetx = (b % atlasrow) * dims.x;
-		int offsety = (b / atlasrow) * dims.y;
-		h_atlascoords[b] = toInt2(offsetx, offsety);
-		for (int y = 0; y < dims.y; y++)
-			cudaMemcpy(d_atlas + (offsety + y) * atlasdims.x + offsetx, d_input + b * Elements(dims) + y * dims.x, dims.x * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-	}
+	tfloat* d_atlas = d_MakeAtlas(d_input, dims, atlasdims, atlasprimitives, h_atlascoords);
+	int atlasrow = atlasprimitives.x;
 
 	#pragma endregion
 

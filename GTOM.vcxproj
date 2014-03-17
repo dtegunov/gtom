@@ -51,6 +51,7 @@
     <CudaCompile Include="Generics\CompositeArithmetics.cu" />
     <CudaCompile Include="Generics\Extraction.cu" />
     <CudaCompile Include="Generics\LocalStdDev.cu" />
+    <CudaCompile Include="Generics\MakeAtlas.cu" />
     <CudaCompile Include="Generics\MinMax.cu" />
     <CudaCompile Include="Generics\MinMaxMonolithic.cu" />
     <CudaCompile Include="Generics\Padding.cu" />
@@ -67,6 +68,7 @@
     <CudaCompile Include="ImageManipulation\Xray.cu" />
     <CudaCompile Include="Projection\Backward.cu" />
     <CudaCompile Include="Projection\Forward.cu" />
+    <CudaCompile Include="Reconstruction\ART.cu" />
     <CudaCompile Include="Transformation\Shift.cu" />
     <CudaCompile Include="Transformation\Bin.cu" />
     <CudaCompile Include="Transformation\Coordinates.cu" />

@@ -37,6 +37,9 @@
     <Filter Include="Source Files\Alignment">
       <UniqueIdentifier>{a82d7b36-0c32-47a3-9322-d0f20d7890cc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Reconstruction">
+      <UniqueIdentifier>{a2043cad-fb84-4935-9f83-732fe4d6d90b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -119,6 +122,9 @@
     </ClCompile>
     <ClCompile Include="Align2D.cpp">
       <Filter>Source Files\Alignment</Filter>
+    </ClCompile>
+    <ClCompile Include="ART.cpp">
+      <Filter>Source Files\Reconstruction</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -43,6 +43,9 @@
     <Filter Include="BinaryManipulation">
       <UniqueIdentifier>{532ff7b2-7efc-429c-b2e4-60e7003d8d65}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Reconstruction">
+      <UniqueIdentifier>{119447d0-c002-4381-b896-ab4ea3f6fd17}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CubicSplines\internal\cutil_math_bugfixes.h">
@@ -209,6 +212,12 @@
     </CudaCompile>
     <CudaCompile Include="Generics\LocalStdDev.cu">
       <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Generics\MakeAtlas.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Reconstruction\ART.cu">
+      <Filter>Reconstruction</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

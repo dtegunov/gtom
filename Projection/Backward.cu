@@ -24,7 +24,7 @@ __global__ void ProjBackwardKernel(tfloat* d_volume, int3 dimsvolume, int3 dimsi
 //Equivalent of TOM's tom_backproj3d method//
 /////////////////////////////////////////////
 
-void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* angles, tfloat* weight, int batch)
+void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* h_angles, tfloat* h_weights, int batch)
 {
 	cudaChannelFormatDesc descInput = cudaCreateChannelDesc<tfloat>();
 	texBackprojImage.normalized = false;
@@ -44,10 +44,34 @@ void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dim
 						  dimsimage.y, 
 						  dimsimage.x * sizeof(tfloat));
 
-		glm::mat4 rotationPhi = glm::eulerAngleZ(angles[b].x);
-		glm::mat4 rotationTheta = glm::eulerAngleY(-angles[b].y);
-		glm::mat4 rotationMat = rotationPhi * rotationTheta;
-		ProjBackwardKernel <<<grid, TpB>>> (d_volume, dimsvolume, dimsimage, rotationMat, weight[b]);
+		float phi = PI / 2.0f - h_angles[b].x;
+		float psi = h_angles[b].x - PI / 2.0f;
+		float theta = h_angles[b].y;
+
+		float cosphi = cos(phi), sinphi = sin(phi);
+		float cospsi = cos(psi), sinpsi = sin(psi);
+		float costheta = cos(theta), sintheta = sin(theta);
+
+		glm::mat4 rotationMat;
+
+		rotationMat[0][0] = cospsi * cosphi - costheta * sinpsi * sinphi;
+		rotationMat[1][0] = sinpsi * cosphi + costheta * cospsi * sinphi;
+		rotationMat[2][0] = sintheta * sinphi;
+		rotationMat[3][0] = 0.0f;
+		rotationMat[0][1] = -cospsi * sinphi - costheta * sinpsi * cosphi;
+		rotationMat[1][1] = -sinpsi * sinphi + costheta * cospsi * cosphi;
+		rotationMat[2][1] = sintheta * cosphi;
+		rotationMat[3][1] = 0.0f;
+		rotationMat[0][2] = sintheta * sinpsi;
+		rotationMat[1][2] = -sintheta * cospsi;
+		rotationMat[2][2] = costheta;
+		rotationMat[3][2] = 0.0f;
+		rotationMat[0][3] = 0.0f;
+		rotationMat[1][3] = 0.0f;
+		rotationMat[2][3] = 0.0f;
+		rotationMat[3][3] = 1.0f;
+
+		ProjBackwardKernel <<<grid, TpB>>> (d_volume, dimsvolume, dimsimage, rotationMat, h_weights[b]);
 
 		cudaUnbindTexture(texBackprojImage);
 	}
