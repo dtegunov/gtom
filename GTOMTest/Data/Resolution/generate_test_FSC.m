@@ -1,0 +1,23 @@
+%Case 1:
+dimx=280;
+dimy=280;
+dimz=280;
+indata1 = single(rand(dimx,dimy,dimz));
+indata2 = tom_bandpass(indata1, 0, 20, 1);
+indata3 = tom_bandpass(indata1, 0, 10, 1);
+indata1=vol1;
+indata2=vol2;
+outdata1 = tom_fsc(indata1, indata2, floor(dimx/2), 1, 0);
+outdata2 = tom_fsc(indata1, indata3, floor(dimx/2), 1, 0);
+fid = fopen('Input1_FSC_1.bin','W');
+fwrite(fid,indata1,'single');
+fwrite(fid,indata1,'single');
+fclose(fid);
+fid = fopen('Input2_FSC_1.bin','W');
+fwrite(fid,indata2,'single');
+fwrite(fid,indata2,'single');
+fclose(fid);
+fid = fopen('Output_FSC_1.bin','W');
+fwrite(fid,outdata1,'single');
+fwrite(fid,outdata2,'single');
+fclose(fid);

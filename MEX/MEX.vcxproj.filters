@@ -19,6 +19,12 @@
     <Filter Include="Source Files\Generics">
       <UniqueIdentifier>{4aa4114f-78c2-4a26-872c-0fb3820006ba}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Resolution">
+      <UniqueIdentifier>{24d76375-c5e6-4c35-ba65-0e079517ebaf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Image Manipulation">
+      <UniqueIdentifier>{8c163f9f-68b2-4f76-bf91-e87bc0299121}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Helper.cu">
@@ -41,6 +47,12 @@
     </None>
     <None Include="FFT\IFFTC2C.cu">
       <Filter>Source Files\FFT</Filter>
+    </None>
+    <None Include="Resolution\LocalFSC.cu">
+      <Filter>Source Files\Resolution</Filter>
+    </None>
+    <None Include="ImageManipulation\LocalLowpass.cu">
+      <Filter>Source Files\Image Manipulation</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

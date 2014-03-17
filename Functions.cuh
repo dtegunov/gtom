@@ -202,6 +202,10 @@ void d_ComplexMultiplyByConjVector(tcomplex* d_input, tcomplex* d_multiplicators
 void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator);
 void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
 
+template <class T> void d_DivideByVector(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch = 1);
+template <class T> void d_DivideByScalar(T* d_input, T* d_output, size_t elements, T divisor);
+template <class T> void d_DivideByScalar(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch = 1);
+
 template <class T> void d_AddScalar(T* d_input, T* d_output, size_t elements, T summand);
 template <class T> void d_AddScalar(T* d_input, T* d_summands, T* d_output, size_t elements, int batch = 1);
 template <class T> void d_AddVector(T* d_input, T* d_summands, T* d_output, size_t elements, int batch = 1);
@@ -221,10 +225,19 @@ template <class T> void d_MinOp(T* d_input1, T* d_input2, T* d_output, size_t el
 size_t NextPow2(size_t x);
 bool IsPow2(size_t x);
 
-//CompositeArithmetics.cu
+//CompositeArithmetics.cu:
 template <class T> void d_SquaredDistanceFromVector(T* d_input, T* d_vector, T* d_output, size_t elements, int batch = 1);
 template <class T> void d_SquaredDistanceFromScalar(T* d_input, T* d_output, size_t elements, T scalar);
 template <class T> void d_SquaredDistanceFromScalar(T* d_input, T* d_scalars, T* d_output, size_t elements, int batch = 1);
+
+//Histogram.cu:
+template<class T> void d_Histogram(T* d_input, uint* d_histogram, size_t elements, int nbins, T minval, T maxval, int batch = 1);
+
+//IndexOf.cu:
+void d_FirstIndexOf(tfloat* d_input, tfloat* d_output, size_t elements, tfloat value, T_INTERP_MODE mode, int batch = 1);
+template<class T> void d_BiggerThan(tfloat* d_input, T* d_output, size_t elements, tfloat value, int batch = 1);
+template<class T> void d_SmallerThan(tfloat* d_input, T* d_output, size_t elements, tfloat value, int batch = 1);
+template<class T> void d_IsBetween(tfloat* d_input, T* d_output, size_t elements, tfloat minval, tfloat maxval, int batch = 1);
 
 //Sum.cu:
 template <class T> void d_Sum(T *d_input, T *d_output, size_t n, int batch = 1);
@@ -241,6 +254,9 @@ template <class T> void d_MinMonolithic(T* d_input, T* d_output, int n, int batc
 template <class T> void d_MaxMonolithic(T* d_input, tuple2<T, size_t>* d_output, int n, int batch);
 template <class T> void d_MaxMonolithic(T* d_input, T* d_output, int n, int batch);
 
+//Reductions.cu:
+template<class T> void d_ReduceAdd(T* d_input, T* d_output, int vectorlength, int nvectors, int batch = 1);
+
 //SumMinMax.cu:
 template <class T> void d_SumMinMax(T* d_input, T* d_sum, T* d_min, T* d_max, size_t n, int batch = 1);
 
@@ -249,6 +265,7 @@ template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t e
 
 //Extraction.cu:
 template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch = 1);
+template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch = 1);
 void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, tfloat2* h_scale, tfloat* h_rotation, tfloat2* h_translation, T_INTERP_MODE mode, int batch = 1);
 
 //Padding.cu:
@@ -273,6 +290,9 @@ enum T_ALIGN_MODE
 	T_ALIGN_BOTH = 3
 };
 void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat3* h_params, int* h_membership, tfloat* h_scores, int maxtranslation, tfloat maxrotation, int iterations, T_ALIGN_MODE mode, int batch);
+
+//Align3D.cu:
+void d_Align3D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat5* h_params, int* h_membership, tfloat* h_scores, int maxtranslation, tfloat3 maxrotation, tfloat3 rotationsteps, int rotationrefinements, T_ALIGN_MODE mode, int batch);
 
 
 ///////////////////////
@@ -347,13 +367,13 @@ void d_HermitianSymmetryTrim(tcomplex* const d_input, tcomplex* const d_output, 
 template <class T> void d_RemapFull2HalfFFT(T* d_input, T* d_output, int3 dims, int batch = 1);
 template <class T> void d_RemapFullFFT2Full(T* d_input, T* d_output, int3 dims, int batch = 1);
 template <class T> void d_RemapFull2FullFFT(T* d_input, T* d_output, int3 dims, int batch = 1);
+template <class T> void d_RemapHalfFFT2Half(T* d_input, T* d_output, int3 dims, int batch = 1);
 
 //FFTResize.cu:
 void d_FFTCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
 void d_FFTFullCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
 void d_FFTPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
 void d_FFTFullPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
-
 
 //////////////////////
 //Image Manipulation//
@@ -378,6 +398,9 @@ void d_NormMonolithic(tfloat* d_input, tfloat* d_output, size_t elements, T_NORM
 void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch = 1);
 void d_BandpassNeat(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch = 1);
 
+//LocalLowpass.cu:
+void d_LocalLowpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* d_resolution, tfloat maxprecision);
+
 //Xray.cu:
 void d_Xray(tfloat* d_input, tfloat* d_output, int3 dims, tfloat ndev = (tfloat)4.6, int region = 2, int batch = 1);
 
@@ -387,10 +410,15 @@ void d_Xray(tfloat* d_input, tfloat* d_output, int3 dims, tfloat ndev = (tfloat)
 ///////////
 
 //SphereMask.cu:
-template <class T> void d_SphereMask(T const* const d_input, T* const d_output, int3 const size, tfloat const* const radius, tfloat const sigma, tfloat3 const* const center, int batch = 1);
+template <class T> void d_SphereMask(T* d_input, T* d_output, int3 size, tfloat* radius, tfloat sigma, tfloat3* center, int batch = 1);
 
 //RectangleMask.cu:
-template <class T> void d_RectangleMask(T const* const d_input, T* const d_output, int3 const size, int3 const rectsize, tfloat const sigma, int3 const* const center, int batch);
+template <class T> void d_RectangleMask(T* d_input, T* d_output, int3 size, int3 rectsize, tfloat sigma, int3* center, int batch);
+
+//Windows.cu:
+void d_HannMask(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* radius, tfloat3* center, int batch = 1);
+void d_HammingMask(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* radius, tfloat3* center, int batch = 1);
+void d_GaussianMask(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* sigma, tfloat3* center, int batch = 1);
 
 //Remap.cu:
 template <class T> void d_Remap(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch = 1);
@@ -411,6 +439,17 @@ void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dim
 void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* angles, int batch = 1);
 
 
+//////////////
+//Resolution//
+//////////////
+
+//FSC.cu:
+void d_FSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d_curve, int maxradius, cufftHandle* plan = NULL, int batch = 1);
+
+//LocalFSC.cu:
+void d_LocalFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d_resolution, int windowsize, int maxradius, tfloat threshold);
+
+
 //////////////////
 //Transformation//
 //////////////////
@@ -422,6 +461,9 @@ void d_Bin(tfloat* d_input, tfloat* d_output, int3 dims, int bincount, int batch
 void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE interpolation, int batch = 1);
 void d_CartAtlas2Polar(tfloat* d_input, tfloat* d_output, tfloat2* d_offsets, int2 atlasdims, int2 dims, T_INTERP_MODE interpolation, int batch);
 int2 GetCart2PolarSize(int2 dims);
+
+//Rotate.cu:
+void d_Rotate3D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
 
 //Shift.cu:
 void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, tcomplex* d_sharedintermediate = NULL, int batch = 1);

@@ -17,6 +17,7 @@
 ////////////////////////////
 
 template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3 regionorigin);
+template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3* d_regionorigins);
 __global__ void Extract2DTransformedLinearKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::vec2* vecx, glm::vec2* vecy, glm::vec2* veccenter);
 __global__ void Extract2DTransformedCubicKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::vec2* vecx, glm::vec2* vecy, glm::vec2* veccenter);
 
@@ -49,6 +50,19 @@ template void d_Extract<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 so
 template void d_Extract<double>(double* d_input, double* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
 template void d_Extract<int>(int* d_input, int* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
 template void d_Extract<char>(char* d_input, char* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
+
+template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch)
+{
+	size_t TpB = 256;
+	dim3 grid = dim3((regiondims.x * regiondims.y + 255) / 256, regiondims.z, batch);
+	ExtractManyKernel <<<grid, (int)TpB>>> (d_input, d_output, sourcedims, Elements(sourcedims), regiondims, Elements(regiondims), d_regionorigins);
+	cudaStreamQuery(0);
+}
+template void d_Extract<tfloat>(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+template void d_Extract<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+template void d_Extract<double>(double* d_input, double* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+template void d_Extract<int>(int* d_input, int* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+template void d_Extract<char>(char* d_input, char* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -135,6 +149,24 @@ template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 s
 
 	for (int x = threadIdx.x; x < regiondims.x; x += blockDim.x)
 		offsetoutput[x] = offsetinput[(x + regionorigin.x) % sourcedims.x];
+}
+
+template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3* d_regionorigins)
+{
+	int3 regionorigin = d_regionorigins[blockIdx.z];
+	uint id = blockIdx.x * blockDim.x + threadIdx.x;
+	if(id >= regiondims.x * regiondims.y)
+		return;
+	
+	uint y = id / regiondims.x;
+	uint x = id - y * regiondims.x;
+	int oy = (y + regionorigin.y);
+	int oz = (blockIdx.y + regionorigin.z);
+
+	d_output += blockIdx.z * regionelements + (blockIdx.y * regiondims.y + y) * regiondims.x;
+	d_input += (oz * sourcedims.y + oy) * sourcedims.x + regionorigin.x;
+
+	d_output[x] = d_input[x];
 }
 
 __global__ void Extract2DTransformedLinearKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::vec2* vecx, glm::vec2* vecy, glm::vec2* veccenter)

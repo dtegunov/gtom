@@ -1,0 +1,1 @@
+mex 'Resolution\LocalFSC.cu' Helper.cu;

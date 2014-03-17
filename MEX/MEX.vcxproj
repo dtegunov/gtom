@@ -22,6 +22,8 @@
     <None Include="FFT\IFFTC2R.cu" />
     <None Include="FFT\IFFTC2RFull.cu" />
     <None Include="Helper.cu" />
+    <None Include="ImageManipulation\LocalLowpass.cu" />
+    <None Include="Resolution\LocalFSC.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h" />
