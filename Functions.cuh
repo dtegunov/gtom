@@ -258,9 +258,6 @@ template <class T> void d_MinMonolithic(T* d_input, T* d_output, int n, int batc
 template <class T> void d_MaxMonolithic(T* d_input, tuple2<T, size_t>* d_output, int n, int batch);
 template <class T> void d_MaxMonolithic(T* d_input, T* d_output, int n, int batch);
 
-//Reductions.cu:
-template<class T> void d_ReduceAdd(T* d_input, T* d_output, int vectorlength, int nvectors, int batch = 1);
-
 //SumMinMax.cu:
 template <class T> void d_SumMinMax(T* d_input, T* d_sum, T* d_min, T* d_max, size_t n, int batch = 1);
 
@@ -479,6 +476,7 @@ int2 GetCart2PolarSize(int2 dims);
 
 //Rotate.cu:
 void d_Rotate3D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
+void d_Rotate3D(cudaArray* a_input, cudaChannelFormatDesc channelDesc, tfloat* d_output, int3 dims, tfloat3 angles, T_INTERP_MODE mode);
 
 //Shift.cu:
 void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, tcomplex* d_sharedintermediate = NULL, int batch = 1);

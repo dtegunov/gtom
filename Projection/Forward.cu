@@ -1,5 +1,6 @@
 #include "../Prerequisites.cuh"
 #include "../Functions.cuh"
+#include "../GLMFunctions.cuh"
 #include "../DeviceFunctions.cuh"
 
 #define GLM_FORCE_RADIANS
@@ -66,7 +67,7 @@ void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, tfloat* d
 	{
 		glm::vec4 vecForward = glm::vec4(0.0f, 0.0f, 0.5f, 1.0f);
 
-		float phi = PI / 2.0f - h_angles[b].x;
+		/*float phi = PI / 2.0f - h_angles[b].x;
 		float psi = h_angles[b].x - PI / 2.0f;
 		float theta = h_angles[b].y;
 
@@ -91,9 +92,9 @@ void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, tfloat* d
 		rotationMat[0][3] = 0.0f;
 		rotationMat[1][3] = 0.0f;
 		rotationMat[2][3] = 0.0f;
-		rotationMat[3][3] = 1.0f;
+		rotationMat[3][3] = 1.0f;*/
 
-		rotationMat = glm::inverse(rotationMat);
+		glm::mat4 rotationMat = GetEulerRotation(h_angles[b]);
 
 		glm::vec4 vecRay4 = vecForward * rotationMat;
 		glm::vec3 vecRay3 = glm::vec3(vecRay4.x, vecRay4.y, vecRay4.z);
@@ -101,6 +102,7 @@ void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, tfloat* d
 	}
 
 	cudaUnbindTexture(texForwprojVolume);
+	cudaFreeArray(d_volumeArray);
 }
 
 

@@ -63,6 +63,7 @@
     <CudaCompile Include="Generics\Sum.cu" />
     <CudaCompile Include="Generics\Dev.cu" />
     <CudaCompile Include="Generics\SumMinMax.cu" />
+    <CudaCompile Include="Helpers\Euler.cu" />
     <CudaCompile Include="Helpers\HermitianSymmetry.cu" />
     <CudaCompile Include="Helpers\MDPointer.cu" />
     <CudaCompile Include="Helpers\Memory.cu" />
@@ -78,7 +79,7 @@
     <CudaCompile Include="Resolution\FSC.cu" />
     <CudaCompile Include="Resolution\LocalFSC.cu" />
     <CudaCompile Include="Transformation\Rotation.cu" />
-	<CudaCompile Include="Reconstruction\ART.cu" />
+    <CudaCompile Include="Reconstruction\ART.cu" />
     <CudaCompile Include="Transformation\Shift.cu" />
     <CudaCompile Include="Transformation\Bin.cu" />
     <CudaCompile Include="Transformation\Coordinates.cu" />

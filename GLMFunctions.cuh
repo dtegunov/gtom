@@ -9,7 +9,5 @@
 #include "glm/gtx/euler_angles.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
-glm::mat4 GetEulerRotation(tfloat3 angles)
-{
-
-}
+glm::mat4 GetEulerRotation(tfloat3 angles);
+glm::mat4 GetEulerRotation(tfloat2 angles);

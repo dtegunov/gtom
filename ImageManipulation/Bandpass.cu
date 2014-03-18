@@ -86,7 +86,7 @@ void d_BandpassNeat(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tf
 	cudaMalloc((void**)&d_paddedinput, Elements(paddeddims) * batch * sizeof(tfloat));
 
 	d_Pad(d_input, d_paddedinput, dims, paddeddims, T_PAD_MODE::T_PAD_MIRROR, (tfloat)0, batch);
-	d_Bandpass(d_paddedinput, d_paddedinput, paddeddims, low * scalefactor, high * scalefactor, smooth * scalefactor, batch);
+	d_Bandpass(d_paddedinput, d_paddedinput, paddeddims, low * scalefactor, high * scalefactor, smooth * scalefactor, NULL, NULL, NULL, batch);
 	d_Pad(d_paddedinput, d_input, paddeddims, dims, T_PAD_MODE::T_PAD_TILE, (tfloat)0, batch);
 
 	cudaFree(d_paddedinput);

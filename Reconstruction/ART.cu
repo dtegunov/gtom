@@ -1,5 +1,6 @@
 #include "../Prerequisites.cuh"
 #include "../Functions.cuh"
+#include "../GLMFunctions.cuh"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_INLINE
@@ -36,6 +37,33 @@ void d_ART(tfloat* d_projections, int3 dimsproj, char* d_masks, tfloat* d_volume
 	d_ValueFill(d_volume, Elements(dimsvolume), (tfloat)0);
 	//d_ValueFill(d_volume+43, 1, (tfloat)1);
 
+	glm::vec3* h_vecX = (glm::vec3*)malloc(dimsproj.z * sizeof(glm::vec3));
+	glm::vec3* h_vecY = (glm::vec3*)malloc(dimsproj.z * sizeof(glm::vec3));
+	glm::vec3* h_vecZ = (glm::vec3*)malloc(dimsproj.z * sizeof(glm::vec3));
+
+	glm::vec4 vecX(1.0f, 0.0f, 0.0f, 1.0f);
+	glm::vec4 vecY(0.0f, 1.0f, 0.0f, 1.0f);
+	glm::vec4 vecZ(0.0f, 0.0f, 1.0f, 1.0f);
+
+	for (int b = 0; b < dimsproj.z; b++)
+	{
+		glm::mat4 rotationmat = glm::inverse(GetEulerRotation(h_angles[b]));
+		glm::vec4 transvecX = vecX * rotationmat;
+		h_vecX[b] = glm::vec3(transvecX.x, transvecX.y, transvecX.z);
+		glm::vec4 transvecY = vecY * rotationmat;
+		h_vecY[b] = glm::vec3(transvecY.x, transvecY.y, transvecY.z);
+		glm::vec4 transvecZ = vecZ * rotationmat;
+		h_vecZ[b] = glm::vec3(transvecZ.x, transvecZ.y, transvecZ.z);
+	}
+
+	glm::vec3* d_vecX = (glm::vec3*)CudaMallocFromHostArray(h_vecX, dimsproj.z * sizeof(glm::vec3));
+	glm::vec3* d_vecY = (glm::vec3*)CudaMallocFromHostArray(h_vecY, dimsproj.z * sizeof(glm::vec3));
+	glm::vec3* d_vecZ = (glm::vec3*)CudaMallocFromHostArray(h_vecZ, dimsproj.z * sizeof(glm::vec3));
+	
+	free(h_vecX);
+	free(h_vecY);
+	free(h_vecZ);
+
 	for (int i = 0; i < iterations; i++)
 	{
 		d_ProjForward(d_volume, dimsvolume, d_forwproj, d_samples, toInt3(dimsproj.x, dimsproj.y, 1), h_angles, dimsproj.z);
@@ -61,7 +89,7 @@ void d_ART(tfloat* d_projections, int3 dimsproj, char* d_masks, tfloat* d_volume
 
 		size_t TpB = CorrectionTpB;
 		dim3 grid = dim3(dimsvolume.x, dimsvolume.y, dimsvolume.z);
-		CorrectionsKernel <<<grid, TpB>>> (d_volume, dimsvolume, dimsproj, atlasprimitivesperdim.x, d_angles);
+		CorrectionsKernel <<<grid, TpB>>> (d_volume, dimsvolume, dimsproj, atlasprimitivesperdim.x, d_vecX, d_vecY, d_vecZ);
 
 		tfloat* h_corrections = (tfloat*)MallocFromDeviceArray(d_corrections, Elements(atlasdims) * sizeof(tfloat));
 		tfloat* h_volume = (tfloat*)MallocFromDeviceArray(d_volume, Elements(dimsvolume) * sizeof(tfloat));
@@ -75,7 +103,10 @@ void d_ART(tfloat* d_projections, int3 dimsproj, char* d_masks, tfloat* d_volume
 		cudaFree(d_corrections);
 		free(h_atlascoords);
 	}
-
+	
+	cudaFree(d_vecX);
+	cudaFree(d_vecY);
+	cudaFree(d_vecZ);
 	cudaFree(d_samples);
 	cudaFree(d_forwproj);
 	cudaFree(d_angles);
