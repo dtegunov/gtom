@@ -63,6 +63,7 @@
     <CudaCompile Include="Generics\Sum.cu" />
     <CudaCompile Include="Generics\Dev.cu" />
     <CudaCompile Include="Generics\SumMinMax.cu" />
+    <CudaCompile Include="Helpers\AngularSpacing.cu" />
     <CudaCompile Include="Helpers\Euler.cu" />
     <CudaCompile Include="Helpers\HermitianSymmetry.cu" />
     <CudaCompile Include="Helpers\MDPointer.cu" />
@@ -76,6 +77,7 @@
     <CudaCompile Include="Masking\Windows.cu" />
     <CudaCompile Include="Projection\Backward.cu" />
     <CudaCompile Include="Projection\Forward.cu" />
+    <CudaCompile Include="Projection\Forward2.cu" />
     <CudaCompile Include="Resolution\FSC.cu" />
     <CudaCompile Include="Resolution\LocalFSC.cu" />
     <CudaCompile Include="Transformation\Rotation.cu" />

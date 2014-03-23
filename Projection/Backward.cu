@@ -25,7 +25,7 @@ __global__ void ProjBackwardKernel(tfloat* d_volume, int3 dimsvolume, int3 dimsi
 //Equivalent of TOM's tom_backproj3d method//
 /////////////////////////////////////////////
 
-void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* h_angles, tfloat* h_weights, int batch)
+void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* h_angles, tfloat* h_weights, T_INTERP_MODE mode, int batch)
 {
 	cudaChannelFormatDesc descInput = cudaCreateChannelDesc<tfloat>();
 	texBackprojImage.normalized = false;

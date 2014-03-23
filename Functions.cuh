@@ -245,6 +245,7 @@ template <class T> T* d_MakeAtlas(T* d_input, int3 inputdims, int3 &outputdims, 
 
 //Sum.cu:
 template <class T> void d_Sum(T *d_input, T *d_output, size_t n, int batch = 1);
+template <class T> void d_SumMonolithic(T* d_input, T* d_output, int n, int batch);
 
 //MinMax.cu:
 template <class T> void d_Min(T *d_input, tuple2<T, size_t> *d_output, size_t n, int batch = 1);
@@ -296,7 +297,7 @@ enum T_ALIGN_MODE
 void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat3* h_params, int* h_membership, tfloat* h_scores, int maxtranslation, tfloat maxrotation, int iterations, T_ALIGN_MODE mode, int batch);
 
 //Align3D.cu:
-void d_Align3D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat5* h_params, int* h_membership, tfloat* h_scores, int maxtranslation, tfloat3 maxrotation, tfloat3 rotationsteps, int rotationrefinements, T_ALIGN_MODE mode, int batch);
+void d_Align3D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat3 &position, tfloat3 &rotation, int* h_membership, tfloat* h_scores, tfloat3* h_allpositions, tfloat3* h_allrotations, int maxtranslation, tfloat3 maxrotation, tfloat rotationstep, int rotationrefinements, T_ALIGN_MODE mode);
 
 
 ///////////////////////
@@ -438,10 +439,11 @@ template <class T> void MaskSparseToDense(T* h_input, intptr_t** h_mapforward, i
 //////////////
 
 //Backward.cu:
-void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* h_angles, tfloat* h_weights, int batch = 1);
+void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int3 dimsimage, tfloat2* h_angles, tfloat* h_weights, T_INTERP_MODE mode, int batch = 1);
 
 //Forward.cu:
 void d_ProjForward(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, tfloat* d_samples, int3 dimsimage, tfloat2* h_angles, int batch = 1);
+void d_ProjForward2(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, tfloat* d_samples, int3 dimsimage, tfloat2* h_angles, int batch = 1);
 
 
 //////////////////
@@ -476,7 +478,7 @@ int2 GetCart2PolarSize(int2 dims);
 
 //Rotate.cu:
 void d_Rotate3D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
-void d_Rotate3D(cudaArray* a_input, cudaChannelFormatDesc channelDesc, tfloat* d_output, int3 dims, tfloat3 angles, T_INTERP_MODE mode);
+void d_Rotate3D(cudaArray* a_input, cudaChannelFormatDesc channelDesc, tfloat* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
 
 //Shift.cu:
 void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, tcomplex* d_sharedintermediate = NULL, int batch = 1);

@@ -14,7 +14,7 @@ TEST(Projection, Backward)
 		tfloat* d_inputimage = (tfloat*)CudaMallocFromBinaryFile("Data\\Projection\\Input_Backward_1.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Projection\\Output_Backward_1.bin");
 		
-		d_ProjBackward(d_inputvolume, dimsvolume, d_inputimage, dimsimage, &angles, &weight);
+		d_ProjBackward(d_inputvolume, dimsvolume, d_inputimage, dimsimage, &angles, &weight, T_INTERP_LINEAR);
 
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_inputvolume, Elements(dimsvolume) * sizeof(tfloat));
 	
@@ -37,7 +37,7 @@ TEST(Projection, Backward)
 		tfloat* d_inputimage = (tfloat*)CudaMallocFromBinaryFile("Data\\Projection\\Input_Backward_2.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Projection\\Output_Backward_2.bin");
 		
-		d_ProjBackward(d_inputvolume, dimsvolume, d_inputimage, dimsimage, &angles, &weight);
+		d_ProjBackward(d_inputvolume, dimsvolume, d_inputimage, dimsimage, &angles, &weight, T_INTERP_LINEAR);
 
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_inputvolume, Elements(dimsvolume) * sizeof(tfloat));
 	
@@ -60,7 +60,7 @@ TEST(Projection, Backward)
 		tfloat* d_inputimage = (tfloat*)CudaMallocFromBinaryFile("Data\\Projection\\Input_Backward_3.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Projection\\Output_Backward_3.bin");
 		
-		d_ProjBackward(d_inputvolume, dimsvolume, d_inputimage, dimsimage, &angles, &weight);
+		d_ProjBackward(d_inputvolume, dimsvolume, d_inputimage, dimsimage, &angles, &weight, T_INTERP_LINEAR);
 
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_inputvolume, Elements(dimsvolume) * sizeof(tfloat));
 	
@@ -83,7 +83,7 @@ TEST(Projection, Backward)
 		tfloat* d_inputimage = (tfloat*)CudaMallocFromBinaryFile("Data\\Projection\\Input_Backward_4.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Projection\\Output_Backward_4.bin");
 		
-		d_ProjBackward(d_inputvolume, dimsvolume, d_inputimage, dimsimage, &angles, &weight);
+		d_ProjBackward(d_inputvolume, dimsvolume, d_inputimage, dimsimage, &angles, &weight, T_INTERP_LINEAR);
 
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_inputvolume, Elements(dimsvolume) * sizeof(tfloat));
 	

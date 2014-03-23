@@ -85,13 +85,17 @@ template void d_MultiplyByScalar<int>(int* d_input, int* d_multiplicators, int* 
 template <class T> __global__ void MultiplyByVectorKernel(T* d_input, T* d_multiplicators, T* d_output, size_t elements, int batch)
 {
 	T val;
+	d_input += blockIdx.x * blockDim.x + threadIdx.x;
+	d_output += blockIdx.x * blockDim.x + threadIdx.x;
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
 		id < elements; 
 		id += blockDim.x * gridDim.x)
 	{
 		val = d_multiplicators[id];
 		for(size_t n = 0; n < batch; n++)
-			d_output[id + elements * n] = d_input[id + elements * n] * val;
+			d_output[elements * n] = d_input[elements * n] * val;
+		d_input += blockDim.x * gridDim.x;
+		d_output += blockDim.x * gridDim.x;
 	}
 }
 

@@ -7,6 +7,7 @@
 ////////////////////////////
 
 template <class T, uint blockSize, bool nIsPow2> __global__ void SumKernel(T* d_input, T* d_output, size_t n);
+template <class T, uint blockSize> __global__ void SumMonolithicKernel(T* d_input, T* d_output, int n);
 
 
 ///////
@@ -101,15 +102,15 @@ template <class T> void d_Sum(T* d_input, T* d_output, size_t n, int batch)
 	GetNumBlocksAndThreads(n, numblocks, numthreads, maxblocks);
 
 	T* d_intermediate;
-	cudaMalloc((void**)&d_intermediate, numblocks * sizeof(T));
+	cudaMalloc((void**)&d_intermediate, numblocks * batch * sizeof(T));
 
-	T* h_intermediate = (T*)malloc(numblocks * sizeof(T));
+	//T* h_intermediate = (T*)malloc(numblocks * sizeof(T));
 
 	for(int b = 0; b < batch; b++)
 	{
-		SumReduce<T>(d_input + (n * (size_t)b), d_intermediate, n, numblocks, numthreads);
+		SumReduce<T>(d_input + n * b, d_intermediate + numblocks * b, n, numblocks, numthreads);
 		
-		cudaMemcpy(h_intermediate, d_intermediate, numblocks * sizeof(T), cudaMemcpyDeviceToHost);
+		/*cudaMemcpy(h_intermediate, d_intermediate, numblocks * sizeof(T), cudaMemcpyDeviceToHost);
 
 		T result = h_intermediate[0];
 		T c = 0, y, t;
@@ -121,15 +122,39 @@ template <class T> void d_Sum(T* d_input, T* d_output, size_t n, int batch)
 			result = t;
 		}
 
-		cudaMemcpy(d_output + b, &result, sizeof(T), cudaMemcpyHostToDevice);
+		cudaMemcpy(d_output + b, &result, sizeof(T), cudaMemcpyHostToDevice);*/
 	}
+	d_SumMonolithic(d_intermediate, d_output, numblocks, batch);
 
-	free(h_intermediate);
+	//free(h_intermediate);
 	cudaFree(d_intermediate);
 }
 template void d_Sum<float>(float* d_input, float* d_output, size_t n, int batch);
 template void d_Sum<double>(double* d_input, double* d_output, size_t n, int batch);
 template void d_Sum<int>(int* d_input, int* d_output, size_t n, int batch);
+
+template <class T> void d_SumMonolithic(T* d_input, T* d_output, int n, int batch)
+{
+	int TpB = min(n, 256);
+	dim3 grid = dim3(batch);
+	if(TpB <= 4)
+		SumMonolithicKernel <T, 4> <<<grid, TpB>>> (d_input, d_output, n);
+	else if(TpB <= 8)
+		SumMonolithicKernel <T, 8> <<<grid, TpB>>> (d_input, d_output, n);
+	else if(TpB <= 16)
+		SumMonolithicKernel <T, 16> <<<grid, TpB>>> (d_input, d_output, n);
+	else if(TpB <= 32)
+		SumMonolithicKernel <T, 32> <<<grid, TpB>>> (d_input, d_output, n);
+	else if(TpB <= 64)
+		SumMonolithicKernel <T, 64> <<<grid, TpB>>> (d_input, d_output, n);
+	else if(TpB <= 128)
+		SumMonolithicKernel <T, 128> <<<grid, TpB>>> (d_input, d_output, n);
+	else if(TpB <= 256)
+		SumMonolithicKernel <T, 256> <<<grid, TpB>>> (d_input, d_output, n);
+}
+template void d_SumMonolithic<float>(float* d_input, float* d_output, int n, int batch);
+template void d_SumMonolithic<double>(double* d_input, double* d_output, int n, int batch);
+template void d_SumMonolithic<int>(int* d_input, int* d_output, int n, int batch);
 
 
 ////////////////
@@ -254,4 +279,38 @@ template <class T, uint blockSize, bool nIsPow2> __global__ void SumKernel(T* d_
     // write result for this block to global mem
     if (tid == 0)
         d_output[blockIdx.x] = sdata[0];
+}
+
+template <class T, uint blockSize> __global__ void SumMonolithicKernel(T* d_input, T* d_output, int n)
+{
+	__shared__ T sums[blockSize];
+
+	d_input += n * blockIdx.x;
+	
+	T result = 0;
+	T c = 0, y, t;
+	for (int id = threadIdx.x; id < n; id += blockDim.x)
+	{
+		y = d_input[id] - c;
+		t = result + y;
+		c = (t - result) - y;
+		result = t;
+	}
+
+	sums[threadIdx.x] = result;
+
+	__syncthreads();
+
+	if(threadIdx.x == 0)
+	{
+		for (int i = 1; i < blockDim.x; i++)
+		{
+			y = sums[i] - c;
+			t = result + y;
+			c = (t - result) - y;
+			result = t;
+		}
+
+		d_output[blockIdx.x] = result;
+	}
 }

@@ -255,5 +255,11 @@
     <CudaCompile Include="Generics\MakeAtlas.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
+    <CudaCompile Include="Helpers\AngularSpacing.cu">
+      <Filter>Helpers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Projection\Forward2.cu">
+      <Filter>Projection</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

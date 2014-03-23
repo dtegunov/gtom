@@ -22,41 +22,38 @@ __global__ void NormMeanStdDevMonoKernel(tfloat* d_input, tfloat* d_output, int 
 
 template <class Tmask> void d_Norm(tfloat* d_input, tfloat* d_output, size_t elements, Tmask* d_mask, T_NORM_MODE mode, tfloat scf, int batch)
 {
-	for (int b = 0; b < batch; b++)
+	imgstats5* d_imagestats;
+	cudaMalloc((void**)&d_imagestats, batch * sizeof(imgstats5));
+	d_Dev(d_input, d_imagestats, elements, d_mask, batch);
+
+	imgstats5* h_imagestats = (imgstats5*)MallocFromDeviceArray(d_imagestats, batch * sizeof(imgstats5));
+
+	size_t TpB = min(192, NextMultipleOf(elements, 32));
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	dim3 grid = dim3((uint)totalblocks, batch);
+
+	if(mode == T_NORM_MODE::T_NORM_PHASE)
+		NormPhaseKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements);
+	else if(mode == T_NORM_MODE::T_NORM_STD1)
+		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)1);
+	else if(mode == T_NORM_MODE::T_NORM_STD2)
+		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)2);
+	else if(mode == T_NORM_MODE::T_NORM_STD3)
+		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)3);
+	else if(mode == T_NORM_MODE::T_NORM_MEAN01STD)
+		NormMeanStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements);
+	else if(mode == T_NORM_MODE::T_NORM_OSCAR)
 	{
-		imgstats5* d_imagestats;
-		cudaMalloc((void**)&d_imagestats, batch * sizeof(imgstats5));
-		d_Dev(d_input + elements * b, d_imagestats, elements, d_mask, batch);
-
-		imgstats5* h_imagestats = (imgstats5*)MallocFromDeviceArray(d_imagestats, batch * sizeof(imgstats5));
-
-		size_t TpB = min(192, NextMultipleOf(elements, 32));
-		size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
-		dim3 grid = dim3((uint)totalblocks, batch);
-
-		if(mode == T_NORM_MODE::T_NORM_PHASE)
-			NormPhaseKernel <<<grid, (uint)TpB>>> (d_input + elements * b, d_output + elements * b, d_imagestats, elements);
-		else if(mode == T_NORM_MODE::T_NORM_STD1)
-			NormStdDevKernel <<<grid, (uint)TpB>>> (d_input + elements * b, d_output + elements * b, d_imagestats, elements, (tfloat)1);
-		else if(mode == T_NORM_MODE::T_NORM_STD2)
-			NormStdDevKernel <<<grid, (uint)TpB>>> (d_input + elements * b, d_output + elements * b, d_imagestats, elements, (tfloat)2);
-		else if(mode == T_NORM_MODE::T_NORM_STD3)
-			NormStdDevKernel <<<grid, (uint)TpB>>> (d_input + elements * b, d_output + elements * b, d_imagestats, elements, (tfloat)3);
-		else if(mode == T_NORM_MODE::T_NORM_MEAN01STD)
-			NormMeanStdDevKernel <<<grid, (uint)TpB>>> (d_input + elements * b, d_output + elements * b, d_imagestats, elements);
-		else if(mode == T_NORM_MODE::T_NORM_OSCAR)
-		{
-			NormStdDevKernel <<<grid, (uint)TpB>>> (d_input + elements * b, d_output + elements * b, d_imagestats, elements, (tfloat)3);
-			d_AddScalar(d_output + elements * b, d_output + elements * b, elements * batch, (tfloat)100);
-			d_Dev(d_output + elements * b, d_imagestats, elements, d_mask, batch);
-			NormPhaseKernel <<<grid, (uint)TpB>>> (d_output + elements * b, d_output + elements * b, d_imagestats, elements);
-		}
-		else if(mode == T_NORM_MODE::T_NORM_CUSTOM)
-			NormCustomScfKernel <<<grid, (uint)TpB>>> (d_input + elements * b, d_output + elements * b, d_imagestats, elements, scf);
-
-		free(h_imagestats);
-		cudaFree(d_imagestats);
+		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)3);
+		d_AddScalar(d_output, d_output, elements * batch, (tfloat)100);
+		d_Dev(d_output, d_imagestats, elements, d_mask, batch);
+		NormPhaseKernel <<<grid, (uint)TpB>>> (d_output, d_output, d_imagestats, elements);
 	}
+	else if(mode == T_NORM_MODE::T_NORM_CUSTOM)
+		NormCustomScfKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, scf);
+
+	free(h_imagestats);
+	cudaFree(d_imagestats);
 }
 template void d_Norm<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat* d_mask, T_NORM_MODE mode, tfloat stddev, int batch);
 template void d_Norm<int>(tfloat* d_input, tfloat* d_output, size_t elements, int* d_mask, T_NORM_MODE mode, tfloat stddev, int batch);

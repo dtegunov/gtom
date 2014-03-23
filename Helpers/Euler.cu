@@ -3,8 +3,8 @@
 glm::mat4 GetEulerRotation(tfloat3 angles)
 {
 	float phi = angles.x;
-	float psi = angles.y;
-	float theta = angles.z;
+	float theta = angles.y;
+	float psi = angles.z;
 
 	float cosphi = cos(phi), sinphi = sin(phi);
 	float cospsi = cos(psi), sinpsi = sin(psi);
@@ -38,5 +38,5 @@ glm::mat4 GetEulerRotation(tfloat2 angles)
 	float psi = angles.x - PI / 2.0f;
 	float theta = angles.y;
 	
-	return glm::inverse(GetEulerRotation(tfloat3(phi, psi, theta)));
+	return glm::inverse(GetEulerRotation(tfloat3(phi, theta, psi)));
 }

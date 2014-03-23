@@ -143,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Align2D.cpp" />
+    <ClCompile Include="Align3D.cpp" />
     <ClCompile Include="ART.cpp" />
     <ClCompile Include="Backward.cpp" />
     <ClCompile Include="Bandpass.cpp" />
@@ -163,6 +164,7 @@
     <ClCompile Include="LocalPeaks.cpp" />
     <ClCompile Include="Padding.cpp" />
     <ClCompile Include="Peak.cpp" />
+    <ClCompile Include="Rotation.cpp" />
     <ClCompile Include="Scale.cpp" />
     <ClCompile Include="Max.cpp" />
     <ClCompile Include="Min.cpp" />

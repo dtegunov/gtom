@@ -11,3 +11,5 @@
 
 glm::mat4 GetEulerRotation(tfloat3 angles);
 glm::mat4 GetEulerRotation(tfloat2 angles);
+
+tfloat3* GetEqualAngularSpacing(tfloat2 phirange, tfloat2 thetarange, tfloat2 psirange, tfloat increment, int &numangles);

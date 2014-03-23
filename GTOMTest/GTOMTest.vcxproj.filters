@@ -138,6 +138,12 @@
     <ClCompile Include="ART.cpp">
       <Filter>Source Files\Reconstruction</Filter>
     </ClCompile>
+    <ClCompile Include="Align3D.cpp">
+      <Filter>Source Files\Alignment</Filter>
+    </ClCompile>
+    <ClCompile Include="Rotation.cpp">
+      <Filter>Source Files\Transformation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">
