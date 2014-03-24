@@ -144,6 +144,12 @@
     <ClCompile Include="Rotation.cpp">
       <Filter>Source Files\Transformation</Filter>
     </ClCompile>
+    <ClCompile Include="AnisotropicFSC.cpp">
+      <Filter>Source Files\Resolution</Filter>
+    </ClCompile>
+    <ClCompile Include="IrregularSphereMask.cpp">
+      <Filter>Source Files\Masking</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">

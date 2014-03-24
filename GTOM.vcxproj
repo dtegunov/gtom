@@ -70,14 +70,17 @@
     <CudaCompile Include="Helpers\Memory.cu" />
     <CudaCompile Include="Helpers\Misc.cu" />
     <CudaCompile Include="Helpers\TypeConversion.cu" />
+    <CudaCompile Include="ImageManipulation\AnisotropicLowpass.cu" />
     <CudaCompile Include="ImageManipulation\Bandpass.cu" />
     <CudaCompile Include="ImageManipulation\LocalLowpass.cu" />
     <CudaCompile Include="ImageManipulation\Norm.cu" />
     <CudaCompile Include="ImageManipulation\Xray.cu" />
+    <CudaCompile Include="Masking\IrregularSphereMask.cu" />
     <CudaCompile Include="Masking\Windows.cu" />
     <CudaCompile Include="Projection\Backward.cu" />
     <CudaCompile Include="Projection\Forward.cu" />
     <CudaCompile Include="Projection\Forward2.cu" />
+    <CudaCompile Include="Resolution\AnisotropicFSC.cu" />
     <CudaCompile Include="Resolution\FSC.cu" />
     <CudaCompile Include="Resolution\LocalFSC.cu" />
     <CudaCompile Include="Transformation\Rotation.cu" />

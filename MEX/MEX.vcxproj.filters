@@ -54,6 +54,12 @@
     <None Include="ImageManipulation\LocalLowpass.cu">
       <Filter>Source Files\Image Manipulation</Filter>
     </None>
+    <None Include="Resolution\AnisotropicFSCMap.cu">
+      <Filter>Source Files\Resolution</Filter>
+    </None>
+    <None Include="ImageManipulation\AnisotropicLowpass.cu">
+      <Filter>Source Files\Image Manipulation</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">

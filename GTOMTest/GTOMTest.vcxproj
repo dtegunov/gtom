@@ -144,6 +144,7 @@
   <ItemGroup>
     <ClCompile Include="Align2D.cpp" />
     <ClCompile Include="Align3D.cpp" />
+    <ClCompile Include="AnisotropicFSC.cpp" />
     <ClCompile Include="ART.cpp" />
     <ClCompile Include="Backward.cpp" />
     <ClCompile Include="Bandpass.cpp" />
@@ -160,6 +161,7 @@
     <ClCompile Include="FSC.cpp" />
     <ClCompile Include="Helper.cpp" />
     <ClCompile Include="Histogram.cpp" />
+    <ClCompile Include="IrregularSphereMask.cpp" />
     <ClCompile Include="LocalFSC.cpp" />
     <ClCompile Include="LocalPeaks.cpp" />
     <ClCompile Include="Padding.cpp" />

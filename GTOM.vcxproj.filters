@@ -261,5 +261,14 @@
     <CudaCompile Include="Projection\Forward2.cu">
       <Filter>Projection</Filter>
     </CudaCompile>
+    <CudaCompile Include="Resolution\AnisotropicFSC.cu">
+      <Filter>Resolution</Filter>
+    </CudaCompile>
+    <CudaCompile Include="ImageManipulation\AnisotropicLowpass.cu">
+      <Filter>Image Manipulation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Masking\IrregularSphereMask.cu">
+      <Filter>Masking</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
