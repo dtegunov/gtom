@@ -166,6 +166,7 @@
     <ClCompile Include="LocalPeaks.cpp" />
     <ClCompile Include="Padding.cpp" />
     <ClCompile Include="Peak.cpp" />
+    <ClCompile Include="RecFourier.cpp" />
     <ClCompile Include="Rotation.cpp" />
     <ClCompile Include="Scale.cpp" />
     <ClCompile Include="Max.cpp" />

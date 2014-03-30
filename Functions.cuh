@@ -219,6 +219,7 @@ template <class T> void d_Sqrt(T* d_input, T* d_output, size_t elements);
 template <class T> void d_Square(T* d_input, T* d_output, size_t elements, int batch = 1);
 template <class T> void d_Pow(T* d_input, T* d_output, size_t elements, T exponent);
 template <class T> void d_Abs(T* d_input, T* d_output, size_t elements);
+template <class T> void d_Inv(T* d_input, T* d_output, size_t elements);
 
 template <class T> void d_MaxOp(T* d_input1, T* d_input2, T* d_output, size_t elements);
 template <class T> void d_MinOp(T* d_input1, T* d_input2, T* d_output, size_t elements);
@@ -374,6 +375,7 @@ template <class T> void d_RemapFull2HalfFFT(T* d_input, T* d_output, int3 dims, 
 template <class T> void d_RemapFullFFT2Full(T* d_input, T* d_output, int3 dims, int batch = 1);
 template <class T> void d_RemapFull2FullFFT(T* d_input, T* d_output, int3 dims, int batch = 1);
 template <class T> void d_RemapHalfFFT2Half(T* d_input, T* d_output, int3 dims, int batch = 1);
+template <class T> void d_RemapHalf2HalfFFT(T* d_input, T* d_output, int3 dims, int batch = 1);
 
 //FFTResize.cu:
 void d_FFTCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
@@ -456,7 +458,11 @@ void d_ProjForward2(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, tfloat* 
 //Reconstruction//
 //////////////////
 
+//ART.cu:
 void d_ART(tfloat* d_projections, int3 dimsproj, char* d_masks, tfloat* d_volume, tfloat* d_volumeerrors, int3 dimsvolume, tfloat2* h_angles, int iterations);
+
+//RecFourier.cu:
+void d_ReconstructFourier(tfloat* d_projections, int3 dimsproj, tfloat* d_volume, int3 dimsvolume, tfloat2* h_angles);
 
 
 //////////////

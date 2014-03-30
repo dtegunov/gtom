@@ -80,6 +80,7 @@
     <CudaCompile Include="Projection\Backward.cu" />
     <CudaCompile Include="Projection\Forward.cu" />
     <CudaCompile Include="Projection\Forward2.cu" />
+    <CudaCompile Include="Reconstruction\RecFourier.cu" />
     <CudaCompile Include="Resolution\AnisotropicFSC.cu" />
     <CudaCompile Include="Resolution\FSC.cu" />
     <CudaCompile Include="Resolution\LocalFSC.cu" />

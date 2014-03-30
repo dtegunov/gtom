@@ -150,6 +150,9 @@
     <ClCompile Include="IrregularSphereMask.cpp">
       <Filter>Source Files\Masking</Filter>
     </ClCompile>
+    <ClCompile Include="RecFourier.cpp">
+      <Filter>Source Files\Reconstruction</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">

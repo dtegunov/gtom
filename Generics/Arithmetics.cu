@@ -39,6 +39,7 @@ template <class T> __global__ void SquareKernel(T* d_input, T* d_output, size_t 
 template <class T> __global__ void SqrtKernel(T* d_input, T* d_output, size_t elements);
 template <class T> __global__ void PowKernel(T* d_input, T* d_output, size_t elements, T exponent);
 template <class T> __global__ void AbsKernel(T* d_input, T* d_output, size_t elements);
+template <class T> __global__ void InvKernel(T* d_input, T* d_output, size_t elements);
 
 template <class T> __global__ void MaxOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements);
 template <class T> __global__ void MinOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements);
@@ -661,6 +662,30 @@ template <class T> __global__ void AbsKernel(T* d_input, T* d_output, size_t ele
 		id < elements; 
 		id += blockDim.x * gridDim.x)
 		d_output[id] = abs(d_input[id]);
+}
+
+
+///////////
+//Inverse//
+///////////
+
+template <class T> void d_Inv(T* d_input, T* d_output, size_t elements)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	dim3 grid = dim3((uint)totalblocks);
+	InvKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements);
+}
+template void d_Inv<float>(float* d_input, float* d_output, size_t elements);
+template void d_Inv<double>(double* d_input, double* d_output, size_t elements);
+
+template <class T> __global__ void InvKernel(T* d_input, T* d_output, size_t elements)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+		if(d_input[id] != (T)0)
+			d_output[id] = (T)1 / d_input[id];
 }
 
 

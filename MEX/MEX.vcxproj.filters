@@ -25,6 +25,9 @@
     <Filter Include="Source Files\Image Manipulation">
       <UniqueIdentifier>{8c163f9f-68b2-4f76-bf91-e87bc0299121}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Reconstruction">
+      <UniqueIdentifier>{58f577eb-f0ca-43d1-9cad-9f491246b0a7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Helper.cu">
@@ -59,6 +62,12 @@
     </None>
     <None Include="ImageManipulation\AnisotropicLowpass.cu">
       <Filter>Source Files\Image Manipulation</Filter>
+    </None>
+    <None Include="Reconstruction\SIRT.cu">
+      <Filter>Source Files\Reconstruction</Filter>
+    </None>
+    <None Include="Reconstruction\RecFourier.cu">
+      <Filter>Source Files\Reconstruction</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

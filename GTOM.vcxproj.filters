@@ -270,5 +270,8 @@
     <CudaCompile Include="Masking\IrregularSphereMask.cu">
       <Filter>Masking</Filter>
     </CudaCompile>
+    <CudaCompile Include="Reconstruction\RecFourier.cu">
+      <Filter>Reconstruction</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
