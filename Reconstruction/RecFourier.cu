@@ -24,32 +24,25 @@ __global__ void ReconstructFourierKernel(tcomplex* d_projft, tcomplex* d_volumef
 
 void d_ReconstructFourier(tfloat* d_projections, int3 dimsproj, tfloat* d_volume, int3 dimsvolume, tfloat2* h_angles)
 {
-	d_RemapFull2FullFFT(d_projections, d_projections, toInt3(dimsproj.x, dimsproj.y, 1), dimsproj.z);
+	tfloat* d_projremapped;
+	cudaMalloc((void**)&d_projremapped, Elements(dimsproj) * sizeof(tfloat));
+	d_RemapFull2FullFFT(d_projections, d_projremapped, toInt3(dimsproj.x, dimsproj.y, 1), dimsproj.z);
 
 	tcomplex* d_projft;
 	cudaMalloc((void**)&d_projft, ElementsFFT(dimsproj) * sizeof(tcomplex));
-	for (int b = 0; b < dimsproj.z; b++)
-		d_FFTR2C(d_projections + dimsproj.x * dimsproj.y * b, d_projft + (dimsproj.x / 2 + 1) * dimsproj.y * b, 2, toInt3(dimsproj.x, dimsproj.y, 1));
-
-	tcomplex* d_projftsym;
-	cudaMalloc((void**)&d_projftsym, Elements(dimsproj) * sizeof(tcomplex));
-	d_HermitianSymmetryPad(d_projft, d_projftsym, toInt3(dimsproj.x, dimsproj.y, 1), dimsproj.z);
+	for (int b = 0; b < dimsproj.z; b += 100)
+		d_FFTR2C(d_projremapped + dimsproj.x * dimsproj.y * b, d_projft + (dimsproj.x / 2 + 1) * dimsproj.y * b, 2, toInt3(dimsproj.x, dimsproj.y, 1), min(100, dimsproj.z - b));
+	cudaFree(d_projremapped);
 
 	tcomplex* d_projftshifted;
-	//cudaMalloc((void**)&d_projftshifted, ElementsFFT(dimsproj) * sizeof(tcomplex));
-	//d_RemapHalfFFT2Half(d_projft, d_projftshifted, toInt3(dimsproj.x, dimsproj.y, 1), dimsproj.z);
-	cudaMalloc((void**)&d_projftshifted, Elements(dimsproj) * sizeof(tcomplex));
-	d_RemapFullFFT2Full(d_projftsym, d_projftshifted, toInt3(dimsproj.x, dimsproj.y, 1), dimsproj.z);
-	cudaFree(d_projft);
-	cudaFree(d_projftsym);
+	cudaMalloc((void**)&d_projftshifted, ElementsFFT(dimsproj) * sizeof(tcomplex));
+	d_RemapHalfFFT2Half(d_projft, d_projftshifted, toInt3(dimsproj.x, dimsproj.y, 1), dimsproj.z);
 
 	//tcomplex* h_projftshifted = (tcomplex*)MallocFromDeviceArray(d_projftshifted, ElementsFFT(dimsproj) * sizeof(tcomplex));
 	//free(h_projftshifted);
 
-	//tcomplex* d_volumeft = (tcomplex*)CudaMallocValueFilled(ElementsFFT(dimsvolume) * 2, (tfloat)0);
-	//tfloat* d_samples = CudaMallocValueFilled(ElementsFFT(dimsvolume), (tfloat)0);
-	tcomplex* d_volumeft = (tcomplex*)CudaMallocValueFilled(Elements(dimsvolume) * 2, (tfloat)0);
-	tfloat* d_samples = CudaMallocValueFilled(Elements(dimsvolume), (tfloat)0);
+	tcomplex* d_volumeft = (tcomplex*)CudaMallocValueFilled(ElementsFFT(dimsvolume) * 2, (tfloat)0);
+	tfloat* d_samples = CudaMallocValueFilled(ElementsFFT(dimsvolume), (tfloat)0);
 
 	glm::vec3* h_vecX = (glm::vec3*)malloc(dimsproj.z * sizeof(glm::vec3));
 	glm::vec3* h_vecY = (glm::vec3*)malloc(dimsproj.z * sizeof(glm::vec3));
@@ -72,33 +65,26 @@ void d_ReconstructFourier(tfloat* d_projections, int3 dimsproj, tfloat* d_volume
 	free(h_vecX);
 	free(h_vecY);
 
-	int TpB = min(NextMultipleOf((dimsproj.x) * dimsproj.y, 32), 256);
-	dim3 grid = dim3(((dimsproj.x) * dimsproj.y + TpB - 1) / TpB, dimsproj.z);
+	int TpB = min(NextMultipleOf((dimsproj.x / 2 + 1) * dimsproj.y, 32), 256);
+	dim3 grid = dim3(((dimsproj.x / 2 + 1) * dimsproj.y + TpB - 1) / TpB, dimsproj.z);
 	ReconstructFourierKernel <<<grid, TpB>>> (d_projftshifted, d_volumeft, d_samples, dimsvolume, toInt3(dimsproj.x, dimsproj.y, 1), d_vecX, d_vecY);
 
 	cudaFree(d_vecX);
 	cudaFree(d_vecY);
 	cudaFree(d_projftshifted);
 
-	d_Inv(d_samples, d_samples, Elements(dimsvolume));
-	d_ComplexMultiplyByVector(d_volumeft, d_samples, d_volumeft, Elements(dimsvolume));
+	d_Inv(d_samples, d_samples, ElementsFFT(dimsvolume));
+	d_ComplexMultiplyByVector(d_volumeft, d_samples, d_volumeft, ElementsFFT(dimsvolume));
 	cudaFree(d_samples);
-	d_RemapFull2FullFFT(d_volumeft, d_volumeft, dimsvolume);
-
-	tcomplex* d_volumeftasym;
-	cudaMalloc((void**)&d_volumeftasym, ElementsFFT(dimsvolume) * sizeof(tcomplex));
-	d_HermitianSymmetryTrim(d_volumeft, d_volumeftasym, dimsvolume);
-	cudaFree(d_volumeft);
+	d_RemapHalf2HalfFFT(d_volumeft, d_volumeft, dimsvolume);
 
 	//tcomplex* h_volumeft = (tcomplex*)MallocFromDeviceArray(d_volumeft, ElementsFFT(dimsvolume) * sizeof(tcomplex));
 	//free(h_volumeft);
-	//d_MultiplyByScalar((tfloat*)d_volumeft, (tfloat*)d_volumeft, ElementsFFT(dimsvolume) * 2, (tfloat)1 / (tfloat)dimsproj.z);
-	d_IFFTC2R(d_volumeftasym, d_volume, 3, dimsvolume);
-
+	d_IFFTC2R(d_volumeft, d_volume, 3, dimsvolume);
 	d_RemapFullFFT2Full(d_volume, d_volume, dimsvolume);
 
 
-	cudaFree(d_volumeftasym);
+	cudaFree(d_volumeft);
 }
 
 
@@ -108,24 +94,24 @@ void d_ReconstructFourier(tfloat* d_projections, int3 dimsproj, tfloat* d_volume
 
 __global__ void ReconstructFourierKernel(tcomplex* d_projft, tcomplex* d_volumeft, tfloat* d_samples, int3 dimsvolume, int3 dimsproj, glm::vec3* d_vecX, glm::vec3* d_vecY)
 {
-	int elements = Elements(dimsproj);
+	int elements = ElementsFFT(dimsproj);
 	d_projft += elements * blockIdx.y;
 
 	for (int id = blockIdx.x * blockDim.x + threadIdx.x; id < elements; id += gridDim.x * blockDim.x)
 	{
-		int y = id / (dimsproj.x);
-		int x = id % (dimsproj.x);
+		int y = id / (dimsproj.x / 2 + 1);
+		int x = id % (dimsproj.x / 2 + 1);
 
 		glm::vec3 rotated = (float)(x - dimsvolume.x / 2) * d_vecX[blockIdx.y] + (float)(y - dimsvolume.y / 2) * d_vecY[blockIdx.y];
 		if(rotated.x * rotated.x + rotated.y * rotated.y + rotated.z * rotated.z >= dimsvolume.x * dimsvolume.x / 4)
 			continue;
 
-		//bool isnegative = false;
-		/*if(rotated.x > 0.0f)
+		bool isnegative = false;
+		if(rotated.x > 0.0f)
 		{
 			rotated = -rotated;
 			isnegative = true;
-		}*/
+		}
 		rotated += glm::vec3((float)(dimsvolume.x / 2));
 		int x0 = (int)rotated.x;
 		int y0 = (int)rotated.y;
@@ -139,8 +125,8 @@ __global__ void ReconstructFourierKernel(tcomplex* d_projft, tcomplex* d_volumef
 		int z1 = min(z0 + 1, dimsvolume.z - 1);
 
 		tcomplex val = d_projft[id];
-		//if(isnegative)
-			//val = cconj(val);
+		if(isnegative)
+			val = cconj(val);
 		
 		float xd = rotated.x - floor(rotated.x);
 		float yd = rotated.y - floor(rotated.y);
@@ -163,37 +149,37 @@ __global__ void ReconstructFourierKernel(tcomplex* d_projft, tcomplex* d_volumef
 		float c011 = (1.0f - xd) * c11;
 		float c111 = xd * c11;
 
-		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x) + x0), c000 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x) + x0)) + 1, c000 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y0) * (dimsvolume.x) + x0), c000);
+		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0), c000 * val.x);
+		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0)) + 1, c000 * val.y);
+		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0), c000);
 
-		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x) + x1), c100 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x) + x1)) + 1, c100 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y0) * (dimsvolume.x) + x1), c100);
+		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1), c100 * val.x);
+		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1)) + 1, c100 * val.y);
+		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1), c100);
 
-		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x) + x0), c010 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x) + x0)) + 1, c010 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y1) * (dimsvolume.x) + x0), c010);
+		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0), c010 * val.x);
+		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0)) + 1, c010 * val.y);
+		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0), c010);
 
-		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x) + x1), c110 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x) + x1)) + 1, c110 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y1) * (dimsvolume.x) + x1), c110);
+		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1), c110 * val.x);
+		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1)) + 1, c110 * val.y);
+		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1), c110);
 
 
-		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x) + x0), c001 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x) + x0)) + 1, c001 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y0) * (dimsvolume.x) + x0), c001);
+		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0), c001 * val.x);
+		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0)) + 1, c001 * val.y);
+		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0), c001);
 
-		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x) + x1), c101 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x) + x1)) + 1, c101 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y0) * (dimsvolume.x) + x1), c101);
+		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1), c101 * val.x);
+		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1)) + 1, c101 * val.y);
+		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1), c101);
 
-		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x) + x0), c011 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x) + x0)) + 1, c011 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y1) * (dimsvolume.x) + x0), c011);
+		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0), c011 * val.x);
+		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0)) + 1, c011 * val.y);
+		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0), c011);
 
-		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x) + x1), c111 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x) + x1)) + 1, c111 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y1) * (dimsvolume.x) + x1), c111);
+		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1), c111 * val.x);
+		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1)) + 1, c111 * val.y);
+		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1), c111);
 	}
 }
