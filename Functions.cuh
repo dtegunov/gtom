@@ -221,6 +221,9 @@ template <class T> void d_Pow(T* d_input, T* d_output, size_t elements, T expone
 template <class T> void d_Abs(T* d_input, T* d_output, size_t elements);
 template <class T> void d_Inv(T* d_input, T* d_output, size_t elements);
 
+void d_ComplexPolarToCart(tcomplex* d_polar, tcomplex* d_cart, size_t elements);
+void d_ComplexCartToPolar(tcomplex* d_cart, tcomplex* d_polar, size_t elements);
+
 template <class T> void d_MaxOp(T* d_input1, T* d_input2, T* d_output, size_t elements);
 template <class T> void d_MinOp(T* d_input1, T* d_input2, T* d_output, size_t elements);
 

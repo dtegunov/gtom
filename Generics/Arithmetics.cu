@@ -41,6 +41,9 @@ template <class T> __global__ void PowKernel(T* d_input, T* d_output, size_t ele
 template <class T> __global__ void AbsKernel(T* d_input, T* d_output, size_t elements);
 template <class T> __global__ void InvKernel(T* d_input, T* d_output, size_t elements);
 
+__global__ void ComplexPolarToCartKernel(tcomplex* d_polar, tcomplex* d_cart, size_t elements);
+__global__ void ComplexCartToPolarKernel(tcomplex* d_cart, tcomplex* d_polar, size_t elements);
+
 template <class T> __global__ void MaxOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements);
 template <class T> __global__ void MinOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements);
 
@@ -686,6 +689,49 @@ template <class T> __global__ void InvKernel(T* d_input, T* d_output, size_t ele
 		id += blockDim.x * gridDim.x)
 		if(d_input[id] != (T)0)
 			d_output[id] = (T)1 / d_input[id];
+}
+
+
+/////////////////////////////////
+//Complex number representation//
+/////////////////////////////////
+
+void d_ComplexPolarToCart(tcomplex* d_polar, tcomplex* d_cart, size_t elements)
+{
+	int TpB = min(256, elements);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 8192));
+	ComplexPolarToCartKernel <<<grid, TpB>>> (d_polar, d_cart, elements);
+}
+
+__global__ void ComplexPolarToCartKernel(tcomplex* d_polar, tcomplex* d_cart, size_t elements)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+		#ifndef TOM_DOUBLE
+			d_cart[id] = make_cuComplex(cos(d_polar[id].y) * d_polar[id].x, sin(d_polar[id].y) * d_polar[id].x);
+		#else
+			d_cart[id] = make_cuDoubleComplex(cos(d_polar[id].y) * d_polar[id].x, sin(d_polar[id].y) * d_polar[id].x);
+		#endif
+}
+
+void d_ComplexCartToPolar(tcomplex* d_cart, tcomplex* d_polar, size_t elements)
+{
+	int TpB = min(256, elements);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 8192));
+	ComplexCartToPolarKernel <<<grid, TpB>>> (d_cart, d_polar, elements);
+}
+
+__global__ void ComplexCartToPolarKernel(tcomplex* d_cart, tcomplex* d_polar, size_t elements)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+		#ifndef TOM_DOUBLE
+			d_cart[id] = make_cuComplex(sqrt(d_cart[id].x * d_cart[id].x + d_cart[id].y * d_cart[id].y), atan2(d_cart[id].y, d_cart[id].x));
+		#else
+			d_cart[id] = make_cuDoubleComplex(sqrt(d_cart[id].x * d_cart[id].x + d_cart[id].y * d_cart[id].y), atan2(d_cart[id].y, d_cart[id].x));
+		#endif
 }
 
 
