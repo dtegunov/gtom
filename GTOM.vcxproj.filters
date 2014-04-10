@@ -49,6 +49,9 @@
     <Filter Include="Reconstruction">
       <UniqueIdentifier>{c345958e-abbd-4a78-8ff9-a90dcc8739e3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Tomography">
+      <UniqueIdentifier>{3ed6bd75-1d43-4392-8ba8-1102c2283da7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CubicSplines\internal\cutil_math_bugfixes.h">
@@ -272,6 +275,9 @@
     </CudaCompile>
     <CudaCompile Include="Reconstruction\RecFourier.cu">
       <Filter>Reconstruction</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Tomography\InterpolateSingleAxis.cu">
+      <Filter>Tomography</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

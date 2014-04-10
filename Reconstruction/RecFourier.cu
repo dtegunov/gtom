@@ -24,6 +24,9 @@ __global__ void ReconstructFourierKernel(tcomplex* d_projft, tcomplex* d_volumef
 
 void d_ReconstructFourier(tfloat* d_projections, int3 dimsproj, tfloat* d_volume, int3 dimsvolume, tfloat2* h_angles)
 {
+	//tfloat* h_projections = (tfloat*)MallocFromDeviceArray(d_projections, Elements(dimsproj) * sizeof(tfloat));
+	//free(h_projections);
+
 	tfloat* d_projremapped;
 	cudaMalloc((void**)&d_projremapped, Elements(dimsproj) * sizeof(tfloat));
 	d_RemapFull2FullFFT(d_projections, d_projremapped, toInt3(dimsproj.x, dimsproj.y, 1), dimsproj.z);
@@ -37,6 +40,7 @@ void d_ReconstructFourier(tfloat* d_projections, int3 dimsproj, tfloat* d_volume
 	tcomplex* d_projftshifted;
 	cudaMalloc((void**)&d_projftshifted, ElementsFFT(dimsproj) * sizeof(tcomplex));
 	d_RemapHalfFFT2Half(d_projft, d_projftshifted, toInt3(dimsproj.x, dimsproj.y, 1), dimsproj.z);
+	cudaFree(d_projft);
 
 	//tcomplex* h_projftshifted = (tcomplex*)MallocFromDeviceArray(d_projftshifted, ElementsFFT(dimsproj) * sizeof(tcomplex));
 	//free(h_projftshifted);

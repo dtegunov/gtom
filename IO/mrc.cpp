@@ -13,7 +13,7 @@ void ReadMRC(string path, void** data, EM_DATATYPE &datatype, int nframe, bool f
 	int mode = ((int*)header)[3];
 	if(mode == 0)
 		datatype = EM_DATATYPE::EM_BYTE;
-	else if(mode == 1)
+	else if(mode == 1 || mode == 6)
 		datatype = EM_DATATYPE::EM_SHORT;
 	else if(mode == 2)
 		datatype = EM_DATATYPE::EM_SINGLE;

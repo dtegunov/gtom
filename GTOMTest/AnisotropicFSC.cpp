@@ -17,7 +17,7 @@ TEST(Resolution, AnisotropicFSC)
 		
 		//d_AnisotropicFSC(d_input1, d_input2, dims, d_curve, shells, tfloat3(1, 0, 0), ToRad(90), (tfloat)0, NULL, 2);
 		//d_FirstIndexOf(d_curve, d_resolution, shells, (tfloat)0.3, T_INTERP_LINEAR, 2);
-		d_AnisotropicFSCMap(d_input1, d_input2, dims, d_map, toInt2(24, 6), shells, (tfloat)0.143, NULL, 1);
+		d_AnisotropicFSCMap(d_input1, d_input2, dims, d_map, toInt2(24, 6), shells, T_FSC_THRESHOLD, (tfloat)0.143, NULL, 1);
 
 		tfloat* h_map = (tfloat*)MallocFromDeviceArray(d_map, 24 * 6 * sizeof(tfloat));
 		tfloat* h_curve = (tfloat*)MallocFromDeviceArray(d_curve, shells * 2 * sizeof(tfloat));

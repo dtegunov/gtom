@@ -6,7 +6,7 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-__global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3 delta);
+template<int ndims> __global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3 delta);
 __global__ void ShiftIntegerKernel(tfloat* d_input, tfloat* d_output, int3 dims, int3 delta);
 
 
@@ -35,7 +35,10 @@ void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufft
 
 			int TpB = min(256, NextMultipleOf(dims.x / 2 + 1, 32));
 			dim3 grid = dim3(((dims.x / 2 + 1) + TpB - 1) / TpB, dims.y, dims.z);
-			ShiftFourierKernel <<<grid, TpB>>> (d_intermediate, d_intermediate, dims, normdelta);
+			if(DimensionCount(dims) == 3)
+				ShiftFourierKernel <3> <<<grid, TpB>>> (d_intermediate, d_intermediate, dims, normdelta);
+			else
+				ShiftFourierKernel <2> <<<grid, TpB>>> (d_intermediate, d_intermediate, dims, normdelta);
 			cudaStreamQuery(0);
 			
 			if(planback == NULL)
@@ -59,12 +62,28 @@ void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufft
 		cudaFree(d_intermediate);
 }
 
+void d_Shift(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* delta, int batch)
+{
+	for (int b = 0; b < batch; b++)
+	{
+		tfloat3 normdelta = tfloat3(delta[b].x / (tfloat)dims.x, delta[b].y / (tfloat)dims.y, delta[b].z / (tfloat)dims.z);
+
+		int TpB = min(256, NextMultipleOf(dims.x / 2 + 1, 32));
+		dim3 grid = dim3(((dims.x / 2 + 1) + TpB - 1) / TpB, dims.y, dims.z);
+		if(DimensionCount(dims) == 3)
+			ShiftFourierKernel <3> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
+		else
+			ShiftFourierKernel <2> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
+		cudaStreamQuery(0);
+	}
+}
+
 
 ////////////////
 //CUDA kernels//
 ////////////////
 
-__global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3 delta)
+template<int ndims> __global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3 delta)
 {
 	int x = blockIdx.x * blockDim.x + threadIdx.x;
 	if(x >= dims.x / 2 + 1)
@@ -86,7 +105,7 @@ __global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 d
 
 	tcomplex multiplicator = cmul(multx, multy);
 
-	if(dims.z > 1)
+	if(ndims > 2)
 	{
 		tfloat factorz = delta.z * (tfloat)z * (tfloat)PI2;
 		tcomplex multz = { cos(factorz), sin(-factorz) };
@@ -97,7 +116,6 @@ __global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 d
 
 	size_t id = (blockIdx.z * dims.y + blockIdx.y) * (dims.x / 2 + 1) + blockIdx.x * blockDim.x + threadIdx.x;
 	d_output[id] = cmul(d_input[id], multiplicator);
-	//d_output[id] = multiplicator;
 }
 
 __global__ void ShiftIntegerKernel(tfloat* d_input, tfloat* d_output, int3 dims, int3 delta)

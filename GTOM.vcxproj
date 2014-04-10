@@ -84,6 +84,7 @@
     <CudaCompile Include="Resolution\AnisotropicFSC.cu" />
     <CudaCompile Include="Resolution\FSC.cu" />
     <CudaCompile Include="Resolution\LocalFSC.cu" />
+    <CudaCompile Include="Tomography\InterpolateSingleAxis.cu" />
     <CudaCompile Include="Transformation\Rotation.cu" />
     <CudaCompile Include="Reconstruction\ART.cu" />
     <CudaCompile Include="Transformation\Shift.cu" />

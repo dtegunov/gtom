@@ -28,6 +28,9 @@
     <Filter Include="Source Files\Reconstruction">
       <UniqueIdentifier>{58f577eb-f0ca-43d1-9cad-9f491246b0a7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Tomography">
+      <UniqueIdentifier>{3c385251-33eb-4d57-b84d-4253286c96e6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Helper.cu">
@@ -68,6 +71,9 @@
     </None>
     <None Include="Reconstruction\RecFourier.cu">
       <Filter>Source Files\Reconstruction</Filter>
+    </None>
+    <None Include="Tomography\InterpolateSingleAxis.cu">
+      <Filter>Source Files\Tomography</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,7 @@
 #include "..\Prerequisites.h"
 
 
+//(tfloat* resmap) AnisotropicFSCMap(tfloat* volume1, tfloat* volume2, int2 anglesteps, int maxradius, tfloat threshold)
 void mexFunction(int nlhs, mxArray *plhs[],
                  int nrhs, mxArray const *prhs[])
 {
@@ -28,6 +29,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 						d_resmap, 
 						anglesteps, 
 						((double*)mxGetData(prhs[3]))[0],
+						T_FSC_THRESHOLD,
 						((double*)mxGetData(prhs[4]))[0],
 						NULL,
 						1);

@@ -240,6 +240,7 @@ template<class T> void d_Histogram(T* d_input, uint* d_histogram, size_t element
 
 //IndexOf.cu:
 void d_FirstIndexOf(tfloat* d_input, tfloat* d_output, size_t elements, tfloat value, T_INTERP_MODE mode, int batch = 1);
+void d_FirstMinimum(tfloat* d_input, tfloat* d_output, size_t elements, T_INTERP_MODE mode, int batch = 1);
 template<class T> void d_BiggerThan(tfloat* d_input, T* d_output, size_t elements, tfloat value, int batch = 1);
 template<class T> void d_SmallerThan(tfloat* d_input, T* d_output, size_t elements, tfloat value, int batch = 1);
 template<class T> void d_IsBetween(tfloat* d_input, T* d_output, size_t elements, tfloat minval, tfloat maxval, int batch = 1);
@@ -472,6 +473,12 @@ void d_ReconstructFourier(tfloat* d_projections, int3 dimsproj, tfloat* d_volume
 //Resolution//
 //////////////
 
+enum T_FSC_MODE 
+{ 
+	T_FSC_THRESHOLD = 0,
+	T_FSC_FIRSTMIN = 1
+};
+
 //FSC.cu:
 void d_FSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d_curve, int maxradius, cufftHandle* plan = NULL, int batch = 1);
 
@@ -480,7 +487,14 @@ void d_LocalFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d
 
 //AnisotropicFSC:
 void d_AnisotropicFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d_curve, int maxradius, tfloat3 direction, tfloat coneangle, tfloat falloff, cufftHandle* plan, int batch = 1);
-void d_AnisotropicFSCMap(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d_map, int2 anglesteps, int maxradius, tfloat threshold, cufftHandle* plan, int batch);
+void d_AnisotropicFSCMap(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d_map, int2 anglesteps, int maxradius, T_FSC_MODE fscmode, tfloat threshold, cufftHandle* plan, int batch);
+
+
+//////////////
+//Tomography//
+//////////////
+
+void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_interpolated, tfloat* h_angles, int interpindex, tfloat smoothsigma);
 
 
 //////////////////
@@ -498,9 +512,11 @@ int2 GetCart2PolarSize(int2 dims);
 //Rotate.cu:
 void d_Rotate3D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
 void d_Rotate3D(cudaArray* a_input, cudaChannelFormatDesc channelDesc, tfloat* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
+void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat angle, T_INTERP_MODE mode, int batch = 1);
 
 //Shift.cu:
 void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, tcomplex* d_sharedintermediate = NULL, int batch = 1);
+void d_Shift(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* delta, int batch = 1);
 
 //Scale.cu:
 void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, int batch = 1);

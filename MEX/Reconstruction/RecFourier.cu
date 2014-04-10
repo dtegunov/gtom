@@ -4,7 +4,7 @@
 void mexFunction(int nlhs, mxArray *plhs[],
                  int nrhs, mxArray const *prhs[])
 {
-    char const * const errId = "GTOM:Resolution:LocalFSC:InvalidInput";
+    char const * const errId = "GTOM:Reconstruction:RecFourier:InvalidInput";
     char const * const errMsg = "Invalid input to MEX file.";
 
     mxInitGPU();

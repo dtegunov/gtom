@@ -28,6 +28,7 @@
     <None Include="Reconstruction\SIRT.cu" />
     <None Include="Resolution\AnisotropicFSCMap.cu" />
     <None Include="Resolution\LocalFSC.cu" />
+    <None Include="Tomography\InterpolateSingleAxis.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h" />

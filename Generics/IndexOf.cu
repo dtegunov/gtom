@@ -7,6 +7,7 @@
 ////////////////////////////
 
 __global__ void FirstIndexOfLinearKernel(tfloat* d_input, tfloat* d_output, size_t elements, tfloat value);
+__global__ void FirstMinimumLinearKernel(tfloat* d_input, tfloat* d_output, size_t elements);
 
 template<class T> __global__ void BiggerThanKernel(tfloat* d_input, T* d_output, size_t elements, tfloat value);
 template<class T> __global__ void SmallerThanKernel(tfloat* d_input, T* d_output, size_t elements, tfloat value);
@@ -64,6 +65,74 @@ __global__ void FirstIndexOfLinearKernel(tfloat* d_input, tfloat* d_output, size
 		if((value <= current && value >= next) || (value >= current && value <= next))
 		{
 			index = (tfloat)n + max(min((value - current) / (next - current + (tfloat)0.00001), 1), 0);
+			found = true;
+			break;
+		}
+	}
+
+	indices[threadIdx.x] = index;
+
+	__syncthreads();
+
+	if(threadIdx.x == 0)
+	{
+		for (int t = 1; t < min(elements, blockDim.x); t++)
+			index = min(index, indices[t]);
+
+		if(found)
+			d_output[blockIdx.x] = max(index, 1);
+		else if(anybigger)
+			d_output[blockIdx.x] = (tfloat)elements;
+		else if(nan)
+			d_output[blockIdx.x] = (tfloat)-1;
+		else
+			d_output[blockIdx.x] = (tfloat)1;
+	}
+}
+
+void d_FirstMinimum(tfloat* d_input, tfloat* d_output, size_t elements, T_INTERP_MODE mode, int batch)
+{
+	if(mode == T_INTERP_LINEAR)
+	{
+		int TpB = min(NextMultipleOf(elements, 32), 256);
+		dim3 grid = dim3(batch);
+		FirstMinimumLinearKernel <<<grid, TpB>>> (d_input, d_output, elements);
+	}
+	else
+		throw;
+}
+
+__global__ void FirstMinimumLinearKernel(tfloat* d_input, tfloat* d_output, size_t elements)
+{
+	d_input += blockIdx.x * elements;
+	
+	__shared__ tfloat indices[256];
+	__shared__ bool found, anybigger, nan;
+	if(threadIdx.x == 0)
+	{
+		found = false;
+		anybigger = false;
+		nan = false;
+	}
+	__syncthreads();
+
+	tfloat index = (tfloat)(elements + 1);
+	tfloat left, right, current;
+	for (size_t n = threadIdx.x + 1; n < elements - 1; n += blockDim.x)
+	{
+		left = d_input[n - 1];		
+		current = d_input[n];
+		right = d_input[n + 1];
+
+		if(isnan(left) || isnan(current) || isnan(right))
+		{
+			nan = true;
+			continue;
+		}
+		
+		if(current < left && current < right)
+		{
+			index = (tfloat)n;
 			found = true;
 			break;
 		}
