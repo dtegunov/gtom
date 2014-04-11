@@ -8,7 +8,7 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-template<int mode> __global__ void RotateKernel(tfloat* d_output, int3 dims, glm::vec3* d_vec);
+template<int mode> __global__ void Rotate3DKernel(tfloat* d_output, int3 dims, glm::vec3* d_vec);
 template<int mode> __global__ void Rotate2DFTKernel(tcomplex* d_output, int3 dims, glm::vec2 vecx, glm::vec2 vecy);
 
 
@@ -89,15 +89,20 @@ void d_Rotate3D(cudaArray* a_input, cudaChannelFormatDesc channelDesc, tfloat* d
 	dim3 grid = dim3(min((Elements(dims) + TpB - 1) / TpB, 8192), batch);
 
 	if(mode == T_INTERP_LINEAR)
-		RotateKernel<0> <<<grid, TpB>>> (d_output, dims, d_vec);
+		Rotate3DKernel<0> <<<grid, TpB>>> (d_output, dims, d_vec);
 	else if(mode == T_INTERP_CUBIC)		
-		RotateKernel<1> <<<grid, TpB>>> (d_output, dims,  d_vec);	
+		Rotate3DKernel<1> <<<grid, TpB>>> (d_output, dims,  d_vec);	
 	
 	cudaFree(d_vec);
 	free(h_vec);
 
 	cudaUnbindTexture(texRotationVolume);
 }
+
+
+//////////////////////////////
+//Rotate 2D in Fourier space//
+//////////////////////////////
 
 void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat angle, T_INTERP_MODE mode, int batch)
 {
@@ -110,64 +115,90 @@ void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat angle
 	cudaMalloc((void**)&d_real, ElementsFFT(dims) * sizeof(tfloat));
 	tfloat* d_imag;
 	cudaMalloc((void**)&d_imag, ElementsFFT(dims) * sizeof(tfloat));
-	d_ConvertTComplexToSplitComplex(d_input, d_real, d_imag, ElementsFFT(dims));
 
-	int pitchedwidth = (dims.x / 2 + 1) * sizeof(tfloat);
-	tfloat* d_pitchedreal = (tfloat*)CudaMallocAligned2D((dims.x / 2 + 1) * sizeof(tfloat), dims.y, &pitchedwidth);
-	for (int y = 0; y < dims.y; y++)
-		cudaMemcpy((char*)d_pitchedreal + y * pitchedwidth, 
-					d_real + y * (dims.x / 2 + 1), 
-					(dims.x / 2 + 1) * sizeof(tfloat), 
-					cudaMemcpyDeviceToDevice);
-	tfloat* d_pitchedimag = (tfloat*)CudaMallocAligned2D((dims.x / 2 + 1) * sizeof(tfloat), dims.y, &pitchedwidth);
-	for (int y = 0; y < dims.y; y++)
-		cudaMemcpy((char*)d_pitchedimag + y * pitchedwidth, 
-					d_imag + y * (dims.x / 2 + 1), 
-					(dims.x / 2 + 1) * sizeof(tfloat), 
-					cudaMemcpyDeviceToDevice);
-
-	if(mode == T_INTERP_CUBIC)
+	for (int b = 0; b < batch; b++)
 	{
-		d_CubicBSplinePrefilter2D(d_pitchedreal, pitchedwidth, toInt2(dims.x / 2 + 1, dims.y));
-		d_CubicBSplinePrefilter2D(d_pitchedimag, pitchedwidth, toInt2(dims.x / 2 + 1, dims.y));
+		d_ConvertTComplexToSplitComplex(d_input + ElementsFFT(dims) * b, d_real, d_imag, ElementsFFT(dims));
+
+		int pitchedwidth = (dims.x / 2 + 1) * sizeof(tfloat);
+		tfloat* d_pitchedreal = (tfloat*)CudaMallocAligned2D((dims.x / 2 + 1) * sizeof(tfloat), dims.y, &pitchedwidth);
+		for (int y = 0; y < dims.y; y++)
+			cudaMemcpy((char*)d_pitchedreal + y * pitchedwidth, 
+						d_real + y * (dims.x / 2 + 1), 
+						(dims.x / 2 + 1) * sizeof(tfloat), 
+						cudaMemcpyDeviceToDevice);
+		tfloat* d_pitchedimag = (tfloat*)CudaMallocAligned2D((dims.x / 2 + 1) * sizeof(tfloat), dims.y, &pitchedwidth);
+		for (int y = 0; y < dims.y; y++)
+			cudaMemcpy((char*)d_pitchedimag + y * pitchedwidth, 
+						d_imag + y * (dims.x / 2 + 1), 
+						(dims.x / 2 + 1) * sizeof(tfloat), 
+						cudaMemcpyDeviceToDevice);
+
+		if(mode == T_INTERP_CUBIC)
+		{
+			d_CubicBSplinePrefilter2D(d_pitchedreal, pitchedwidth, toInt2(dims.x / 2 + 1, dims.y));
+			d_CubicBSplinePrefilter2D(d_pitchedimag, pitchedwidth, toInt2(dims.x / 2 + 1, dims.y));
+		}
+
+		cudaChannelFormatDesc descreal = cudaCreateChannelDesc<tfloat>();
+		cudaBindTexture2D(NULL, 
+							texRotation2DFTReal, 
+							d_pitchedreal, 
+							descreal, 
+							dims.x / 2 + 1, 
+							dims.y, 
+							pitchedwidth);
+		cudaChannelFormatDesc descimag = cudaCreateChannelDesc<tfloat>();
+		cudaBindTexture2D(NULL, 
+							texRotation2DFTImag, 
+							d_pitchedimag, 
+							descimag, 
+							dims.x / 2 + 1, 
+							dims.y, 
+							pitchedwidth);
+	
+		glm::vec2 vecx = glm::vec2(cos(-angle), sin(-angle));
+		glm::vec2 vecy = glm::vec2(cos(-angle + (tfloat)PI / (tfloat)2), sin(-angle + (tfloat)PI / (tfloat)2));
+
+		size_t TpB = min(256, NextMultipleOf(dims.x / 2 + 1, 32));
+		dim3 grid = dim3((dims.x / 2 + 1 + TpB - 1) / TpB, dims.y, batch);
+	
+		if(mode == T_INTERP_MODE::T_INTERP_LINEAR)
+			Rotate2DFTKernel<1> <<<grid, (int)TpB>>> (d_output + ElementsFFT(dims) * b, dims, vecx, vecy);
+		else if(mode == T_INTERP_MODE::T_INTERP_CUBIC)
+			Rotate2DFTKernel<2> <<<grid, (int)TpB>>> (d_output + ElementsFFT(dims) * b, dims, vecx, vecy);
+
+		cudaStreamQuery(0);
+
+		cudaUnbindTexture(texRotation2DFTReal);
+		cudaUnbindTexture(texRotation2DFTImag);
+		cudaFree(d_pitchedimag);
+		cudaFree(d_pitchedreal);
 	}
 
-	cudaChannelFormatDesc descreal = cudaCreateChannelDesc<tfloat>();
-	cudaBindTexture2D(NULL, 
-						texRotation2DFTReal, 
-						d_pitchedreal, 
-						descreal, 
-						dims.x / 2 + 1, 
-						dims.y, 
-						pitchedwidth);
-	cudaChannelFormatDesc descimag = cudaCreateChannelDesc<tfloat>();
-	cudaBindTexture2D(NULL, 
-						texRotation2DFTImag, 
-						d_pitchedimag, 
-						descimag, 
-						dims.x / 2 + 1, 
-						dims.y, 
-						pitchedwidth);
-	
-	glm::vec2 vecx = glm::vec2(cos(-angle), sin(-angle));
-	glm::vec2 vecy = glm::vec2(cos(-angle + (tfloat)PI / (tfloat)2), sin(-angle + (tfloat)PI / (tfloat)2));
-
-	size_t TpB = min(256, NextMultipleOf(dims.x / 2 + 1, 32));
-	dim3 grid = dim3((dims.x / 2 + 1 + TpB - 1) / TpB, dims.y, batch);
-	
-	if(mode == T_INTERP_MODE::T_INTERP_LINEAR)
-		Rotate2DFTKernel<1> <<<grid, (int)TpB>>> (d_output, dims, vecx, vecy);
-	else if(mode == T_INTERP_MODE::T_INTERP_CUBIC)
-		Rotate2DFTKernel<2> <<<grid, (int)TpB>>> (d_output, dims, vecx, vecy);
-
-	cudaStreamQuery(0);
-
-	cudaUnbindTexture(texRotation2DFTReal);
-	cudaUnbindTexture(texRotation2DFTImag);
-	cudaFree(d_pitchedimag);
-	cudaFree(d_pitchedreal);
 	cudaFree(d_imag);
 	cudaFree(d_real);
+}
+
+void d_Rotate2D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat angle, int batch)
+{
+	int3 dimspadded = toInt3(dims.x * 2, dims.y * 2, 1);
+	tcomplex* d_padded;
+	cudaMalloc((void**)&d_padded, ElementsFFT(dimspadded) * batch * sizeof(tcomplex));
+
+	d_Pad(d_input, (tfloat*)d_padded, dims, dimspadded, T_PAD_MODE::T_PAD_MIRROR, (tfloat)0, batch);
+	d_RemapFull2FullFFT((tfloat*)d_padded, (tfloat*)d_padded, dimspadded, batch);
+	d_FFTR2C((tfloat*)d_padded, d_padded, 2, dimspadded, batch);
+	d_RemapHalfFFT2Half(d_padded, d_padded, dimspadded, batch);
+
+	d_Rotate2DFT(d_padded, d_padded, dimspadded, angle, T_INTERP_CUBIC, batch);
+
+	d_RemapHalf2HalfFFT(d_padded, d_padded, dimspadded, batch);
+	d_IFFTC2R(d_padded, (tfloat*)d_padded, 2, dimspadded, batch);
+	d_RemapFullFFT2Full((tfloat*)d_padded, (tfloat*)d_padded, dimspadded, batch);
+	d_Pad((tfloat*)d_padded, d_output, dimspadded, dims, T_PAD_MODE::T_PAD_VALUE, (tfloat)0, batch);
+
+	cudaFree(d_padded);
 }
 
 
@@ -175,7 +206,7 @@ void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat angle
 //CUDA kernels//
 ////////////////
 
-template<int mode> __global__ void RotateKernel(tfloat* d_output, int3 dims, glm::vec3* d_vec)
+template<int mode> __global__ void Rotate3DKernel(tfloat* d_output, int3 dims, glm::vec3* d_vec)
 {
 	__shared__ glm::vec3 vecx, vecy, vecz;
 	__shared__ uint elementsxy, elements, threads;
@@ -238,16 +269,16 @@ template<int mode> __global__ void Rotate2DFTKernel(tcomplex* d_output, int3 dim
 
 	glm::vec2 pos = (vecx * (float)(idx - dims.x / 2)) + (vecy * (float)(idy - dims.y / 2));
 
-	/*float radiussq = pos.x * pos.x + pos.y * pos.y;
-	if(radiussq >= (float)(dims.x * dims.x / 4))
+	float radiussq = pos.x * pos.x + pos.y * pos.y;
+	if(radiussq > (float)((dims.x / 2 - 1) * (dims.x / 2 - 1)))
 	{
 		(*d_output).x = (tfloat)0;
 		(*d_output).y = (tfloat)0;
 		return;
-	}*/
+	}
 
 	bool isnegative = false;
-	if(pos.x > 0)
+	if(pos.x > 0.5)
 	{
 		pos = -pos;
 		isnegative = true;

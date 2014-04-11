@@ -1,10 +1,13 @@
 rng(123);
 
 %Case 1:
-dimx=16;
-dimy=16;
+dimx=64;
+dimy=64;
 
 indata = single(rand(dimx,dimy));
+
+load lena;
+indata = tom_rescale(lena,[dimx dimy]);
 %indata = tom_rescale(indata,[dimx, dimy, dimz]);
 
 outdata = imrotate(indata,30,'bicubic','crop');

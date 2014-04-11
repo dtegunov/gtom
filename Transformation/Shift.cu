@@ -6,7 +6,7 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-template<int ndims> __global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3 delta);
+template<int ndims, bool iszerocentered> __global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3 delta);
 __global__ void ShiftIntegerKernel(tfloat* d_input, tfloat* d_output, int3 dims, int3 delta);
 
 
@@ -36,9 +36,9 @@ void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufft
 			int TpB = min(256, NextMultipleOf(dims.x / 2 + 1, 32));
 			dim3 grid = dim3(((dims.x / 2 + 1) + TpB - 1) / TpB, dims.y, dims.z);
 			if(DimensionCount(dims) == 3)
-				ShiftFourierKernel <3> <<<grid, TpB>>> (d_intermediate, d_intermediate, dims, normdelta);
+				ShiftFourierKernel <3, false> <<<grid, TpB>>> (d_intermediate, d_intermediate, dims, normdelta);
 			else
-				ShiftFourierKernel <2> <<<grid, TpB>>> (d_intermediate, d_intermediate, dims, normdelta);
+				ShiftFourierKernel <2, false> <<<grid, TpB>>> (d_intermediate, d_intermediate, dims, normdelta);
 			cudaStreamQuery(0);
 			
 			if(planback == NULL)
@@ -62,7 +62,7 @@ void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufft
 		cudaFree(d_intermediate);
 }
 
-void d_Shift(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* delta, int batch)
+void d_Shift(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* delta, bool iszerocentered, int batch)
 {
 	for (int b = 0; b < batch; b++)
 	{
@@ -70,10 +70,20 @@ void d_Shift(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* delta, i
 
 		int TpB = min(256, NextMultipleOf(dims.x / 2 + 1, 32));
 		dim3 grid = dim3(((dims.x / 2 + 1) + TpB - 1) / TpB, dims.y, dims.z);
-		if(DimensionCount(dims) == 3)
-			ShiftFourierKernel <3> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
+		if(!iszerocentered)
+		{
+			if(DimensionCount(dims) == 3)
+				ShiftFourierKernel <3, false> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
+			else
+				ShiftFourierKernel <2, false> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
+		}
 		else
-			ShiftFourierKernel <2> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
+		{
+			if(DimensionCount(dims) == 3)
+				ShiftFourierKernel <3, false> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
+			else
+				ShiftFourierKernel <2, false> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
+		}
 		cudaStreamQuery(0);
 	}
 }
@@ -83,15 +93,28 @@ void d_Shift(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* delta, i
 //CUDA kernels//
 ////////////////
 
-template<int ndims> __global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3 delta)
+template<int ndims, bool iszerocentered> __global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3 delta)
 {
 	int x = blockIdx.x * blockDim.x + threadIdx.x;
 	if(x >= dims.x / 2 + 1)
 		return;
-	if(x == dims.x / 2)
-		x = (-x);
-	int y = ((blockIdx.y + ((dims.y + 1) / 2)) % dims.y) - (dims.y / 2);
-	int z = ((blockIdx.z + ((dims.z + 1) / 2)) % dims.z) - (dims.z / 2);
+	int y, z;
+
+	if(!iszerocentered)
+	{
+		if(x == dims.x / 2)
+			x = (-x);
+		y = ((blockIdx.y + ((dims.y + 1) / 2)) % dims.y) - (dims.y / 2);
+		z = ((blockIdx.z + ((dims.z + 1) / 2)) % dims.z) - (dims.z / 2);
+	}
+	else
+	{
+		if(x == dims.x / 2)
+			x = (-x);
+		x = dims.x / 2 - x;
+		y = blockIdx.y - (dims.y / 2);
+		z = blockIdx.z - (dims.z / 2);
+	}
 
 	tfloat factorx = delta.x * (tfloat)x * (tfloat)PI2;
 	tcomplex multx = { cos(factorx), sin(-factorx) };
