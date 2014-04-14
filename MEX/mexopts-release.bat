@@ -38,8 +38,8 @@ rem ********************************************************************
 rem Compiler parameters
 rem ********************************************************************
 set COMPILER=nvcc
-set COMPFLAGS=-gencode=arch=compute_35,code=sm_35 -c --compiler-options=/GR,/W0,/EHs,/D_CRT_SECURE_NO_DEPRECATE,/D_SCL_SECURE_NO_DEPRECATE,/D_SECURE_SCL=0,/DMATLAB_MEX_FILE,/nologo,/openmp,/MDd,/D_SECURE_SCL=1,/D_ITERATOR_DEBUG_LEVEL=2
-set OPTIMFLAGS=--compiler-options=/O2,/Oy-,/DNDEBUG
+set COMPFLAGS=-gencode=arch=compute_35,code=sm_35 -c --compiler-options=/GR,/W0,/EHs,/D_CRT_SECURE_NO_DEPRECATE,/D_SCL_SECURE_NO_DEPRECATE,/D_SECURE_SCL=0,/DMATLAB_MEX_FILE,/nologo,/openmp,/MT,/D_SECURE_SCL=0,/D_ITERATOR_DEBUG_LEVEL=0
+set OPTIMFLAGS=--compiler-options=/Ox,/Oy-,/DNDEBUG
 set DEBUGFLAGS=--compiler-options=/Z7
 
 rem ********************************************************************
@@ -48,9 +48,9 @@ rem ********************************************************************
 rem Link with the standard mex libraries and gpu.lib.
 set LIBLOC=%MATLAB%\extern\lib\win64\microsoft
 set LINKER=link
-set LINKFLAGS=/dll /export:%ENTRYPOINT% /LIBPATH:"%LIBLOC%" libmx.lib libmex.lib libmat.lib gpu.lib cudart.lib cufft.lib cublas.lib "..\x64\Debug\GTOM.lib" /MACHINE:X64 /nologo /manifest /incremental:NO /implib:"%LIB_NAME%.x" /MAP:"%OUTDIR%%MEX_NAME%%MEX_EXT%.map"
+set LINKFLAGS=/dll /export:%ENTRYPOINT% /LIBPATH:"%LIBLOC%" libmx.lib libmex.lib libmat.lib gpu.lib cudart.lib cufft.lib cublas.lib "..\x64\Release\GTOM.lib" /MACHINE:X64 /nologo /manifest /incremental:NO /implib:"%LIB_NAME%.x" /MAP:"%OUTDIR%%MEX_NAME%%MEX_EXT%.map"
 set LINKOPTIMFLAGS=
-set LINKDEBUGFLAGS=/debug /PDB:"%OUTDIR%%MEX_NAME%%MEX_EXT%.pdb"
+set LINKDEBUGFLAGS=
 set LINK_FILE=
 set LINK_LIB=
 set NAME_OUTPUT=/out:"%OUTDIR%%MEX_NAME%%MEX_EXT%"

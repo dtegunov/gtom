@@ -6,6 +6,7 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
+template <class T> __global__ void MemcpyMultiKernel(T* d_output, T* d_input, size_t elements, int copies);
 template <class T> __global__ void ValueFillKernel(T* d_output, size_t elements, T value);
 template <class T, int fieldcount> __global__ void JoinInterleavedKernel(T** d_fields, T* d_output, size_t elements);
 template <class T1, class T2> __global__ void TypeConversionKernel(T1* d_input, T2* d_output, size_t elements);
@@ -92,6 +93,18 @@ tfloat* MixedToHostTfloat(void* h_input, EM_DATATYPE datatype, size_t elements)
 /////////////////
 //Device memory//
 /////////////////
+
+template<class T> void CudaMemcpyMulti(T* dst, T* src, size_t elements, int copies)
+{
+	size_t TpB = min(256, elements);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 8192));
+	MemcpyMultiKernel <<<grid, TpB>>> (dst, src, elements, copies);
+}
+template void CudaMemcpyMulti<char>(char* dst, char* src, size_t elements, int copies);
+template void CudaMemcpyMulti<short>(short* dst, short* src, size_t elements, int copies);
+template void CudaMemcpyMulti<int>(int* dst, int* src, size_t elements, int copies);
+template void CudaMemcpyMulti<float>(float* dst, float* src, size_t elements, int copies);
+template void CudaMemcpyMulti<double>(double* dst, double* src, size_t elements, int copies);
 
 void* CudaMallocAligned2D(size_t widthbytes, size_t height, int* pitch, int alignment)
 {       
@@ -296,6 +309,18 @@ tfloat* MixedToDeviceTfloat(void* h_input, EM_DATATYPE datatype, size_t elements
 ////////////////
 //CUDA kernels//
 ////////////////
+
+template <class T> __global__ void MemcpyMultiKernel(T* d_output, T* d_input, size_t elements, int copies)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+	{
+		T value = d_input[id];
+		for (int i = 0; i < copies; i++)
+			d_output[i * elements + id] = value;
+	}
+}
 
 template <class T> __global__ void ValueFillKernel(T* d_output, size_t elements, T value)
 {

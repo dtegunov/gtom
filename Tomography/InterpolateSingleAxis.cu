@@ -13,20 +13,21 @@ __global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t eleme
 //Performs 3D reconstruction using ART//
 ////////////////////////////////////////
 
-void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_interpolated, tfloat* h_angles, int interpindex, tfloat smoothsigma)
+void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_interpolated, tfloat* h_angles, int interpindex, int maxpoints, tfloat smoothsigma)
 {
 	tfloat interpangle = h_angles[interpindex];
-	int npoints = dimsproj.z - 1;
+	int npoints = maxpoints;// dimsproj.z - 1;
 	tfloat* h_factors = (tfloat*)malloc(npoints * sizeof(tfloat));
 	short* h_indices = (short*)malloc(npoints * sizeof(short));
 
-	for (int i = 0, n = 0; i < dimsproj.z; i++)
+	int n = 0;
+	for (int i = max(0, interpindex - maxpoints / 2); i < min(dimsproj.z, interpindex + maxpoints / 2 + 1); i++)
 	{
 		if(i == interpindex)
 			continue;
 
 		double factor = 1.0;
-		for (int j = 0; j < dimsproj.z; j++)
+		for (int j = max(0, interpindex - maxpoints / 2); j < min(dimsproj.z, interpindex + maxpoints / 2 + 1); j++)
 		{
 			if(j == interpindex || j == i)
 				continue;
@@ -38,14 +39,14 @@ void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_
 		n++;
 	}
 
-	tfloat* d_factors = (tfloat*)CudaMallocFromHostArray(h_factors, npoints * sizeof(tfloat));
-	short* d_indices = (short*)CudaMallocFromHostArray(h_indices, npoints * sizeof(short));
+	tfloat* d_factors = (tfloat*)CudaMallocFromHostArray(h_factors, n * sizeof(tfloat));
+	short* d_indices = (short*)CudaMallocFromHostArray(h_indices, n * sizeof(short));
 	free(h_factors);
 	free(h_indices);
 
 	int TpB = min(NextMultipleOf((dimsproj.x / 2 + 1) * dimsproj.y, 32), 128);
 	dim3 grid = dim3(min(((dimsproj.x / 2 + 1) * dimsproj.y + TpB - 1) / TpB, 8192));
-	InterpolateSingleAxisTiltKernel <<<grid, TpB>>> (d_projft, (dimsproj.x / 2 + 1) * dimsproj.y, d_interpolated, d_factors, d_indices, npoints);
+	InterpolateSingleAxisTiltKernel <<<grid, TpB>>> (d_projft, (dimsproj.x / 2 + 1) * dimsproj.y, d_interpolated, d_factors, d_indices, n);
 
 	cudaFree(d_factors);
 	cudaFree(d_indices);

@@ -129,6 +129,16 @@ template <class T1, class T2> void CudaMallocFromHostArrayConverted(T1* h_array,
 float* CudaMallocZeroFilledFloat(size_t elements);
 
 /**
+ * \brief Copies elements from source to multiple consecutive destinations.
+ * \param[in] dst	Destination start address
+ * \param[in] src	Source address
+ * \param[in] elements	Number of elements
+ * \param[in] copies	Number of copies
+ * \returns Array pointer in device memory
+ */
+template<class T> void CudaMemcpyMulti(T* dst, T* src, size_t elements, int copies);
+
+/**
  * \brief Creates an array of T initialized to value in device memory with the specified element count.
  * \param[in] elements	Element count
  * \param[in] value		Initial value
@@ -494,7 +504,7 @@ void d_AnisotropicFSCMap(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, 
 //Tomography//
 //////////////
 
-void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_interpolated, tfloat* h_angles, int interpindex, tfloat smoothsigma);
+void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_interpolated, tfloat* h_angles, int interpindex, int maxpoints, tfloat smoothsigma);
 
 
 //////////////////

@@ -1,7 +1,7 @@
 #include "..\Prerequisites.h"
 
 
-//(tfloat* interpolated) InterpolateSingleAxis(tfloat* projstack, tfloat* angles, int interpindex, tfloat smoothsigma)
+//(tfloat* interpolated) InterpolateSingleAxis(tfloat* projstack, tfloat* angles, int interpindex, int maxpoints, tfloat smoothsigma)
 void mexFunction(int nlhs, mxArray *plhs[],
                  int nrhs, mxArray const *prhs[])
 {
@@ -10,7 +10,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
     mxInitGPU();
 
-	if (nrhs < 4)
+	if (nrhs < 5)
         mexErrMsgIdAndTxt(errId, errMsg);
 
 	mxArrayAdapter proj(prhs[0]);
@@ -30,12 +30,13 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	tfloat* h_angles = (tfloat*)angles.GetAsManagedTFloat();
 
 	int interpindex = (int)((double*)mxGetData(prhs[2]))[0];
-	tfloat smoothsigma = (tfloat)((double*)mxGetData(prhs[3]))[0];
+	int maxpoints = (int)((double*)mxGetData(prhs[3]))[0];
+	tfloat smoothsigma = (tfloat)((double*)mxGetData(prhs[4]))[0];
 
 	tcomplex* d_interpft;
 	cudaMalloc((void**)&d_interpft, (dimsproj.x / 2 + 1) * dimsproj.y * sizeof(tcomplex));
 
-	d_InterpolateSingleAxisTilt(d_projft, dimsproj, d_interpft, h_angles, interpindex, smoothsigma);
+	d_InterpolateSingleAxisTilt(d_projft, dimsproj, d_interpft, h_angles, interpindex, maxpoints, smoothsigma);
 	cudaFree(d_projft);
 	
 	d_RemapHalf2HalfFFT(d_interpft, d_interpft, toInt3(dimsproj.x, dimsproj.y, 1));
