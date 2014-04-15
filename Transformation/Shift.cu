@@ -109,9 +109,9 @@ template<int ndims, bool iszerocentered> __global__ void ShiftFourierKernel(tcom
 	}
 	else
 	{
-		if(x == dims.x / 2)
-			x = (-x);
 		x = dims.x / 2 - x;
+		//if(x == dims.x / 2)
+			//x = (-x);
 		y = blockIdx.y - (dims.y / 2);
 		z = blockIdx.z - (dims.z / 2);
 	}

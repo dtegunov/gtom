@@ -278,7 +278,7 @@ template<int mode> __global__ void Rotate2DFTKernel(tcomplex* d_output, int3 dim
 	}
 
 	bool isnegative = false;
-	if(pos.x > 0.5)
+	if(pos.x > 0.0000001f)
 	{
 		pos = -pos;
 		isnegative = true;
