@@ -13,7 +13,7 @@
 //Equivalent of TOM's tom_peak method//
 ///////////////////////////////////////
 
-void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, T_PEAK_MODE mode, int batch)
+void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, T_PEAK_MODE mode, cufftHandle* planforw, cufftHandle* planback, int batch)
 {
 	tuple2<tfloat, size_t>* d_integerindices;
 	cudaMalloc((void**)&d_integerindices, batch * sizeof(tuple2<tfloat, size_t>));
@@ -128,7 +128,9 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 					d_interpolated, 
 					toInt3(samples, min(dims.y, samples), min(dims.z, samples)), 
 					toInt3(samples * subdivisions, dims.y == 1 ? 1 : samples * subdivisions, dims.z == 1 ? 1 : samples * subdivisions), 
-					T_INTERP_MODE::T_INTERP_FOURIER);
+					T_INTERP_MODE::T_INTERP_FOURIER,
+					planforw,
+					planback);
 			d_Max(d_interpolated, d_maxtuple, pow(samples * subdivisions, DimensionCount(dims)));
 			cudaMemcpy(h_maxtuple, d_maxtuple, sizeof(tuple2<tfloat, size_t>), cudaMemcpyDeviceToHost);
 
@@ -163,6 +165,19 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 	cudaFree(d_integerindices);
 }
 
+void d_PeakMakePlans(int3 dims, cufftHandle* planforw, cufftHandle* planback)
+{
+	int samples = DimensionCount(dims) < 3 ? 9 : 5;
+	for (int i = 0; i < DimensionCount(dims); i++)	//Samples shouldn't be bigger than smallest relevant dimension
+		samples = min(samples, ((int*)&dims)[i]);
+	int subdivisions = DimensionCount(dims) < 3 ? 105 : 63;		//Theoretical precision is 1/subdivisions
+
+	int3 dimsold = toInt3(samples, min(dims.y, samples), min(dims.z, samples));
+	int3 dimsnew = toInt3(samples * subdivisions, dims.y == 1 ? 1 : samples * subdivisions, dims.z == 1 ? 1 : samples * subdivisions);
+
+	*planforw = d_FFTR2CGetPlan(DimensionCount(dims), dimsold);
+	*planback = d_IFFTC2CGetPlan(DimensionCount(dims), dimsnew);
+}
 
 ////////////////
 //CUDA kernels//

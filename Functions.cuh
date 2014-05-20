@@ -338,7 +338,8 @@ enum T_PEAK_MODE
 	T_PEAK_SUBCOARSE = 2,
 	T_PEAK_SUBFINE = 3
 };
-void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, T_PEAK_MODE mode, int batch = 1);
+void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, T_PEAK_MODE mode, cufftHandle* planforw = (cufftHandle*)NULL, cufftHandle* planback = (cufftHandle*)NULL, int batch = 1);
+void d_PeakMakePlans(int3 dims, cufftHandle* planforw, cufftHandle* planback);
 void d_LocalPeaks(tfloat* d_input, int3** h_peaks, int* h_peaksnum, int3 dims, int localextent, tfloat threshold, int batch = 1);
 
 
@@ -383,6 +384,7 @@ cufftHandle d_IFFTC2CGetPlan(int const ndimensions, int3 const dimensions, int b
 //HermitianSymmetry.cu:
 void d_HermitianSymmetryPad(tcomplex* const d_input, tcomplex* const d_output, int3 const dimensions, int batch = 1);
 void d_HermitianSymmetryTrim(tcomplex* const d_input, tcomplex* const d_output, int3 const dimensions, int batch = 1);
+void d_HermitianSymmetryMirrorHalf(tcomplex* d_input, tcomplex* d_output, int3 dims, int batch = 1);
 
 //FFTRemap.cu:
 template <class T> void d_RemapFull2HalfFFT(T* d_input, T* d_output, int3 dims, int batch = 1);

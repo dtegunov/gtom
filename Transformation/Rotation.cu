@@ -115,19 +115,20 @@ void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat angle
 	cudaMalloc((void**)&d_real, ElementsFFT(dims) * sizeof(tfloat));
 	tfloat* d_imag;
 	cudaMalloc((void**)&d_imag, ElementsFFT(dims) * sizeof(tfloat));
+	
+	int pitchedwidth = (dims.x / 2 + 1) * sizeof(tfloat);
+	tfloat* d_pitchedreal = (tfloat*)CudaMallocAligned2D((dims.x / 2 + 1) * sizeof(tfloat), dims.y, &pitchedwidth);
+	tfloat* d_pitchedimag = (tfloat*)CudaMallocAligned2D((dims.x / 2 + 1) * sizeof(tfloat), dims.y, &pitchedwidth);
 
 	for (int b = 0; b < batch; b++)
 	{
 		d_ConvertTComplexToSplitComplex(d_input + ElementsFFT(dims) * b, d_real, d_imag, ElementsFFT(dims));
 
-		int pitchedwidth = (dims.x / 2 + 1) * sizeof(tfloat);
-		tfloat* d_pitchedreal = (tfloat*)CudaMallocAligned2D((dims.x / 2 + 1) * sizeof(tfloat), dims.y, &pitchedwidth);
 		for (int y = 0; y < dims.y; y++)
 			cudaMemcpy((char*)d_pitchedreal + y * pitchedwidth, 
 						d_real + y * (dims.x / 2 + 1), 
 						(dims.x / 2 + 1) * sizeof(tfloat), 
 						cudaMemcpyDeviceToDevice);
-		tfloat* d_pitchedimag = (tfloat*)CudaMallocAligned2D((dims.x / 2 + 1) * sizeof(tfloat), dims.y, &pitchedwidth);
 		for (int y = 0; y < dims.y; y++)
 			cudaMemcpy((char*)d_pitchedimag + y * pitchedwidth, 
 						d_imag + y * (dims.x / 2 + 1), 
@@ -172,9 +173,9 @@ void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat angle
 
 		cudaUnbindTexture(texRotation2DFTReal);
 		cudaUnbindTexture(texRotation2DFTImag);
-		cudaFree(d_pitchedimag);
-		cudaFree(d_pitchedreal);
 	}
+	cudaFree(d_pitchedimag);
+	cudaFree(d_pitchedreal);
 
 	cudaFree(d_imag);
 	cudaFree(d_real);

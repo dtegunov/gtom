@@ -148,12 +148,12 @@ void d_AnisotropicFSCMap(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, 
 	for (int idtheta = 0; idtheta < anglesteps.y; idtheta++)
 	{
 		float theta = (float)idtheta * thetastep;
-		float x = -cos(theta);
+		float z = cos(theta);
 
 		for (int idphi = 0; idphi < anglesteps.x; idphi++)
 		{
 			float phi = (dimsvolume.z == 1 ? ToRad(-90.0f) : 0.0f) + (float)idphi * phistep;
-			float z = dimsvolume.z == 1 ? 0.0f : cos(phi) * sin(theta);
+			float x = dimsvolume.z == 1 ? 0.0f : -cos(phi) * sin(theta);
 			float y = sin(phi) * (dimsvolume.z == 1 ? 1.0f : sin(theta));
 			if(dimsvolume.z == 1)
 				x = -cos(phi);
@@ -162,11 +162,13 @@ void d_AnisotropicFSCMap(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, 
 			tfloat* h_curve = (tfloat*)MallocFromDeviceArray(d_curve, maxradius * sizeof(tfloat));
 			free(h_curve);
 			if(fscmode == T_FSC_THRESHOLD)
-				d_FirstIndexOf(d_curve, d_map + idtheta * anglesteps.x + idphi, maxradius, threshold, T_INTERP_LINEAR, batch);
+				d_FirstIndexOf(d_curve + 3, d_map + idtheta * anglesteps.x + idphi, maxradius - 3, threshold, T_INTERP_LINEAR, batch);
 			else
-				d_FirstMinimum(d_curve, d_map + idtheta * anglesteps.x + idphi, maxradius, T_INTERP_LINEAR, batch);
+				d_FirstMinimum(d_curve + 3, d_map + idtheta * anglesteps.x + idphi, maxradius - 3, T_INTERP_LINEAR, batch);
 		}
 	}
+
+	d_AddScalar(d_map, d_map, anglesteps.x * anglesteps.y, (tfloat)3);
 
 	cudaFree(d_curve);
 }
@@ -216,11 +218,16 @@ template<uint maxshells, uint maxthreads, uint subdivs> __global__ void Anisotro
 				z = min(idz - dimsvolume.z / 2 + offset, dimsvolume.z - 1);
 
 				tfloat radius = sqrt((tfloat)(x * x + y * y + z * z));
-				if(radius >= maxradius)
-					continue;
+				tfloat angle = 0.0f;
 
-				glm::vec3 normdirection((tfloat)x / radius, (tfloat)y / radius, (tfloat)z / radius);
-				tfloat angle = acos(abs(direction.x * normdirection.x + direction.y * normdirection.y + direction.z * normdirection.z));
+				if(radius > 0.0f)
+				{
+					if(radius >= maxradius)
+						continue;
+
+					glm::vec3 normdirection((tfloat)x / radius, (tfloat)y / radius, (tfloat)z / radius);
+					angle = acos(abs(direction.x * normdirection.x + direction.y * normdirection.y + direction.z * normdirection.z));
+				}
 				if(angle > coneangle + falloff)
 					continue;
 
@@ -274,11 +281,16 @@ template<uint maxshells, uint maxthreads, uint subdivs> __global__ void Anisotro
 				z = idz - dimsvolume.z / 2 + offset;
 
 				tfloat radius = sqrt((tfloat)(x * x + y * y + z * z));
-				if(radius >= maxradius)
-					continue;
+				tfloat angle = 0.0f;
 
-				glm::vec3 normdirection((tfloat)x / radius, (tfloat)y / radius, (tfloat)z / radius);
-				tfloat angle = acos(abs(direction.x * normdirection.x + direction.y * normdirection.y + direction.z * normdirection.z));
+				if(radius > 0.0f)
+				{
+					if(radius >= maxradius)
+						continue;
+
+					glm::vec3 normdirection((tfloat)x / radius, (tfloat)y / radius, (tfloat)z / radius);
+					angle = acos(abs(direction.x * normdirection.x + direction.y * normdirection.y + direction.z * normdirection.z));
+				}
 				if(angle > coneangle + falloff)
 					continue;
 

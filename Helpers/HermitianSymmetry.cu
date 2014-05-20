@@ -6,6 +6,7 @@ __global__ void HermitianSymmetryPad3DFirstKernel(tcomplex* d_input, tcomplex* d
 __global__ void HermitianSymmetryPad2DSecondKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull);
 __global__ void HermitianSymmetryPad3DSecondKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull);
 __global__ void HermitianSymmetryTrimKernel(tcomplex* d_input, tcomplex* d_output, uint3 dimensions, size_t elementsTrimmed, size_t elementsFull);
+__global__ void HermitianSymmetryMirrorHalfKernel(tcomplex* d_input, tcomplex* d_output, int3 dims);
 
 
 ////////////////////
@@ -114,5 +115,38 @@ __global__ void HermitianSymmetryTrimKernel(tcomplex* d_input, tcomplex* d_outpu
 		uint z = blockIdx.y;
 	
 		d_output[(z * dimensions.y + y) * (dimensions.x / 2 + 1) + x] = d_input[(z * dimensions.y + y) * dimensions.x + x];
+	}
+}
+
+
+//////////////////////
+//Symmetry Mirroring//
+//////////////////////
+
+void d_HermitianSymmetryMirrorHalf(tcomplex* d_input, tcomplex* d_output, int3 dims, int batch)
+{
+	int TpB = min(256, NextMultipleOf(dims.x / 2 + 1, 32));
+	dim3 grid = dim3(dims.y, dims.z, batch);
+	HermitianSymmetryMirrorHalfKernel <<<grid, TpB>>> (d_input, d_output, dims);
+}
+
+__global__ void HermitianSymmetryMirrorHalfKernel(tcomplex* d_input, tcomplex* d_output, int3 dims)
+{
+	d_input += ElementsFFT(dims) * blockIdx.z;
+	d_output += ElementsFFT(dims) * blockIdx.z;
+
+	int y = blockIdx.x;
+	int my = 0;
+
+	for(int x = threadIdx.x; x < dims.x / 2 + 1; x += blockDim.x)
+	{
+		if(y > 0 && x > 0)
+			my = dims.y - y;
+
+		tcomplex value = d_input[my * (dims.x / 2 + 1) + x];
+		if(y > 0 && x > 0)
+			d_output[y * (dims.x / 2 + 1) + x] = cconj(value);
+		else
+			d_output[y * (dims.x / 2 + 1) + x] = value;
 	}
 }

@@ -43,6 +43,9 @@
     <Filter Include="Source Files\Reconstruction">
       <UniqueIdentifier>{a2043cad-fb84-4935-9f83-732fe4d6d90b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\MEXProfiling">
+      <UniqueIdentifier>{834dc913-7d69-4a06-aacd-ff762b8e70cc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -152,6 +155,9 @@
     </ClCompile>
     <ClCompile Include="RecFourier.cpp">
       <Filter>Source Files\Reconstruction</Filter>
+    </ClCompile>
+    <ClCompile Include="TSAPreprocess.cpp">
+      <Filter>Source Files\MEXProfiling</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

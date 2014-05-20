@@ -137,7 +137,7 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 				d_RemapFullFFT2Full(d_datacart, d_datacart, effdims, batch);
 				d_MultiplyByVector(d_datacart, d_maskcart, d_datacart, Elements(effdims), batch);
 
-				d_Peak(d_datacart, d_peakpos, d_peakvalues, effdims, T_PEAK_INTEGER, batch);
+				d_Peak(d_datacart, d_peakpos, d_peakvalues, effdims, T_PEAK_INTEGER, NULL, NULL, batch);
 				d_SubtractScalar((tfloat*)d_peakpos, (tfloat*)d_peakpos, batch * 3, (tfloat)(effdims.x / 2));
 				d_MultiplyByScalar(d_peakvalues, d_peakvalues, batch, (tfloat)1 / (tfloat)Elements(effdims));
 
@@ -184,7 +184,7 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 					d_Scale(d_polarextract, d_polarextractboost, toInt3(polardims.y, 1, 1), toInt3(polardims.y * polarboost, 1, 1), T_INTERP_FOURIER, NULL, NULL, batch);
 
 					d_MultiplyByVector(d_polarextractboost, d_maskpolar, d_polarextractboost, polardims.y * polarboost, batch);
-					d_Peak(d_polarextractboost, d_peakpos, d_peakvalues, toInt3(polardims.y * polarboost, 1, 1), T_PEAK_INTEGER, batch);
+					d_Peak(d_polarextractboost, d_peakpos, d_peakvalues, toInt3(polardims.y * polarboost, 1, 1), T_PEAK_INTEGER, NULL, NULL, batch);
 					d_MultiplyByScalar(d_peakvalues, d_peakvalues, batch, (tfloat)1 / (tfloat)Elements(polardims));
 
 					cudaMemcpy(h_peakpos, d_peakpos, batch * sizeof(tfloat3), cudaMemcpyDeviceToHost);
@@ -224,7 +224,7 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 					d_RemapFullFFT2Full(d_datacart, d_datacart, effdims, batch);
 					d_MultiplyByVector(d_datacart, d_maskcart, d_datacart, Elements(effdims), batch);
 
-					d_Peak(d_datacart, d_peakpos, d_peakvalues, effdims, T_PEAK_SUBCOARSE, batch);
+					d_Peak(d_datacart, d_peakpos, d_peakvalues, effdims, T_PEAK_SUBCOARSE, NULL, NULL, batch);
 					d_SubtractScalar((tfloat*)d_peakpos, (tfloat*)d_peakpos, batch * 3, (tfloat)(effdims.x / 2));
 					d_MultiplyByScalar(d_peakvalues, d_peakvalues, batch, (tfloat)1 / (tfloat)Elements(effdims));
 
