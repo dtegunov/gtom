@@ -17,12 +17,13 @@ __global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t eleme
 void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_interpolated, tfloat* h_angles, int interpindex, int maxpoints, tfloat smoothsigma)
 {
 	tfloat interpangle = h_angles[interpindex];
-	int npoints = maxpoints;// dimsproj.z - 1;
+	int npoints = dimsproj.z - 1;//maxpoints;
 	tfloat* h_factors = (tfloat*)malloc(npoints * sizeof(tfloat));
 	short* h_indices = (short*)malloc(npoints * sizeof(short));
 
 	int n = 0;
-	for (int i = max(0, interpindex - maxpoints / 2); i <= min(dimsproj.z - 1, interpindex + maxpoints / 2); i++)
+	//for (int i = max(0, interpindex - maxpoints / 2); i <= min(dimsproj.z - 1, interpindex + maxpoints / 2); i++)
+	for (int i = 0; i < dimsproj.z; i++)
 	{
 		bool isconj = false;
 		int ii = i;
@@ -124,15 +125,32 @@ __global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t eleme
 		float sumim = 0.0f;
 		float samples = 0.0f;
 
-		float coscenter = cos(interpangle);
+		float coscenter = abs(cos(interpangle));
 		float centerx = coscenter * x;
 		float centerz = sin(interpangle) * x;
 
-		for (int n = 0; n < npoints; n++)
+		for (int n = npoints - 1; n < npoints; n++)
 		{
 			int index = d_indices[n];
 			float angle = d_angles[n];
-			float cosangle = cos(angle);
+			bool isconj = false;
+			float anglediff = abs(interpangle - angle);
+			if(abs(interpangle - (angle - PI)) < anglediff)
+			{
+				angle = angle - PI;
+				isconj = true;
+			}
+			else if(abs(interpangle - (angle + PI)) < anglediff)
+			{
+				angle = angle + PI;
+				isconj = true;
+			}
+			samples = angle;
+			if(!(x > 0 && y > 0))
+				isconj = false;
+			int ylocal = isconj ? dims.y - (int)y : (int)y;
+
+			float cosangle = abs(cos(angle));
 			float scalefac = coscenter / cosangle;
 			scalefac = 1.0f + (scalefac - 1.0f) * (1.0f - 32.0f / 128.0f);
 			float dx = x * scalefac;
@@ -144,7 +162,7 @@ __global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t eleme
 				continue;
 			d *= max(pow(cos(interpangle - angle), 4.0f), 0.0f);
 
-			tcomplex* d_Nprojft = d_projft + index * elementsproj + (int)y * (dims.x / 2 + 1);
+			tcomplex* d_Nprojft = d_projft + index * elementsproj + ylocal * (dims.x / 2 + 1);
 
 			cuComplex value = make_cuComplex(0.0f, 0.0f);
 			float xfrac = dx - floor(dx);
@@ -167,7 +185,7 @@ __global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t eleme
 			value.y += fac * d_Nprojft[min(dims.x / 2, x1 + 2)].y;
 
 			value.x *= 0.5f;
-			value.y *= 0.5f;
+			value.y *= isconj ? -0.5f : 0.5f;
 
 			sumre += value.x * d;
 			sumim += value.y * d;
@@ -175,7 +193,7 @@ __global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t eleme
 		}
 		if(samples > 0.0f)
 		{
-			d_interpolated[id].x = (tfloat)sumre / samples;
+			d_interpolated[id].x = samples;// (tfloat)sumre / samples;
 			d_interpolated[id].y = (tfloat)sumim / samples;
 		}
 		else
@@ -183,5 +201,6 @@ __global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t eleme
 			d_interpolated[id].x = 0.0f;
 			d_interpolated[id].y = 0.0f;
 		}
+		//d_interpolated[id].x = samples;
 	}
 }

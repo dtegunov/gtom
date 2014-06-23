@@ -279,5 +279,8 @@
     <CudaCompile Include="Tomography\InterpolateSingleAxis.cu">
       <Filter>Tomography</Filter>
     </CudaCompile>
+    <CudaCompile Include="Resolution\LocalAnisotropicFSC.cu">
+      <Filter>Resolution</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

@@ -576,16 +576,15 @@ template <class T> __global__ void SubtractScalarKernel(T* d_input, T* d_subtrah
 //Square//
 //////////
 
-template <class T> void d_Square(T* d_input, T* d_output, size_t elements, int batch)
+template <class T> void d_Square(T* d_input, T* d_output, size_t elements)
 {
 	size_t TpB = min(256, elements);
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
-	for(int b = 0; b < batch; b++)
-		SquareKernel<T> <<<grid, (uint)TpB>>> (d_input + elements * b, d_output + elements * b, elements);
+	SquareKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements);
 }
-template void d_Square<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, int batch);
-template void d_Square<int>(int* d_input, int* d_output, size_t elements, int batch);
+template void d_Square<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements);
+template void d_Square<int>(int* d_input, int* d_output, size_t elements);
 
 template <class T> __global__ void SquareKernel(T* d_input, T* d_output, size_t elements)
 {

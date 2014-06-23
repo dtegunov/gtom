@@ -80,13 +80,13 @@ __global__ void FirstIndexOfLinearKernel(tfloat* d_input, tfloat* d_output, size
 			index = min(index, indices[t]);
 
 		if(found)
-			d_output[blockIdx.x] = max(index, 1);
+			d_output[blockIdx.x] = max(index, 0);
 		else if(anybigger)
 			d_output[blockIdx.x] = (tfloat)elements;
 		else if(nan)
 			d_output[blockIdx.x] = (tfloat)-1;
 		else
-			d_output[blockIdx.x] = (tfloat)1;
+			d_output[blockIdx.x] = (tfloat)0;
 	}
 }
 
@@ -148,13 +148,9 @@ __global__ void FirstMinimumLinearKernel(tfloat* d_input, tfloat* d_output, size
 			index = min(index, indices[t]);
 
 		if(found)
-			d_output[blockIdx.x] = max(index, 1);
-		else if(anybigger)
-			d_output[blockIdx.x] = (tfloat)elements;
-		else if(nan)
-			d_output[blockIdx.x] = (tfloat)-1;
+			d_output[blockIdx.x] = max(index, 0);
 		else
-			d_output[blockIdx.x] = (tfloat)1;
+			d_output[blockIdx.x] = (tfloat)-1;
 	}
 }
 
@@ -163,20 +159,17 @@ __global__ void FirstMinimumLinearKernel(tfloat* d_input, tfloat* d_output, size
 //Is Bigger Than//
 //////////////////
 
-template<class T> void d_BiggerThan(tfloat* d_input, T* d_output, size_t elements, tfloat value, int batch)
+template<class T> void d_BiggerThan(tfloat* d_input, T* d_output, size_t elements, tfloat value)
 {
 	int TpB = min(256, NextMultipleOf(elements, 32));
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768), batch);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768));
 	BiggerThanKernel <<<grid, TpB>>> (d_input, d_output, elements, value);
 }
-template void d_BiggerThan<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat value, int batch);
-template void d_BiggerThan<char>(tfloat* d_input, char* d_output, size_t elements, tfloat value, int batch);
+template void d_BiggerThan<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat value);
+template void d_BiggerThan<char>(tfloat* d_input, char* d_output, size_t elements, tfloat value);
 
 template<class T> __global__ void BiggerThanKernel(tfloat* d_input, T* d_output, size_t elements, tfloat value)
 {
-	d_input += elements * blockIdx.y;
-	d_output += elements * blockIdx.y;
-	
 	for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < elements; i += gridDim.x * blockDim.x)
 		d_output[i] = d_input[i] > value ? (T)1 : (T)0;
 }
@@ -186,20 +179,17 @@ template<class T> __global__ void BiggerThanKernel(tfloat* d_input, T* d_output,
 //Is Smaller Than//
 ///////////////////
 
-template<class T> void d_SmallerThan(tfloat* d_input, T* d_output, size_t elements, tfloat value, int batch)
+template<class T> void d_SmallerThan(tfloat* d_input, T* d_output, size_t elements, tfloat value)
 {
 	int TpB = min(256, NextMultipleOf(elements, 32));
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768), batch);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768));
 	SmallerThanKernel <<<grid, TpB>>> (d_input, d_output, elements, value);
 }
-template void d_SmallerThan<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat value, int batch);
-template void d_SmallerThan<char>(tfloat* d_input, char* d_output, size_t elements, tfloat value, int batch);
+template void d_SmallerThan<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat value);
+template void d_SmallerThan<char>(tfloat* d_input, char* d_output, size_t elements, tfloat value);
 
 template<class T> __global__ void SmallerThanKernel(tfloat* d_input, T* d_output, size_t elements, tfloat value)
 {
-	d_input += elements * blockIdx.y;
-	d_output += elements * blockIdx.y;
-
 	for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < elements; i += gridDim.x * blockDim.x)
 		d_output[i] = d_input[i] < value ? (T)1 : (T)0;
 }
@@ -209,20 +199,17 @@ template<class T> __global__ void SmallerThanKernel(tfloat* d_input, T* d_output
 //Is Between//
 //////////////
 
-template<class T> void d_IsBetween(tfloat* d_input, T* d_output, size_t elements, tfloat minval, tfloat maxval, int batch)
+template<class T> void d_IsBetween(tfloat* d_input, T* d_output, size_t elements, tfloat minval, tfloat maxval)
 {
 	int TpB = min(256, NextMultipleOf(elements, 32));
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768), batch);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768));
 	IsBetweenKernel <<<grid, TpB>>> (d_input, d_output, elements, minval, maxval);
 }
-template void d_IsBetween<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat minval, tfloat maxval, int batch);
-template void d_IsBetween<char>(tfloat* d_input, char* d_output, size_t elements, tfloat minval, tfloat maxval, int batch);
+template void d_IsBetween<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat minval, tfloat maxval);
+template void d_IsBetween<char>(tfloat* d_input, char* d_output, size_t elements, tfloat minval, tfloat maxval);
 
 template<class T> __global__ void IsBetweenKernel(tfloat* d_input, T* d_output, size_t elements, tfloat minval, tfloat maxval)
 {
-	d_input += elements * blockIdx.y;
-	d_output += elements * blockIdx.y;
-
 	for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < elements; i += gridDim.x * blockDim.x)
 		d_output[i] = (d_input[i] < maxval && d_input[i] >= minval) ? (T)1 : (T)0;
 }

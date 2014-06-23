@@ -69,7 +69,7 @@ template<class T, int maxbins, int subdivs> __global__ void HistogramKernel(T* d
 
 	for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; i < elements; i += gridDim.x * blockDim.x)
 	{
-		bin = (int)((tfloat)(d_input[i] - minval) / binsize);
+		bin = (int)((tfloat)(d_input[i] - minval) / binsize + (tfloat)0.5);
 		if(bin >= 0 && bin < nbins)
 			atomicAdd(localhist + nbins * threadgroup + bin, 1);
 	}
@@ -82,6 +82,6 @@ template<class T, int maxbins, int subdivs> __global__ void HistogramKernel(T* d
 
 	__syncthreads();
 
-	for (int i = 0; i < nbins; i++)
+	for (int i = threadIdx.x; i < nbins; i += blockDim.x)
 		d_histogram[i] = localhist[i];
 }

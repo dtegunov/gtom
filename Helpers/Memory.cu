@@ -7,6 +7,7 @@
 ////////////////////////////
 
 template <class T> __global__ void MemcpyMultiKernel(T* d_output, T* d_input, size_t elements, int copies);
+template <class T> __global__ void MemcpyStridedKernel(T* d_output, T* d_input, size_t elements, int stridedst, int stridesrc);
 template <class T> __global__ void ValueFillKernel(T* d_output, size_t elements, T value);
 template <class T, int fieldcount> __global__ void JoinInterleavedKernel(T** d_fields, T* d_output, size_t elements);
 template <class T1, class T2> __global__ void TypeConversionKernel(T1* d_input, T2* d_output, size_t elements);
@@ -103,8 +104,22 @@ template<class T> void CudaMemcpyMulti(T* dst, T* src, size_t elements, int copi
 template void CudaMemcpyMulti<char>(char* dst, char* src, size_t elements, int copies);
 template void CudaMemcpyMulti<short>(short* dst, short* src, size_t elements, int copies);
 template void CudaMemcpyMulti<int>(int* dst, int* src, size_t elements, int copies);
+template void CudaMemcpyMulti<long>(long* dst, long* src, size_t elements, int copies);
 template void CudaMemcpyMulti<float>(float* dst, float* src, size_t elements, int copies);
 template void CudaMemcpyMulti<double>(double* dst, double* src, size_t elements, int copies);
+
+template<class T> void CudaMemcpyStrided(T* dst, T* src, size_t elements, int stridedst, int stridesrc)
+{
+	size_t TpB = min(256, elements);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 8192));
+	MemcpyStridedKernel <<<grid, TpB>>> (dst, src, elements, stridedst, stridesrc);
+}
+template void CudaMemcpyStrided<char>(char* dst, char* src, size_t elements, int stridedst, int stridesrc);
+template void CudaMemcpyStrided<short>(short* dst, short* src, size_t elements, int stridedst, int stridesrc);
+template void CudaMemcpyStrided<int>(int* dst, int* src, size_t elements, int stridedst, int stridesrc);
+template void CudaMemcpyStrided<long>(long* dst, long* src, size_t elements, int stridedst, int stridesrc);
+template void CudaMemcpyStrided<float>(float* dst, float* src, size_t elements, int stridedst, int stridesrc);
+template void CudaMemcpyStrided<double>(double* dst, double* src, size_t elements, int stridedst, int stridesrc);
 
 void* CudaMallocAligned2D(size_t widthbytes, size_t height, int* pitch, int alignment)
 {       
@@ -319,6 +334,16 @@ template <class T> __global__ void MemcpyMultiKernel(T* d_output, T* d_input, si
 		T value = d_input[id];
 		for (int i = 0; i < copies; i++)
 			d_output[i * elements + id] = value;
+	}
+}
+
+template <class T> __global__ void MemcpyStridedKernel(T* d_output, T* d_input, size_t elements, int stridedst, int stridesrc)
+{
+	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+		id < elements; 
+		id += blockDim.x * gridDim.x)
+	{
+		d_output[id * stridedst] = d_input[id * stridesrc];
 	}
 }
 

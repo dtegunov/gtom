@@ -8,16 +8,18 @@
 
 
 
-///////////////////////////////////
-//Local Fourier Shell Correlation//
-///////////////////////////////////
+///////////////////////////////////////////////
+//Local Anisotropic Fourier Shell Correlation//
+///////////////////////////////////////////////
 
-void d_LocalFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d_resolution, int windowsize, int maxradius, tfloat threshold)
+void d_LocalAnisotropicFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d_resolution, int windowsize, int maxradius, int2 anglesteps, tfloat threshold)
 {
 	//maxradius *= 2;
 
 	//tfloat* h_volume1 = (tfloat*)MallocPinnedFromDeviceArray(*d_volume1, Elements(dimsvolume) * sizeof(tfloat));
 	//tfloat* h_volume2 = (tfloat*)MallocPinnedFromDeviceArray(*d_volume2, Elements(dimsvolume) * sizeof(tfloat));
+
+	int samplesperelement = anglesteps.x * anglesteps.y;
 
 	int3 dimspaddedvolume = toInt3(dimsvolume.x + windowsize, dimsvolume.y + windowsize, dimsvolume.z + windowsize);
 	int3 dimswindow = toInt3(windowsize, windowsize, windowsize);
@@ -32,7 +34,7 @@ void d_LocalFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d
 	d_Pad(d_volume2, d_paddedvolume2, dimsvolume, dimspaddedvolume, T_PAD_MIRROR, (tfloat)0);
 	//cudaFree(*d_volume2);
 
-	uint batchmemory = 128 * 1024 * 1024;
+	uint batchmemory = 256 * 1024 * 1024;
 	uint windowmemory = Elements(dimswindow) * sizeof(tfloat);
 	uint batchsize = batchmemory / windowmemory;
 
@@ -54,9 +56,9 @@ void d_LocalFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d
 	cudaMalloc((void**)&d_extractcenters, batchsize * sizeof(int3));
 
 	tfloat* d_fsccurves;
-	cudaMalloc((void**)&d_fsccurves, maxradius * batchsize * sizeof(tfloat));
+	cudaMalloc((void**)&d_fsccurves, maxradius * samplesperelement * batchsize * sizeof(tfloat));
 	tfloat* d_resvalues;
-	cudaMalloc((void**)&d_resvalues, batchsize * sizeof(tfloat));
+	cudaMalloc((void**)&d_resvalues, batchsize * samplesperelement * sizeof(tfloat));
 
 	cufftHandle planforw = d_FFTR2CGetPlan(DimensionCount(dimswindow), dimswindow, batchsize);
 
@@ -84,21 +86,15 @@ void d_LocalFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d
 
 		d_MultiplyByVector(d_extracts1, d_mask, d_extracts1, elementswindow, batchsize);
 		d_MultiplyByVector(d_extracts2, d_mask, d_extracts2, elementswindow, batchsize);
+		
+		d_AnisotropicFSCMap(d_extracts1, d_extracts2, dimswindow, d_fsccurves, anglesteps, maxradius, T_FSC_MODE::T_FSC_THRESHOLD, threshold, &planforw, batchsize);
 
-		//tfloat* h_extracts1 = (tfloat*)MallocFromDeviceArray(d_extracts1, elementswindow * batchsize * sizeof(tfloat));
-		//free(h_extracts1);
-
-		/*d_Pad(d_extracts1, d_paddedextracts1, dimswindow, dimspaddedwindow, T_PAD_VALUE, (tfloat)0, batchsize);
-		d_Pad(d_extracts2, d_paddedextracts2, dimswindow, dimspaddedwindow, T_PAD_VALUE, (tfloat)0, batchsize);*/
-
-		d_FSC(d_extracts1, d_extracts2, dimswindow, d_fsccurves, maxradius, &planforw, batchsize);
-
-		d_ValueFill(d_resvalues, batchsize, (tfloat)-1);
-		d_FirstIndexOf(d_fsccurves, d_resvalues, maxradius, threshold, T_INTERP_LINEAR, batchsize);
-		/*tfloat* h_resvalues = (tfloat*)MallocFromDeviceArray(d_resvalues, batchsize * sizeof(tfloat));
+		d_ValueFill(d_resvalues, batchsize * samplesperelement, (tfloat)-1);
+		d_FirstIndexOf(d_fsccurves, d_resvalues, maxradius, threshold, T_INTERP_LINEAR, batchsize * samplesperelement);
+		/*tfloat* h_resvalues = (tfloat*)MallocFromDeviceArray(d_resvalues, batchsize * samplesperelement * sizeof(tfloat));
 		free(h_resvalues);*/
 
-		cudaMemcpy(d_resolution + i, d_resvalues, min(batchsize, elements - i) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+		cudaMemcpy(d_resolution + i * samplesperelement, d_resvalues, min(batchsize, elements - i) * samplesperelement * sizeof(tfloat), cudaMemcpyDeviceToDevice);
 
 		//break;
 		printf("%f\n", (tfloat)i / (tfloat)elements * (tfloat)100);

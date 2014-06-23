@@ -174,21 +174,16 @@ template<uint maxshells, uint maxthreads, uint subdivs> __global__ void FSCKerne
 
 				tcomplex val1 = d_volume1[address];
 				tfloat denomsval = val1.x * val1.x + val1.y * val1.y;
-				//denoms1[maxshells * threadIdx.x + radiuslow] += denomsval;
 				atomicAdd(denoms1 + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
 				atomicAdd(denoms1 + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
 				//denoms1[maxshells * (threadIdx.x / subdivs) + radiuslow] += (tfloat)1;
 			
 				tcomplex val2 = d_volume2[address];
 				denomsval = val2.x * val2.x + val2.y * val2.y;
-				//denoms2[maxshells * threadIdx.x + radiuslow] += denomsval;		
 				atomicAdd(denoms2 + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
 				atomicAdd(denoms2 + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
 			
 				denomsval = val1.x * val2.x + val1.y * val2.y;
-				//nums[maxshells * threadIdx.x + radiuslow] += denomsval;
-				//nums[maxshells * (threadIdx.x / subdivs) + radiuslow] += denomsval * fraclow;
-				//nums[maxshells * (threadIdx.x / subdivs) + radiushigh] += denomsval * frachigh;
 				atomicAdd(nums + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
 				atomicAdd(nums + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
 			}
@@ -220,19 +215,16 @@ template<uint maxshells, uint maxthreads, uint subdivs> __global__ void FSCKerne
 
 				tcomplex val1 = d_volume1[address];
 				tfloat denomsval = val1.x * val1.x + val1.y * val1.y;
-				//denoms1[maxshells * threadIdx.x + radiuslow] += denomsval;
 				atomicAdd(denoms1 + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
 				atomicAdd(denoms1 + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
 				//denoms1[maxshells * (threadIdx.x / subdivs) + radiuslow] += (tfloat)1;
 			
 				tcomplex val2 = d_volume2[address];
 				denomsval = val2.x * val2.x + val2.y * val2.y;
-				//denoms2[maxshells * threadIdx.x + radiuslow] += denomsval;		
 				atomicAdd(denoms2 + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
 				atomicAdd(denoms2 + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
 			
 				denomsval = val1.x * val2.x + val1.y * val2.y;
-				//nums[maxshells * threadIdx.x + radiuslow] += denomsval;
 				atomicAdd(nums + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
 				atomicAdd(nums + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
 			}
