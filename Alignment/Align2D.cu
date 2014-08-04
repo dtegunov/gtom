@@ -46,7 +46,7 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 	int2 atlasprimitives = toInt2(1, 1);
 
 	int2* h_atlascoords = (int2*)malloc(batch * sizeof(int2));
-	tfloat* d_atlas = d_MakeAtlas(d_input, dims, atlasdims, atlasprimitives, h_atlascoords);
+	tfloat* d_atlas = d_MakeAtlas(d_input, toInt3(dims.x, dims.y, batch), atlasdims, atlasprimitives, h_atlascoords);
 	int atlasrow = atlasprimitives.x;
 
 	#pragma endregion
@@ -173,8 +173,6 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 					cudaMemcpy(d_translation, h_translation, batch * sizeof(tfloat2), cudaMemcpyHostToDevice);
 
 					d_CartAtlas2Polar(d_atlas, d_datapolar, d_translation, toInt2(atlasdims.x, atlasdims.y), toInt2(effdims.x, effdims.y), T_INTERP_LINEAR, batch);
-					tfloat* h_datapolar = (tfloat*)MallocFromDeviceArray(d_datapolar, Elements(polardims) * batch * sizeof(tfloat));
-					free(h_datapolar);
 
 					d_NormMonolithic(d_datapolar, d_datapolar, Elements(polardims), T_NORM_MEAN01STD, batch);
 					d_FFTR2C(d_datapolar, d_datapolarFFT, &planforwRot);

@@ -8,14 +8,14 @@ TEST(Resolution, FSC)
 	{
 		int3 dims = {280, 280, 280};
 		int shells = 96;
-		tfloat* d_input1 = (tfloat*)CudaMallocFromBinaryFile("Data\\Resolution\\Input1_FSC_1.bin");
-		tfloat* d_input2 = (tfloat*)CudaMallocFromBinaryFile("Data\\Resolution\\Input2_FSC_1.bin");
+		tcomplex* d_input1 = (tcomplex*)CudaMallocFromBinaryFile("Data\\Resolution\\Input1_FSC_1.bin");
+		tcomplex* d_input2 = (tcomplex*)CudaMallocFromBinaryFile("Data\\Resolution\\Input2_FSC_1.bin");
 		tfloat* d_curve = (tfloat*)CudaMallocValueFilled(shells * 2, (tfloat)0);
 		tfloat* d_resolution = (tfloat*)CudaMallocValueFilled(2, (tfloat)-1);
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Resolution\\Output_FSC_1.bin");
 		
 		//d_FSC(d_input1, d_input2, dims, d_curve, shells, NULL, 2);
-		d_AnisotropicFSC(d_input1, d_input2, dims, d_curve, shells, tfloat3(1, 0, 0), ToRad(90), (tfloat)0, NULL, 2);
+		d_AnisotropicFSC(d_input1, d_input2, dims, d_curve, shells, tfloat3(1, 0, 0), ToRad(90), (tfloat)0);
 		d_FirstIndexOf(d_curve, d_resolution, shells, (tfloat)0.143, T_INTERP_LINEAR, 2);
 
 		tfloat* h_curve = (tfloat*)MallocFromDeviceArray(d_curve, shells * 2 * sizeof(tfloat));

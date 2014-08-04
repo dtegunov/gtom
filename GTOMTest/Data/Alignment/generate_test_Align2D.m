@@ -23,7 +23,7 @@ rot = zeros(count, 1);
 for t=1:count
     trans(t, :) = (rand(1, 2) - 0.5) .* (maxtrans * 2);
     rot(t) = (rand(1) - 0.5) .* (maxrot * 2);
-    transformed(:,:,t) = tom_rotate(transformed(:,:,t), rot(t));
+    transformed(:,:,t) = imrotate(transformed(:,:,t), rot(t), 'bicubic', 'crop');
     transformed(:,:,t) = tom_shift(transformed(:,:,t), trans(t, :));
 end;
 

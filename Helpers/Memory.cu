@@ -221,6 +221,7 @@ template float* CudaMallocValueFilled<float>(size_t elements, float value);
 template double* CudaMallocValueFilled<double>(size_t elements, double value);
 template tcomplex* CudaMallocValueFilled<tcomplex>(size_t elements, tcomplex value);
 template char* CudaMallocValueFilled<char>(size_t elements, char value);
+template unsigned char* CudaMallocValueFilled<unsigned char>(size_t elements, unsigned char value);
 template short* CudaMallocValueFilled<short>(size_t elements, short value);
 template int* CudaMallocValueFilled<int>(size_t elements, int value);
 template uint* CudaMallocValueFilled<uint>(size_t elements, uint value);
