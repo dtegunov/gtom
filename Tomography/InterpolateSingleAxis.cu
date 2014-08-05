@@ -10,9 +10,9 @@
 __global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t elementsproj, int3 dims, tcomplex* d_interpolated, tfloat* d_angles, tfloat interpangle, short* d_indices, short npoints, tfloat interpradius);
 
 
-////////////////////////////////////////
-//Performs 3D reconstruction using ART//
-////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+//Interpolates a certain image in a tilt series from its neighbors//
+////////////////////////////////////////////////////////////////////
 
 void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_interpolated, tfloat* h_angles, int interpindex, int maxpoints, tfloat smoothsigma)
 {

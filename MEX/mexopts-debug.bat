@@ -20,7 +20,7 @@ rem General parameters
 rem ********************************************************************
 
 set MATLAB=%MATLAB%
-set VSINSTALLDIR=%VS110COMNTOOLS%\..\..
+set VSINSTALLDIR=%VS120COMNTOOLS%\..\..
 set VCINSTALLDIR=%VSINSTALLDIR%\VC
 rem In this case, LINKERDIR is being used to specify the location of the SDK
 set LINKERDIR='.registry_lookup("SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.1A" , "InstallationFolder").'

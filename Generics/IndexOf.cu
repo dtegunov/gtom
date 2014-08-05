@@ -7,6 +7,7 @@
 ////////////////////////////
 
 __global__ void FirstIndexOfLinearKernel(tfloat* d_input, tfloat* d_output, size_t elements, tfloat value);
+__global__ void HalfBitFSCKernel(tfloat* d_input, tfloat* d_output, size_t elements);
 __global__ void FirstMinimumLinearKernel(tfloat* d_input, tfloat* d_output, size_t elements);
 
 template<class T> __global__ void BiggerThanKernel(tfloat* d_input, T* d_output, size_t elements, tfloat value);
@@ -89,6 +90,89 @@ __global__ void FirstIndexOfLinearKernel(tfloat* d_input, tfloat* d_output, size
 			d_output[blockIdx.x] = (tfloat)0;
 	}
 }
+
+////////////////////////////////////////////////////////////////////
+//FSC intersection according to half-bit criterion (van Heel 2005)//
+////////////////////////////////////////////////////////////////////
+
+void d_IntersectHalfBitFSC(tfloat* d_input, tfloat* d_output, size_t elements, tfloat* d_structurefraction, int batch)
+{
+	int TpB = min(NextMultipleOf(elements, 32), 256);
+	dim3 grid = dim3(batch);
+	HalfBitFSCKernel <<<grid, TpB>>> (d_input, d_output, elements);
+}
+
+__global__ void HalfBitFSCKernel(tfloat* d_input, tfloat* d_output, size_t elements)
+{
+	d_input += blockIdx.x * elements;
+
+	__shared__ tfloat indices[256];
+	__shared__ bool found, anybigger, nan;
+	if (threadIdx.x == 0)
+	{
+		found = false;
+		anybigger = false;
+		nan = false;
+	}
+	__syncthreads();
+
+	tfloat index = (tfloat)(elements + 1);
+	tfloat current, next;
+	for (size_t n = threadIdx.x; n < elements - 1; n += blockDim.x)
+	{
+		if (found)
+			break;
+
+		current = d_input[n];
+		next = d_input[n + 1];
+		if (isnan(current) || isnan(next))
+		{
+			nan = true;
+			continue;
+		}
+
+		tfloat rootn0 = sqrt((tfloat)n);
+		tfloat rootn1 = sqrt((tfloat)(n + 1));
+		float value0 = n == 0 ? 0.99f : min(0.99f, (0.2071f + 1.9102f / rootn0) / (1.2071f + 0.9102f / rootn0));
+		float value1 = min(0.99f, (0.2071f + 1.9102f / rootn1) / (1.2071f + 0.9102f / rootn1));
+
+		if (value0 < current && value1 < next)
+			anybigger = true;
+
+		if ((value0 <= current && value1 >= next) || (value0 >= current && value1 <= next))
+		{
+			index = (tfloat)n;
+			tfloat denominator = (value1 - value0) - (next - current);
+			if (abs(denominator) > 0.00001f)	//not parallel
+				index = (tfloat)n + (current - value0) / denominator;
+			found = true;
+			break;
+		}
+	}
+
+	indices[threadIdx.x] = index;
+
+	__syncthreads();
+
+	if (threadIdx.x == 0)
+	{
+		for (int t = 1; t < min(elements, blockDim.x); t++)
+			index = min(index, indices[t]);
+
+		if (found)
+			d_output[blockIdx.x] = max(index, 0);
+		else if (anybigger)
+			d_output[blockIdx.x] = (tfloat)elements;
+		else if (nan)
+			d_output[blockIdx.x] = (tfloat)-1;
+		else
+			d_output[blockIdx.x] = (tfloat)0;
+	}
+}
+
+//////////////////////////
+//Index of first minimum//
+//////////////////////////
 
 void d_FirstMinimum(tfloat* d_input, tfloat* d_output, size_t elements, T_INTERP_MODE mode, int batch)
 {

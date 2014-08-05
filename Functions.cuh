@@ -773,6 +773,16 @@ template<class T> void d_Histogram(T* d_input, uint* d_histogram, size_t element
 void d_FirstIndexOf(tfloat* d_input, tfloat* d_output, size_t elements, tfloat value, T_INTERP_MODE mode, int batch = 1);
 
 /**
+* \brief Finds the position of the first intersection between FSC curve and the 1/2 bit function (van Heel 2005), which depends on the fraction occupied by actual structure
+* \param[in] d_input	Array with input numbers
+* \param[in] d_output	Array that will contain the position; 0 if all values are smaller, elements if all values are larger, -1 if NaN is encountered
+* \param[in] elements	Number of elements
+* \param[in] d_structurefraction	Array with individual structure fractions for all members of the current batch
+* \param[in] batch	Number of input vectors/output positions
+*/
+void d_IntersectHalfBitFSC(tfloat* d_input, tfloat* d_output, size_t elements, tfloat* d_structurefraction, int batch = 1);
+
+/**
  * \brief Finds the position of the first (local) minimum
  * \param[in] d_input	Array with input numbers
  * \param[in] d_output	Array that will contain the position; -1 if no minimum is found
