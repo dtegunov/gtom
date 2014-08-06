@@ -993,15 +993,42 @@ template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3
 void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, tfloat2* h_scale, tfloat* h_rotation, tfloat2* h_translation, T_INTERP_MODE mode, int batch = 1);
 
 //Padding.cu:
+
+/**
+* \brief Specifies how the pad region should be filled
+*/
 enum T_PAD_MODE 
 { 
+	/**Pad with fixed value*/
 	T_PAD_VALUE = 1,
+	/**Pad by repeating mirrored data*/
 	T_PAD_MIRROR = 2,
+	/**Pad by repeating data*/
 	T_PAD_TILE = 3
 };
+
+/**
+* \brief Pads a 1/2/3 dimensional array to obtain the desired size, while keeping the centers of old and new array aligned. Can also be used to extract the central portion if new size is smaller than old.
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain the padded data
+* \param[in] inputdims	Dimensions of original array
+* \param[in] outputdims	Dimensions of the new array
+* \param[in] mode	Specifies how to fill the pad region
+* \param[in] value	If mode = T_PAD_VALUE, this is the fixed value used
+* \param[in] batch	Number of arrays to be padded
+*/
 template <class T> void d_Pad(T* d_input, T* d_output, int3 inputdims, int3 outputdims, T_PAD_MODE mode, T value, int batch = 1);
 
 //Reductions.cu:
+
+/**
+* \brief Sum over multiple vectors
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain the padded data
+* \param[in] vectorlength	Vector length
+* \param[in] nvectors	Number of vectors to sum over
+* \param[in] batch	Number of vector sets to be reduced independently
+*/
 template<class T> void d_ReduceAdd(T* d_input, T* d_output, int vectorlength, int nvectors, int batch = 1);
 
 
@@ -1010,15 +1037,57 @@ template<class T> void d_ReduceAdd(T* d_input, T* d_output, int vectorlength, in
 /////////////
 
 //Align2D.cu:
+
+/**
+* \brief Specifies what kind of alignment should be performed
+*/
 enum T_ALIGN_MODE
 {
+	/**Rotational alignment*/
 	T_ALIGN_ROT = 1 << 0,
+	/**Translational alignment*/
 	T_ALIGN_TRANS = 1 << 1,
+	/**Rotational and translational alignment*/
 	T_ALIGN_BOTH = 3
 };
+
+/**
+* \brief Aligns a set of images to one or multiple targets and assigns each image to the most likely target
+* \param[in] d_input	Images to be aligned
+* \param[in] d_targets	Alignment target images
+* \param[in] dims	Dimensions of one image (not the stack, i. e. z = 1)
+* \param[in] numtargets	Number of alignment targets
+* \param[in] h_params	Host array that will, at i * numtargets + t, contain the translation (.x, .y) and rotation (.z) of image i relative to target t
+* \param[in] h_membership	Host array that will contain the most likely target ID for each aligned image
+* \param[in] h_scores	Host array that will, at i * numtargets + t, contain the cross-correlation value between aligned image i and target t
+* \param[in] maxtranslation	Maximum offset allowed for translational alignment
+* \param[in] maxrotation	Maximum angular offset allowed for rotational alignment
+* \param[in] iterations	Number of iterations if both rotational and translational alignment is performed
+* \param[in] mode	Type of 2D alignment to be performed
+* \param[in] batch	Number of images to be aligned
+*/
 void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat3* h_params, int* h_membership, tfloat* h_scores, int maxtranslation, tfloat maxrotation, int iterations, T_ALIGN_MODE mode, int batch);
 
 //Align3D.cu:
+
+/**
+* \brief Aligns a 3D volume to one or multiple target volumes and assigns it to the most likely target
+* \param[in] d_input	Volume to be aligned
+* \param[in] d_targets	Alignment target volumes
+* \param[in] dims	Volume dimensions
+* \param[in] numtargets	Number of alignment targets
+* \param[in] position	Pointer to variable that will contain the translation for the most likely target
+* \param[in] rotation	Pointer to variable that will contain the rotation (Euler angles) for the most likely target
+* \param[in] h_membership	Host array that will contain the most likely target ID
+* \param[in] h_scores	Host array that will contain the cross-correlation value between aligned volume and each target
+* \param[in] h_allpositions	Host array that will contain the translation relative to each alignment target
+* \param[in] h_allrotations	Host array that will contain the rotation (Euler angles) relative to each alignment target
+* \param[in] maxtranslation	Maximum offset allowed for translational alignment
+* \param[in] maxrotation	Maximum angular offset allowed for rotational alignment
+* \param[in] rotationstep	Angular sampling step
+* \param[in] rotationrefinements	Number of times the alignment should be refined by decreasing rotationstep after the previous iteration
+* \param[in] mode	Type of 3D alignment to be performed
+*/
 void d_Align3D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tfloat3 &position, tfloat3 &rotation, int* h_membership, tfloat* h_scores, tfloat3* h_allpositions, tfloat3* h_allrotations, int maxtranslation, tfloat3 maxrotation, tfloat rotationstep, int rotationrefinements, T_ALIGN_MODE mode);
 
 
@@ -1026,7 +1095,23 @@ void d_Align3D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 //Binary manipulation//
 ///////////////////////
 
+/**
+* \brief Performs a dilation operation on a binary image/volume
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain the dilated data
+* \param[in] dims	Array dimensions
+* \param[in] batch	Number of arrays
+*/
 template <class T> void d_Dilate(T* d_input, T* d_output, int3 dims, int batch = 1);
+
+/**
+* \brief Converts floating point data to binary by applying a threshold; value >= threshold is set to 1, otherwise 0; binary data type can be char or int
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain the binarized data
+* \param[in] elements	Number of elements in array
+* \param[in] threshold	Threshold to be applied
+* \param[in] batch	Number of arrays
+*/
 template <class T> void d_Binarize(tfloat* d_input, T* d_output, size_t elements, tfloat threshold, int batch = 1);
 
 
@@ -1035,18 +1120,77 @@ template <class T> void d_Binarize(tfloat* d_input, T* d_output, size_t elements
 ///////////////
 
 //CCF.cu:
+
+/**
+* \brief Computes the correlation surface by folding two maps in Fourier space; an FFTShift operation is applied afterwards, so that center = no translation
+* \param[in] d_input1	First input map
+* \param[in] d_input2	Second input map
+* \param[in] d_output	Array that will contain the correlation data
+* \param[in] dims	Array dimensions
+* \param[in] normalized	Indicates if the input maps are already normalized, i. e. if this step can be skipped
+* \param[in] d_mask	Optional mask used during normalization, if normalized = false
+* \param[in] batch	Number of map pairs
+*/
 template<class T> void d_CCF(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, T* d_mask, int batch = 1);
+
+/**
+* \brief Computes the correlation surface by folding two maps in Fourier space; FFTShift operation is not applied afterwards, i. e. first element in array = no translation
+* \param[in] d_input1	First input map
+* \param[in] d_input2	Second input map
+* \param[in] d_output	Array that will contain the correlation data
+* \param[in] dims	Array dimensions
+* \param[in] normalized	Indicates if the input maps are already normalized, i. e. if this step can be skipped
+* \param[in] d_mask	Optional mask used during normalization, if normalized = false
+* \param[in] batch	Number of map pairs
+*/
 template<class T> void d_CCFUnshifted(tfloat* d_input1, tfloat* d_input2, tfloat* d_output, int3 dims, bool normalized, T* d_mask, int batch = 1);
 
 //Peak.cu:
+
+/**
+* \brief Specifies how the position of a peak should be determined
+*/
 enum T_PEAK_MODE
 {
+	/**Only integer values; fastest*/
 	T_PEAK_INTEGER = 1,
+	/**Subpixel precision, but with x, y and z determined by scaling a row/column independently in each dimension; moderately fast*/
 	T_PEAK_SUBCOARSE = 2,
+	/**Subpixel precision, with a portion around the peak extracted and up-scaled in Fourier space; slow, but highest precision*/
 	T_PEAK_SUBFINE = 3
 };
+
+/**
+* \brief Locates the position of the maximum value in a map with the specified precision
+* \param[in] d_input	Array with input data
+* \param[in] d_positions	Array that will contain the peak position for each map in batch
+* \param[in] d_values	Array that will contain the peak values for each map in batch
+* \param[in] dims	Array dimensions
+* \param[in] mode	Desired positional precision
+* \param[in] planforw	Optional pre-cooked forward FFT plan; can be made with d_PeakMakePlans
+* \param[in] planback	Optional pre-cooked reverse FFT plan; can be made with d_PeakMakePlans
+* \param[in] batch	Number of maps
+*/
 void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, T_PEAK_MODE mode, cufftHandle* planforw = (cufftHandle*)NULL, cufftHandle* planback = (cufftHandle*)NULL, int batch = 1);
-void d_PeakMakePlans(int3 dims, cufftHandle* planforw, cufftHandle* planback);
+
+/**
+* \brief Creates pre-cooked FFT plans for d_Peak(); parameters must be identical
+* \param[in] dims	Array dimensions
+* \param[in] mode	Desired positional precision
+* \param[in] planforw	Will contain forward FFT plan
+* \param[in] planback	Will contain reverse FFT plan
+*/
+void d_PeakMakePlans(int3 dims, T_PEAK_MODE mode, cufftHandle* planforw, cufftHandle* planback);
+
+/**
+* \brief Detects multiple local peaks in a map
+* \param[in] d_input	Array with input data
+* \param[in] h_peaks	Pointer that will contain a host array with peak positions
+* \param[in] h_peaksnum	Host array that will contain the number of peaks in each map
+* \param[in] localextent	Distance that a peak has to be apart from a higher/equal peak to be detected
+* \param[in] threshold	Minimum value for peaks to be considered
+* \param[in] batch	Number of maps
+*/
 void d_LocalPeaks(tfloat* d_input, int3** h_peaks, int* h_peaksnum, int3 dims, int localextent, tfloat threshold, int batch = 1);
 
 
@@ -1054,8 +1198,21 @@ void d_LocalPeaks(tfloat* d_input, int3** h_peaks, int* h_peaksnum, int3 dims, i
 //Cubic interpolation//
 ///////////////////////
 
-template<class T> void d_CubicBSplinePrefilter2D(T* image, int pitch, int2 dims);
-template<class T> void d_CubicBSplinePrefilter3D(T* d_volume, int pitch, int width, int height, int depth);
+/**
+* \brief Prefilters a 2D map to accelerate cubic interpolation over it; the operation is performed in-place, i. e. original data will be overwritten
+* \param[in] d_image	Array with input image, prefiltered data will be written here
+* \param[in] pitch	Length of one line in bytes (mind 4 byte alignment for CUDA textures)
+* \param[in] dims	Image dimensions
+*/
+template<class T> void d_CubicBSplinePrefilter2D(T* d_image, int pitch, int2 dims);
+
+/**
+* \brief Prefilters a 3D volume to accelerate cubic interpolation over it; the operation is performed in-place, i. e. original data will be overwritten
+* \param[in] d_image	Array with input volume, prefiltered data will be written here
+* \param[in] pitch	Length of one line in bytes (mind 4 byte alignment for CUDA textures)
+* \param[in] dims	Volume dimensions
+*/
+template<class T> void d_CubicBSplinePrefilter3D(T* d_volume, int pitch, int3 dims);
 
 
 /////////////////////
@@ -1063,34 +1220,226 @@ template<class T> void d_CubicBSplinePrefilter3D(T* d_volume, int pitch, int wid
 /////////////////////
 
 //FFT.cu:
+
+/**
+* \brief Performs forward FFT on real-valued data; output will have dimensions.x / 2 + 1 as its width
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void d_FFTR2C(tfloat* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs forward FFT on real-valued data using a pre-cooked plan; output will have dimensions.x / 2 + 1 as its width
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain transformed data
+* \param[in] plan	Pre-cooked plan for forward transform; can be obtained with d_FFTR2CGetPlan()
+*/
 void d_FFTR2C(tfloat* const d_input, tcomplex* const d_output, cufftHandle* plan);
-void d_IFFTZ2D(cufftDoubleComplex* const d_input, double* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs forward FFT on real-valued data; output will have the same dimensions as input and contain the symmetrically redundant half
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void d_FFTR2CFull(tfloat* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs forward FFT on complex-valued data
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void d_FFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs forward FFT on real-valued data contained in a host array; output will have dimensions.x / 2 + 1 as its width
+* \param[in] h_input	Host array with input data
+* \param[in] h_output	Host array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void FFTR2C(tfloat* const h_input, tcomplex* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs forward FFT on real-valued data contained in a host array; output will have the same dimensions as input and contain the symmetrically redundant half
+* \param[in] h_input	Host array with input data
+* \param[in] h_output	Host array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void FFTR2CFull(tfloat* const h_input, tcomplex* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs forward FFT on complex-valued data contained in a host array
+* \param[in] h_input	Host array with input data
+* \param[in] h_output	Host array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void FFTC2C(tcomplex* const h_input, tcomplex* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
 
+
+/**
+* \brief Pre-cooks a plan for forward FFT on real-valued data; must be used with same parameters as d_FFTR2C later
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 cufftHandle d_FFTR2CGetPlan(int const ndimensions, int3 const dimensions, int batch = 1);
 
 //IFFT.cu:
+
+/**
+* \brief Performs inverse FFT on complex-valued data; input must have dimensions.x / 2 + 1 as its width
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs inverse FFT on complex-valued data using a pre-cooked plan; input must have dimensions.x / 2 + 1 as its width
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain transformed data
+* \param[in] plan	Pre-cooked inverse FFT plan; can be obtained with d_IFFTC2RGetPlan()
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs inverse FFT on complex-valued data using a pre-cooked plan; input must have dimensions.x / 2 + 1 as its width
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain transformed data
+* \param[in] plan	Pre-cooked inverse FFT plan; can be obtained with d_IFFTC2RGetPlan()
+*/
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan);
+
+/**
+* \brief Performs inverse FFT on complex-valued data without Hermitian symmetry (thus width = dimensions.x) and discards the complex part of the output
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void d_IFFTC2RFull(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs inverse FFT on complex-valued data without Hermitian symmetry (thus width = dimensions.x)
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs inverse FFT on complex-valued data without Hermitian symmetry (thus width = dimensions.x) using a pre-cooked plan
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain transformed data
+* \param[in] dimensions	Array dimensions
+*/
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, cufftHandle* plan, int3 const dimensions);
+
+/**
+* \brief Performs inverse FFT on complex-valued data in a host array; input must have dimensions.x / 2 + 1 as its width
+* \param[in] h_input	Array with input data
+* \param[in] h_output	Array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void IFFTC2R(tcomplex* const h_input, tfloat* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs inverse FFT on complex-valued data without Hermitian symmetry (thus width = dimensions.x) in a host array and discards the complex part of the output
+* \param[in] h_input	Array with input data
+* \param[in] h_output	Array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void IFFTC2RFull(tcomplex* const h_input, tfloat* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Performs inverse FFT on complex-valued data without Hermitian symmetry (thus width = dimensions.x) in a host array
+* \param[in] h_input	Array with input data
+* \param[in] h_output	Array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 void IFFTC2C(tcomplex* const h_input, tcomplex* const h_output, int const ndimensions, int3 const dimensions, int batch = 1);
 
+/**
+* \brief Performs inverse FFT on double-precision, real-valued data
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain transformed data
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
+void d_IFFTZ2D(cufftDoubleComplex* const d_input, double* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+
+
+/**
+* \brief Pre-cooks a plan for inverse FFT on complex-valued data with Hermitian symmetry (thus width = dimensions.x / 2 + 1); must be used with same parameters as d_IFFTC2R later
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 cufftHandle d_IFFTC2RGetPlan(int const ndimensions, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Pre-cooks a plan for inverse FFT on complex-valued data without Hermitian symmetry (thus width = dimensions.x); must be used with same parameters as d_IFFTC2C later
+* \param[in] ndimensions	Number of dimensions
+* \param[in] dimensions	Array dimensions
+* \param[in] batch	Number of arrays to transform
+*/
 cufftHandle d_IFFTC2CGetPlan(int const ndimensions, int3 const dimensions, int batch = 1);
 
 //HermitianSymmetry.cu:
-void d_HermitianSymmetryPad(tcomplex* const d_input, tcomplex* const d_output, int3 const dimensions, int batch = 1);
-void d_HermitianSymmetryTrim(tcomplex* const d_input, tcomplex* const d_output, int3 const dimensions, int batch = 1);
+
+/**
+* \brief Adds Hermitian-symmetric half to complex-valued data
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain padded data
+* \param[in] dims	Array dimensions with symmetric half, i. e. input will have width = dimensions.x / 2 + 1
+* \param[in] batch	Number of arrays to pad
+*/
+void d_HermitianSymmetryPad(tcomplex* const d_input, tcomplex* const d_output, int3 const dims, int batch = 1);
+
+/**
+* \brief Removes Hermitian-symmetric half from complex-valued data
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain trimmed data
+* \param[in] dims	Array dimensions with symmetric half, i. e. output will have width = dimensions.x / 2 + 1
+* \param[in] batch	Number of arrays to trim
+*/
+void d_HermitianSymmetryTrim(tcomplex* const d_input, tcomplex* const d_output, int3 const dims, int batch = 1);
+
+/**
+* \brief Ensures Hermitian symmetry in complex-valued data
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain symmetric data
+* \param[in] dims	Array dimensions
+* \param[in] batch	Number of arrays to symmetrize
+*/
 void d_HermitianSymmetryMirrorHalf(tcomplex* d_input, tcomplex* d_output, int3 dims, int batch = 1);
 
 //FFTRemap.cu:

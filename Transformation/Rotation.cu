@@ -41,7 +41,7 @@ void d_Rotate3D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* angles, T
 	if(mode == T_INTERP_CUBIC)
 	{
 		cudaMemcpy(d_prefilter, d_input, Elements(dims) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-		d_CubicBSplinePrefilter3D(d_prefilter, dims.x * sizeof(tfloat), dims.x, dims.y, dims.z);
+		d_CubicBSplinePrefilter3D(d_prefilter, dims.x * sizeof(tfloat), dims);
 		d_source = d_prefilter;
 	}
 	else

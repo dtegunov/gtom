@@ -70,13 +70,13 @@ void d_IFFTZ2D(cufftDoubleComplex* const d_input, double* const d_output, int co
 
 void d_IFFTC2RFull(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch)
 {
-	tcomplex* d_unpadded;
-	cudaMalloc((void**)&d_unpadded, (dimensions.x / 2 + 1) * dimensions.y * dimensions.z * sizeof(tcomplex));
+	tcomplex* d_complexoutput;
+	cudaMalloc((void**)&d_complexoutput, Elements(dimensions) * sizeof(tcomplex));
 
-	d_HermitianSymmetryTrim(d_input, d_unpadded, dimensions, batch);
-	d_IFFTC2R(d_unpadded, d_output, ndimensions, dimensions, batch);
+	d_IFFTC2C(d_input, d_complexoutput, ndimensions, dimensions, batch);
+	d_Re(d_complexoutput, d_output, Elements(dimensions));
 
-	cudaFree(d_unpadded);
+	cudaFree(d_complexoutput);
 }
 
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch)
@@ -130,18 +130,12 @@ void IFFTC2R(tcomplex* const h_input, tfloat* const h_output, int const ndimensi
 
 void IFFTC2RFull(tcomplex* const h_input, tfloat* const h_output, int const ndimensions, int3 const dimensions, int batch)
 {
-	size_t reallength = dimensions.x * dimensions.y * dimensions.z;
-	size_t complexlength = dimensions.x * dimensions.y * dimensions.z;
-
-	tcomplex* d_A = (tcomplex*)CudaMallocFromHostArray(h_input, complexlength * sizeof(tcomplex));
-	//tfloat* d_B;
-	//cudaMalloc((void**)&d_B, reallength * sizeof(tfloat));
+	tcomplex* d_A = (tcomplex*)CudaMallocFromHostArray(h_input, Elements(dimensions) * sizeof(tcomplex));
 
 	d_IFFTC2RFull(d_A, (tfloat*)d_A, ndimensions, dimensions, batch);
 
-	cudaMemcpy(h_output, d_A, reallength * sizeof(tfloat), cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_output, d_A, Elements(dimensions) * sizeof(tfloat), cudaMemcpyDeviceToHost);
 	cudaFree(d_A);
-	//cudaFree(d_B);
 }
 
 void IFFTC2C(tcomplex* const h_input, tcomplex* const h_output, int const ndimensions, int3 const dimensions, int batch)

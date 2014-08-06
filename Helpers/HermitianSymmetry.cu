@@ -67,9 +67,7 @@ __global__ void HermitianSymmetryPad2DSecondKernel(tcomplex* d_input, tcomplex* 
 	{
 		uint y = blockIdx.x;
 
-		tcomplex val = d_input[((dimensions.y - y) % dimensions.y) * (dimensions.x / 2 + 1) + (dimensions.x - x)];
-		val.y = -val.y;
-		d_output[y * dimensions.x + x] = val;
+		d_output[y * dimensions.x + x] = cconj(d_input[((dimensions.y - y) % dimensions.y) * (dimensions.x / 2 + 1) + (dimensions.x - x)]);
 	}
 }
 
@@ -83,9 +81,7 @@ __global__ void HermitianSymmetryPad3DSecondKernel(tcomplex* d_input, tcomplex* 
 		uint y = blockIdx.x;
 		uint z = blockIdx.y;
 
-		tcomplex val = d_input[(((dimensions.z - z) % dimensions.z) * dimensions.y + ((dimensions.y - y) % dimensions.y)) * (dimensions.x / 2 + 1) + (dimensions.x - x)];
-		val.y = -val.y;
-		d_output[(z * dimensions.y + y) * dimensions.x + x] = val;
+		d_output[(z * dimensions.y + y) * dimensions.x + x] = cconj(d_input[(((dimensions.z - z) % dimensions.z) * dimensions.y + ((dimensions.y - y) % dimensions.y)) * (dimensions.x / 2 + 1) + (dimensions.x - x)]);
 	}
 }
 

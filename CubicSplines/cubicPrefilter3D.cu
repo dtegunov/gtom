@@ -121,23 +121,23 @@ inline __device__ __host__ uint PowTwoDivider(uint n)
 //! @param width   volume width in number of voxels
 //! @param height  volume height in number of voxels
 //! @param depth   volume depth in number of voxels
-template<class floatN> void d_CubicBSplinePrefilter3D(floatN* volume, int pitch, int width, int height, int depth)
+template<class floatN> void d_CubicBSplinePrefilter3D(floatN* volume, int pitch, int3 dims)
 {
 	// Try to determine the optimal block dimensions
-	uint dimX = min(min(PowTwoDivider(width), PowTwoDivider(height)), 64);
-	uint dimY = min(min(PowTwoDivider(depth), PowTwoDivider(height)), 512/dimX);
+	uint dimX = min(min(PowTwoDivider(dims.x), PowTwoDivider(dims.y)), 64);
+	uint dimY = min(min(PowTwoDivider(dims.z), PowTwoDivider(dims.y)), 512/dimX);
 	dim3 dimBlock(dimX, dimY);
 
 	// Replace the voxel values by the b-spline coefficients
-	dim3 dimGridX(height / dimBlock.x, depth / dimBlock.y);
-	SamplesToCoefficients3DX<floatN><<<dimGridX, dimBlock>>>(volume, pitch, width, height, depth);
+	dim3 dimGridX(dims.y / dimBlock.x, dims.z / dimBlock.y);
+	SamplesToCoefficients3DX<floatN><<<dimGridX, dimBlock>>>(volume, pitch, dims.x, dims.y, dims.z);
 
-	dim3 dimGridY(width / dimBlock.x, depth / dimBlock.y);
-	SamplesToCoefficients3DY<floatN><<<dimGridY, dimBlock>>>(volume, pitch, width, height, depth);
+	dim3 dimGridY(dims.x / dimBlock.x, dims.z / dimBlock.y);
+	SamplesToCoefficients3DY<floatN> << <dimGridY, dimBlock >> >(volume, pitch, dims.x, dims.y, dims.z);
 
-	dim3 dimGridZ(width / dimBlock.x, height / dimBlock.y);
-	SamplesToCoefficients3DZ<floatN><<<dimGridZ, dimBlock>>>(volume, pitch, width, height, depth);
+	dim3 dimGridZ(dims.x / dimBlock.x, dims.y / dimBlock.y);
+	SamplesToCoefficients3DZ<floatN> << <dimGridZ, dimBlock >> >(volume, pitch, dims.x, dims.y, dims.z);
 }
-template void d_CubicBSplinePrefilter3D<float>(float* volume, int pitch, int width, int height, int depth);
+template void d_CubicBSplinePrefilter3D<float>(float* volume, int pitch, int3 dims);
 
 #endif  //_3D_CUBIC_BSPLINE_PREFILTER_H_

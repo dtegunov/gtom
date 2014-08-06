@@ -65,7 +65,7 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 
 			//Interpolate along 1st dimension
 			d_Extract(d_input + Elements(dims) * b, d_original, dims, toInt3(samples, 1, 1), coarseposition);
-			d_Scale(d_original, d_interpolated, toInt3(samples, 1, 1), toInt3(samples * subdivisions, 1 , 1), T_INTERP_MODE::T_INTERP_FOURIER);
+			d_Scale(d_original, d_interpolated, toInt3(samples, 1, 1), toInt3(samples * subdivisions, 1 , 1), T_INTERP_MODE::T_INTERP_FOURIER, planforw, planback);
 			d_Max(d_interpolated, d_maxtuple, samples * subdivisions);
 			cudaMemcpy(h_maxtuple, d_maxtuple, sizeof(tuple2<tfloat, size_t>), cudaMemcpyDeviceToHost);
 			h_values[b] = max(h_values[b], (*h_maxtuple).t1);
@@ -75,7 +75,7 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 			if(dims.y > 1)
 			{
 				d_Extract(d_input + Elements(dims) * b, d_original, dims, toInt3(1, samples, 1), coarseposition);
-				d_Scale(d_original, d_interpolated, toInt3(samples, 1, 1), toInt3(samples * subdivisions, 1 , 1), T_INTERP_MODE::T_INTERP_FOURIER);
+				d_Scale(d_original, d_interpolated, toInt3(samples, 1, 1), toInt3(samples * subdivisions, 1 , 1), T_INTERP_MODE::T_INTERP_FOURIER, planforw, planback);
 				d_Max(d_interpolated, d_maxtuple, samples * subdivisions);
 				cudaMemcpy(h_maxtuple, d_maxtuple, sizeof(tuple2<tfloat, size_t>), cudaMemcpyDeviceToHost);
 				h_values[b] = max(h_values[b], (*h_maxtuple).t1);
@@ -86,7 +86,7 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 			if(dims.z > 1)
 			{
 				d_Extract(d_input + Elements(dims) * b, d_original, dims, toInt3(1, 1, samples), coarseposition);
-				d_Scale(d_original, d_interpolated, toInt3(samples, 1, 1), toInt3(samples * subdivisions, 1 , 1), T_INTERP_MODE::T_INTERP_FOURIER);
+				d_Scale(d_original, d_interpolated, toInt3(samples, 1, 1), toInt3(samples * subdivisions, 1 , 1), T_INTERP_MODE::T_INTERP_FOURIER, planforw, planback);
 				d_Max(d_interpolated, d_maxtuple, samples * subdivisions);
 				cudaMemcpy(h_maxtuple, d_maxtuple, sizeof(tuple2<tfloat, size_t>), cudaMemcpyDeviceToHost);
 				h_values[b] = max(h_values[b], (*h_maxtuple).t1);
@@ -104,11 +104,11 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 	}
 	else if(mode == T_PEAK_MODE::T_PEAK_SUBFINE)
 	{
-		int samples = DimensionCount(dims) < 3 ? 9 : 5;
+		int samples = DimensionCount(dims) < 3 ? 9 : 5;	//Region around the peak to be extracted
 		for (int i = 0; i < DimensionCount(dims); i++)	//Samples shouldn't be bigger than smallest relevant dimension
 			samples = min(samples, ((int*)&dims)[i]);
-		int subdivisions = DimensionCount(dims) < 3 ? 105 : 63;		//Theoretical precision is 1/subdivisions
-		int centerindex = samples / 2 * subdivisions;
+		int subdivisions = DimensionCount(dims) < 3 ? 105 : 63;		//Theoretical precision is 1/subdivisions; scaling 3D map is more expensive, thus less precision there
+		int centerindex = samples / 2 * subdivisions;	//Where the peak is within the extracted, up-scaled region
 
 		tfloat* d_original;
 		cudaMalloc((void**)&d_original, pow(samples, DimensionCount(dims)) * sizeof(tfloat));
@@ -165,18 +165,34 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 	cudaFree(d_integerindices);
 }
 
-void d_PeakMakePlans(int3 dims, cufftHandle* planforw, cufftHandle* planback)
+void d_PeakMakePlans(int3 dims, T_PEAK_MODE mode, cufftHandle* planforw, cufftHandle* planback)
 {
-	int samples = DimensionCount(dims) < 3 ? 9 : 5;
-	for (int i = 0; i < DimensionCount(dims); i++)	//Samples shouldn't be bigger than smallest relevant dimension
-		samples = min(samples, ((int*)&dims)[i]);
-	int subdivisions = DimensionCount(dims) < 3 ? 105 : 63;		//Theoretical precision is 1/subdivisions
+	if (mode == T_PEAK_SUBFINE)
+	{
+		int samples = DimensionCount(dims) < 3 ? 9 : 5;
+		for (int i = 0; i < DimensionCount(dims); i++)	//Samples shouldn't be bigger than smallest relevant dimension
+			samples = min(samples, ((int*)&dims)[i]);
+		int subdivisions = DimensionCount(dims) < 3 ? 105 : 63;		//Theoretical precision is 1/subdivisions
 
-	int3 dimsold = toInt3(samples, min(dims.y, samples), min(dims.z, samples));
-	int3 dimsnew = toInt3(samples * subdivisions, dims.y == 1 ? 1 : samples * subdivisions, dims.z == 1 ? 1 : samples * subdivisions);
+		int3 dimsold = toInt3(samples, min(dims.y, samples), min(dims.z, samples));
+		int3 dimsnew = toInt3(samples * subdivisions, dims.y == 1 ? 1 : samples * subdivisions, dims.z == 1 ? 1 : samples * subdivisions);
 
-	*planforw = d_FFTR2CGetPlan(DimensionCount(dims), dimsold);
-	*planback = d_IFFTC2CGetPlan(DimensionCount(dims), dimsnew);
+		*planforw = d_FFTR2CGetPlan(DimensionCount(dims), dimsold);
+		*planback = d_IFFTC2CGetPlan(DimensionCount(dims), dimsnew);
+	}
+	else if (mode == T_PEAK_SUBCOARSE)
+	{
+		int samples = 9;
+		for (int i = 0; i < DimensionCount(dims); i++)	//Samples shouldn't be bigger than smallest relevant dimension
+			samples = min(samples, ((int*)&dims)[i]);
+		int subdivisions = 105;							//Theoretical precision is 1/subdivisions, 105 = 3*5*7 -> good for FFT
+
+		int3 dimsold = toInt3(samples, 1, 1);
+		int3 dimsnew = toInt3(samples * subdivisions, 1, 1);
+
+		*planforw = d_FFTR2CGetPlan(DimensionCount(dims), dimsold);
+		*planback = d_IFFTC2CGetPlan(DimensionCount(dims), dimsnew);
+	}
 }
 
 ////////////////
