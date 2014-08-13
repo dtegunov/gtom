@@ -94,8 +94,8 @@ void d_LocalFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d
 		d_FSC(d_extracts1, d_extracts2, dimswindow, d_fsccurves, maxradius, &planforw, batchsize);
 
 		d_ValueFill(d_resvalues, batchsize, (tfloat)-1);
-		//d_FirstIndexOf(d_fsccurves, d_resvalues, maxradius, threshold, T_INTERP_LINEAR, batchsize);
-		d_IntersectHalfBitFSC(d_fsccurves, d_resvalues, maxradius, NULL, batchsize);
+		d_FirstIndexOf(d_fsccurves, d_resvalues, maxradius, threshold, T_INTERP_LINEAR, batchsize);
+		//d_IntersectHalfBitFSC(d_fsccurves, d_resvalues, maxradius, NULL, batchsize);
 		/*tfloat* h_resvalues = (tfloat*)MallocFromDeviceArray(d_resvalues, batchsize * sizeof(tfloat));
 		free(h_resvalues);*/
 

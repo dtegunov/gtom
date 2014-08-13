@@ -15,6 +15,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Alignment\Align3D.cu" />
     <None Include="FFT\FFTC2C.cu" />
     <None Include="FFT\FFTR2C.cu" />
     <None Include="FFT\FFTR2CFull.cu" />

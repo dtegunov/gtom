@@ -31,6 +31,9 @@
     <Filter Include="Source Files\Tomography">
       <UniqueIdentifier>{3c385251-33eb-4d57-b84d-4253286c96e6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Alignment">
+      <UniqueIdentifier>{7cac749a-96fd-43c3-8fc9-661d10f546ed}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Helper.cu">
@@ -74,6 +77,9 @@
     </None>
     <None Include="Tomography\InterpolateSingleAxis.cu">
       <Filter>Source Files\Tomography</Filter>
+    </None>
+    <None Include="Alignment\Align3D.cu">
+      <Filter>Source Files\Alignment</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

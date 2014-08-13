@@ -1,0 +1,1 @@
+mex 'Alignment\Align3D.cu' Helper.cu;

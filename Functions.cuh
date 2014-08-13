@@ -1565,7 +1565,7 @@ void d_LocalAnisotropicFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume
 //Tomography//
 //////////////
 
-void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_interpolated, tfloat* h_angles, int interpindex, int maxpoints, tfloat smoothsigma);
+void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_interpolated, tfloat* d_weights, tfloat* h_angles, int interpindex, int maxpoints, tfloat interpradius, int limity);
 
 
 //////////////////

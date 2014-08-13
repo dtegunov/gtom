@@ -58,6 +58,7 @@ template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t e
 
 	if(d_denseinput != d_input)
 		cudaFree(d_denseinput);
+	cudaFree(d_fields);
 	cudaFree(d_means);
 	cudaFree(d_mins);
 	cudaFree(d_maxs);
