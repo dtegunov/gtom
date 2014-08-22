@@ -1585,6 +1585,8 @@ void d_Rotate3D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* angles, T
 void d_Rotate3D(cudaArray* a_input, cudaChannelFormatDesc channelDesc, tfloat* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
 void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat angle, T_INTERP_MODE mode, int batch = 1);
 void d_Rotate2D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat angle, int batch = 1);
+void d_Rotate3DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
+void d_Rotate3DFT(cudaArray* a_inputRe, cudaChannelFormatDesc channelDescRe, cudaArray* a_inputIm, cudaChannelFormatDesc channelDescIm, tcomplex* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
 
 //Shift.cu:
 void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, tcomplex* d_sharedintermediate = NULL, int batch = 1);

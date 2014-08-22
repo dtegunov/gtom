@@ -19,6 +19,8 @@ template<int mode> __global__ void Rotate2DFTKernel(tcomplex* d_output, int3 dim
 texture<tfloat, 3, cudaReadModeElementType> texRotationVolume;
 texture<tfloat, 2, cudaReadModeElementType> texRotation2DFTReal;
 texture<tfloat, 2, cudaReadModeElementType> texRotation2DFTImag;
+texture<tfloat, 3, cudaReadModeElementType> texRotation3DFTReal;
+texture<tfloat, 3, cudaReadModeElementType> texRotation3DFTImag;
 
 
 ////////////////////
@@ -203,6 +205,58 @@ void d_Rotate2D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat angle, int 
 }
 
 
+//////////////////////////////
+//Rotate 3D in Fourier space//
+//////////////////////////////
+
+void d_Rotate3DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch)
+{
+	int3 dimsfft = toInt3(dims.x / 2 + 1, dims.y, dims.z);
+	cudaExtent volumeSize = make_cudaExtent(dimsfft.x, dimsfft.y, dimsfft.z);
+	cudaArray *d_inputArrayRe = 0, *d_inputArrayIm = 0;
+
+	cudaChannelFormatDesc channelDescRe = cudaCreateChannelDesc<tfloat>();
+	cudaMalloc3DArray(&d_inputArrayRe, &channelDescRe, volumeSize);
+	cudaChannelFormatDesc channelDescIm = cudaCreateChannelDesc<tfloat>();
+	cudaMalloc3DArray(&d_inputArrayIm, &channelDescIm, volumeSize);
+
+	tfloat *d_prefilterRe, *d_prefilterIm;
+	cudaMalloc((void**)&d_prefilterRe, ElementsFFT(dims) * sizeof(tfloat));
+	cudaMalloc((void**)&d_prefilterIm, ElementsFFT(dims) * sizeof(tfloat));
+	d_Re(d_input, d_prefilterRe, ElementsFFT(dims));
+	d_Im(d_input, d_prefilterIm, ElementsFFT(dims));
+
+	if (mode == T_INTERP_CUBIC)
+	{
+		d_CubicBSplinePrefilter3D(d_prefilterRe, (dims.x / 2 + 1) * sizeof(tfloat), dimsfft);
+		d_CubicBSplinePrefilter3D(d_prefilterIm, (dims.x / 2 + 1) * sizeof(tfloat), dimsfft);
+	}
+
+	cudaMemcpy3DParms copyParams = { 0 };
+	copyParams.srcPtr = make_cudaPitchedPtr((void*)d_prefilterRe, (dims.x / 2 + 1) * sizeof(tfloat), (dims.x / 2 + 1), dims.y);
+	copyParams.dstArray = d_inputArrayRe;
+	copyParams.extent = volumeSize;
+	copyParams.kind = cudaMemcpyDeviceToDevice;
+	cudaMemcpy3D(&copyParams);
+
+	copyParams.srcPtr = make_cudaPitchedPtr((void*)d_prefilterIm, (dims.x / 2 + 1) * sizeof(tfloat), (dims.x / 2 + 1), dims.y);
+	copyParams.dstArray = d_inputArrayIm;
+	cudaMemcpy3D(&copyParams);
+
+	d_Rotate3DFT(d_inputArrayRe, channelDescRe, d_inputArrayIm, channelDescIm, d_output, dims, angles, mode, batch);
+
+	cudaFree(d_prefilterRe);
+	cudaFree(d_prefilterIm);
+	cudaFreeArray(d_inputArrayRe);
+	cudaFreeArray(d_inputArrayIm);
+}
+
+void d_Rotate3DFT(cudaArray* a_inputRe, cudaChannelFormatDesc channelDescRe, cudaArray* a_inputIm, cudaChannelFormatDesc channelDescIm, tcomplex* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch)
+{
+
+}
+
+
 ////////////////
 //CUDA kernels//
 ////////////////
@@ -253,8 +307,6 @@ template<int mode> __global__ void Rotate3DKernel(tfloat* d_output, int3 dims, g
 		else
 			value = (tfloat)0;
 
-		//value = blockIdx.y;
-
 		d_output[id] = value;
 	}
 }
@@ -302,9 +354,53 @@ template<int mode> __global__ void Rotate2DFTKernel(tcomplex* d_output, int3 dim
 	if(isnegative)
 		valim = -valim;
 
-	//tfloat valre = tex2D(texRotation2DFTReal, pos.x + (float)(dims.x / 2) + 0.5f, pos.y + (float)(dims.y / 2) + 0.5f);
-	//tfloat valim = tex2D(texRotation2DFTImag, pos.x + (float)(dims.x / 2) + 0.5f, pos.y + (float)(dims.y / 2) + 0.5f);
-
 	(*d_output).x = valre;
 	(*d_output).y = valim;
+}
+
+template<int mode> __global__ void Rotate3DFTKernel(tcomplex* d_output, int3 dims, glm::vec3 vecx, glm::vec3 vecy, glm::vec3 vecz)
+{
+	int idy = blockIdx.x;
+	int idz = blockIdx.y;
+	d_output += blockIdx.z * ElementsFFT(dims) + (idz * dims.y + idy) * (dims.x / 2 + 1);
+
+	for (int idx = threadIdx.x; idx < dims.x / 2 + 1; idx += blockDim.x)
+	{
+		glm::vec3 pos = (vecx * (float)(idx - dims.x / 2)) + (vecy * (float)(idy - dims.y / 2)) + (vecz * (float)(idz - dims.z / 2));
+
+		float radiussq = pos.x * pos.x + pos.y * pos.y + pos.z * pos.z;
+		if (radiussq > (float)((dims.x / 2 - 1) * (dims.x / 2 - 1)))
+		{
+			d_output[idx].x = (tfloat)0;
+			d_output[idx].y = (tfloat)0;
+			continue;
+		}
+
+		bool isnegative = false;
+		if (pos.x > 0.0000001f)
+		{
+			pos = -pos;
+			isnegative = true;
+		}
+
+		pos += glm::vec3((float)(dims.x / 2) + 0.5f, (float)(dims.y / 2) + 0.5f, (float)(dims.z / 2) + 0.5f);
+
+		tfloat valre, valim;
+		if (mode == 1)
+		{
+			valre = tex3D(texRotation3DFTReal, pos.x, pos.y, pos.z);
+			valim = tex3D(texRotation3DFTImag, pos.x, pos.y, pos.z);
+		}
+		else
+		{
+			valre = cubicTex3D(texRotation3DFTReal, pos.x, pos.y, pos.z);
+			valim = cubicTex3D(texRotation3DFTImag, pos.x, pos.y, pos.z);
+		}
+
+		if (isnegative)
+			valim = -valim;
+
+		d_output[idx].x = valre;
+		d_output[idx].y = valim;
+	}
 }
