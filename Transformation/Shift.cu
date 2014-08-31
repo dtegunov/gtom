@@ -80,9 +80,9 @@ void d_Shift(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* delta, b
 		else
 		{
 			if(DimensionCount(dims) == 3)
-				ShiftFourierKernel <3, false> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
+				ShiftFourierKernel <3, true> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
 			else
-				ShiftFourierKernel <2, false> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
+				ShiftFourierKernel <2, true> <<<grid, TpB>>> (d_input + ElementsFFT(dims) * b, d_output + ElementsFFT(dims) * b, dims, normdelta);
 		}
 		cudaStreamQuery(0);
 	}

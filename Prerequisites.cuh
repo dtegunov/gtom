@@ -134,6 +134,8 @@ template <class T1, class T2> struct tuple2
 	__host__ __device__ tuple2() {}
 };
 
+typedef unsigned char uchar;
+typedef unsigned short ushort;
 typedef unsigned int uint;
 
 #ifdef TOM_DOUBLE

@@ -6,7 +6,6 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-//__global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t elementsproj, int3 dims, tcomplex* d_interpolated, tfloat* d_factors, short* d_indices, short npoints);
 __global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t elementsproj, int3 dims, tcomplex* d_interpolated, tfloat* d_weights, tfloat* d_angles, tfloat interpangle, short* d_indices, short npoints, tfloat interpradius, int limity);
 
 
@@ -46,7 +45,6 @@ void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_
 
 	int TpB = min(NextMultipleOf((dimsproj.x / 2 + 1) * dimsproj.y, 32), 128);
 	dim3 grid = dim3(min(((dimsproj.x / 2 + 1) * dimsproj.y + TpB - 1) / TpB, 8192));
-	//InterpolateSingleAxisTiltKernel <<<grid, TpB>>> (d_projft, (dimsproj.x / 2 + 1) * dimsproj.y, dimsproj, d_interpolated, d_factors, d_indices, n);
 	InterpolateSingleAxisTiltKernel <<<grid, TpB>>> (d_projft, (dimsproj.x / 2 + 1) * dimsproj.y, dimsproj, d_interpolated, d_weights, d_factors, interpangle, d_indices, n, interpradius, limity);
 
 	cudaFree(d_factors);
@@ -57,39 +55,6 @@ void d_InterpolateSingleAxisTilt(tcomplex* d_projft, int3 dimsproj, tcomplex* d_
 ////////////////
 //CUDA kernels//
 ////////////////
-
-//__global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t elementsproj, int3 dims, tcomplex* d_interpolated, tfloat* d_factors, short* d_indices, short npoints)
-//{
-//	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
-//		id < elementsproj; 
-//		id += blockDim.x * gridDim.x)
-//	{
-//		int x = id % (dims.x / 2 + 1);
-//		int y = id / (dims.x / 2 + 1);
-//		int my = y;
-//
-//		double sumre = 0.0;
-//		double sumim = 0.0;
-//		for (int n = 0; n < npoints; n++)
-//		{
-//			int index = d_indices[n];
-//			bool isconj = false;
-//			my = y;
-//			if(index < 0 || index >= dims.z)
-//			{
-//				isconj = true;
-//				index = (index + npoints * dims.z) % dims.z;
-//				if(x > 0 && y > 0)
-//					my = dims.y - y;
-//			}
-//			double factor = (double)d_factors[n];
-//			sumre += (double)d_projft[index * elementsproj + getOffset(x, my, dims.x / 2 + 1)].x * factor;
-//			sumim += (double)d_projft[index * elementsproj + getOffset(x, my, dims.x / 2 + 1)].y * factor * ((isconj && !(x == 0 && y == 0)) ? -1.0f : 1.0f);
-//		}
-//		d_interpolated[id].x = (tfloat)sumre;
-//		d_interpolated[id].y = (tfloat)sumim;
-//	}
-//}
 
 __global__ void InterpolateSingleAxisTiltKernel(tcomplex* d_projft, size_t elementsproj, int3 dims, tcomplex* d_interpolated, tfloat* d_weights, tfloat* d_angles, tfloat interpangle, short* d_indices, short npoints, tfloat interpradius, int limity)
 {

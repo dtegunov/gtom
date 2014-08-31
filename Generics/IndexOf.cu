@@ -81,13 +81,13 @@ __global__ void FirstIndexOfLinearKernel(tfloat* d_input, tfloat* d_output, size
 			index = min(index, indices[t]);
 
 		if(found)
-			d_output[blockIdx.x] = max(index, 0);
+			d_output[blockIdx.x] = max(index, 1);
 		else if(anybigger)
 			d_output[blockIdx.x] = (tfloat)elements;
 		else if(nan)
-			d_output[blockIdx.x] = (tfloat)-1;
+			d_output[blockIdx.x] = (tfloat)1;
 		else
-			d_output[blockIdx.x] = (tfloat)0;
+			d_output[blockIdx.x] = (tfloat)1;
 	}
 }
 
