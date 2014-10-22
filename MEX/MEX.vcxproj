@@ -37,6 +37,7 @@
   <ItemGroup>
     <ClCompile Include="complexinterleaved.cpp" />
     <ClCompile Include="Generics\Norm.cu" />
+    <ClCompile Include="Reconstruction\RecFourierAdd.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B14BE630-7941-47BB-9BE3-FA8AF3BBEB7D}</ProjectGuid>
@@ -77,16 +78,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Program Files\MATLAB\R2013a\toolbox\distcomp\gpu\extern\include;C:\Program Files\MATLAB\R2013a\extern\include;$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files\MATLAB\R2013a\extern\lib;$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files\MATLAB\R2014b\toolbox\distcomp\gpu\extern\include;C:\Program Files\MATLAB\R2014b\extern\include;$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files\MATLAB\R2014b\extern\lib;$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">
     <IncludePath>C:\Program Files\MATLAB\R2013a\toolbox\distcomp\gpu\extern\include;C:\Program Files\MATLAB\R2013a\extern\include;$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files\MATLAB\R2013a\extern\lib;$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\Program Files\MATLAB\R2013a\toolbox\distcomp\gpu\extern\include;C:\Program Files\MATLAB\R2013a\extern\include;$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files\MATLAB\R2013a\extern\lib;$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files\MATLAB\R2014b\toolbox\distcomp\gpu\extern\include;C:\Program Files\MATLAB\R2014b\extern\include;$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files\MATLAB\R2014b\extern\lib;$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

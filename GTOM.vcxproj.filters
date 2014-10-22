@@ -54,233 +54,285 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CubicSplines\internal\cutil_math_bugfixes.h">
-      <Filter>Cubic Splines\internal</Filter>
+    <ClInclude Include="include\Alignment.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Binary.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Correlation.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CubicInterp.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\FFT.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Generics.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Helper.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ImageManipulation.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Masking.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Projection.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Reconstruction.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Resolution.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Tomography.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Transformation.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cutil_math_bugfixes.h">
+      <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="IO\em.cpp">
-      <Filter>IO</Filter>
-    </ClCompile>
-    <ClCompile Include="IO\mrc.cpp">
-      <Filter>IO</Filter>
-    </ClCompile>
-    <ClCompile Include="IO\raw.cpp">
-      <Filter>IO</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Functions.cuh">
+    <None Include="include\Prerequisites.cuh">
       <Filter>Headers</Filter>
     </None>
-    <None Include="Prerequisites.cuh">
+    <None Include="include\DeviceFunctions.cuh">
       <Filter>Headers</Filter>
     </None>
-    <None Include="DeviceFunctions.cuh">
+    <None Include="include\Angles.cuh">
       <Filter>Headers</Filter>
     </None>
-    <None Include="GLMFunctions.cuh">
+    <None Include="include\GTOM.cuh">
       <Filter>Headers</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="FFT\FFT.cu">
+    <CudaCompile Include="src\FFT\FFT.cu">
       <Filter>FFT</Filter>
     </CudaCompile>
-    <CudaCompile Include="Helpers\TypeConversion.cu">
+    <CudaCompile Include="src\Helpers\TypeConversion.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
-    <CudaCompile Include="FFT\IFFT.cu">
+    <CudaCompile Include="src\FFT\IFFT.cu">
       <Filter>FFT</Filter>
     </CudaCompile>
-    <CudaCompile Include="Helpers\HermitianSymmetry.cu">
+    <CudaCompile Include="src\Helpers\HermitianSymmetry.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
-    <CudaCompile Include="Helpers\Memory.cu">
+    <CudaCompile Include="src\Helpers\Memory.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\Arithmetics.cu">
+    <CudaCompile Include="src\Generics\Arithmetics.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="Masking\SphereMask.cu">
+    <CudaCompile Include="src\Masking\SphereMask.cu">
       <Filter>Masking</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\Sum.cu">
+    <CudaCompile Include="src\Generics\Sum.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\MinMax.cu">
+    <CudaCompile Include="src\Generics\MinMax.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="Masking\Remap.cu">
+    <CudaCompile Include="src\Masking\Remap.cu">
       <Filter>Masking</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\Dev.cu">
+    <CudaCompile Include="src\Generics\Dev.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\CompositeArithmetics.cu">
+    <CudaCompile Include="src\Generics\CompositeArithmetics.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\SumMinMax.cu">
+    <CudaCompile Include="src\Generics\SumMinMax.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="ImageManipulation\Norm.cu">
+    <CudaCompile Include="src\ImageManipulation\Norm.cu">
       <Filter>Image Manipulation</Filter>
     </CudaCompile>
-    <CudaCompile Include="Alignment\Align2D.cu">
+    <CudaCompile Include="src\Alignment\Align2D.cu">
       <Filter>Alignment</Filter>
     </CudaCompile>
-    <CudaCompile Include="ImageManipulation\Bandpass.cu">
+    <CudaCompile Include="src\ImageManipulation\Bandpass.cu">
       <Filter>Image Manipulation</Filter>
     </CudaCompile>
-    <CudaCompile Include="FFT\FFTRemap.cu">
+    <CudaCompile Include="src\FFT\FFTRemap.cu">
       <Filter>FFT</Filter>
     </CudaCompile>
-    <CudaCompile Include="Masking\RectangleMask.cu">
+    <CudaCompile Include="src\Masking\RectangleMask.cu">
       <Filter>Masking</Filter>
     </CudaCompile>
-    <CudaCompile Include="CubicSplines\cubicPrefilter2D.cu">
+    <CudaCompile Include="src\CubicSplines\cubicPrefilter2D.cu">
       <Filter>Cubic Splines</Filter>
     </CudaCompile>
-    <CudaCompile Include="CubicSplines\cubicPrefilter3D.cu">
+    <CudaCompile Include="src\CubicSplines\cubicPrefilter3D.cu">
       <Filter>Cubic Splines</Filter>
     </CudaCompile>
-    <CudaCompile Include="CubicSplines\memcpy.cu">
+    <CudaCompile Include="src\CubicSplines\memcpy.cu">
       <Filter>Cubic Splines</Filter>
     </CudaCompile>
-    <CudaCompile Include="CubicSplines\internal\bspline_kernel.cu">
+    <CudaCompile Include="src\CubicSplines\internal\bspline_kernel.cu">
       <Filter>Cubic Splines\internal</Filter>
     </CudaCompile>
-    <CudaCompile Include="CubicSplines\internal\cubicPrefilter_kernel.cu">
+    <CudaCompile Include="src\CubicSplines\internal\cubicPrefilter_kernel.cu">
       <Filter>Cubic Splines\internal</Filter>
     </CudaCompile>
-    <CudaCompile Include="CubicSplines\internal\math_func.cu">
+    <CudaCompile Include="src\CubicSplines\internal\math_func.cu">
       <Filter>Cubic Splines\internal</Filter>
     </CudaCompile>
-    <CudaCompile Include="CubicSplines\internal\version.cu">
+    <CudaCompile Include="src\CubicSplines\internal\version.cu">
       <Filter>Cubic Splines\internal</Filter>
     </CudaCompile>
-    <CudaCompile Include="CubicSplines\internal\cubicTexKernels.cu">
+    <CudaCompile Include="src\CubicSplines\internal\cubicTexKernels.cu">
       <Filter>Cubic Splines\internal</Filter>
     </CudaCompile>
-    <CudaCompile Include="CubicSplines\cubicTex.cu">
+    <CudaCompile Include="src\CubicSplines\cubicTex.cu">
       <Filter>Cubic Splines</Filter>
     </CudaCompile>
-    <CudaCompile Include="Correlation\CCF.cu">
+    <CudaCompile Include="src\Correlation\CCF.cu">
       <Filter>Correlation</Filter>
     </CudaCompile>
-    <CudaCompile Include="Transformation\Shift.cu">
+    <CudaCompile Include="src\Transformation\Shift.cu">
       <Filter>Transformation</Filter>
     </CudaCompile>
-    <CudaCompile Include="Transformation\Coordinates.cu">
+    <CudaCompile Include="src\Transformation\Coordinates.cu">
       <Filter>Transformation</Filter>
     </CudaCompile>
-    <CudaCompile Include="Transformation\Bin.cu">
+    <CudaCompile Include="src\Transformation\Bin.cu">
       <Filter>Transformation</Filter>
     </CudaCompile>
-    <CudaCompile Include="Transformation\Scale.cu">
+    <CudaCompile Include="src\Transformation\Scale.cu">
       <Filter>Transformation</Filter>
     </CudaCompile>
-    <CudaCompile Include="Correlation\Peak.cu">
+    <CudaCompile Include="src\Correlation\Peak.cu">
       <Filter>Correlation</Filter>
     </CudaCompile>
-    <CudaCompile Include="FFT\FFTResize.cu">
+    <CudaCompile Include="src\FFT\FFTResize.cu">
       <Filter>FFT</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\Extraction.cu">
+    <CudaCompile Include="src\Generics\Extraction.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="Helpers\Misc.cu">
+    <CudaCompile Include="src\Helpers\Misc.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
-    <CudaCompile Include="Helpers\MDPointer.cu">
+    <CudaCompile Include="src\Helpers\MDPointer.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
-    <CudaCompile Include="ImageManipulation\Xray.cu">
+    <CudaCompile Include="src\ImageManipulation\Xray.cu">
       <Filter>Image Manipulation</Filter>
     </CudaCompile>
-    <CudaCompile Include="Projection\Backward.cu">
+    <CudaCompile Include="src\Projection\Backward.cu">
       <Filter>Projection</Filter>
     </CudaCompile>
-    <CudaCompile Include="Projection\Forward.cu">
+    <CudaCompile Include="src\Projection\Forward.cu">
       <Filter>Projection</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\MinMaxMonolithic.cu">
+    <CudaCompile Include="src\Generics\MinMaxMonolithic.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="Correlation\LocalPeaks.cu">
+    <CudaCompile Include="src\Correlation\LocalPeaks.cu">
       <Filter>Correlation</Filter>
     </CudaCompile>
-    <CudaCompile Include="BinaryManipulation\Dilate.cu">
+    <CudaCompile Include="src\BinaryManipulation\Dilate.cu">
       <Filter>BinaryManipulation</Filter>
     </CudaCompile>
-    <CudaCompile Include="BinaryManipulation\Binarize.cu">
+    <CudaCompile Include="src\BinaryManipulation\Binarize.cu">
       <Filter>BinaryManipulation</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\Padding.cu">
+    <CudaCompile Include="src\Generics\Padding.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\LocalStdDev.cu">
+    <CudaCompile Include="src\Generics\LocalStdDev.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="Masking\Windows.cu">
+    <CudaCompile Include="src\Masking\Windows.cu">
       <Filter>Masking</Filter>
     </CudaCompile>
-    <CudaCompile Include="Resolution\FSC.cu">
+    <CudaCompile Include="src\Resolution\FSC.cu">
       <Filter>Resolution</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\Reductions.cu">
+    <CudaCompile Include="src\Generics\Reductions.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\IndexOf.cu">
+    <CudaCompile Include="src\Generics\IndexOf.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="Resolution\LocalFSC.cu">
+    <CudaCompile Include="src\Resolution\LocalFSC.cu">
       <Filter>Resolution</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\Histogram.cu">
+    <CudaCompile Include="src\Generics\Histogram.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="ImageManipulation\LocalLowpass.cu">
+    <CudaCompile Include="src\ImageManipulation\LocalLowpass.cu">
       <Filter>Image Manipulation</Filter>
     </CudaCompile>
-    <CudaCompile Include="Alignment\Align3D.cu">
+    <CudaCompile Include="src\Alignment\Align3D.cu">
       <Filter>Alignment</Filter>
     </CudaCompile>
-    <CudaCompile Include="Transformation\Rotation.cu">
+    <CudaCompile Include="src\Transformation\Rotation.cu">
       <Filter>Transformation</Filter>
     </CudaCompile>
-    <CudaCompile Include="Helpers\Euler.cu">
+    <CudaCompile Include="src\Helpers\Euler.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
-    <CudaCompile Include="Reconstruction\ART.cu">
+    <CudaCompile Include="src\Reconstruction\ART.cu">
       <Filter>Reconstruction</Filter>
     </CudaCompile>
-    <CudaCompile Include="Generics\MakeAtlas.cu">
+    <CudaCompile Include="src\Generics\MakeAtlas.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
-    <CudaCompile Include="Helpers\AngularSpacing.cu">
+    <CudaCompile Include="src\Helpers\AngularSpacing.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
-    <CudaCompile Include="Projection\Forward2.cu">
+    <CudaCompile Include="src\Projection\Forward2.cu">
       <Filter>Projection</Filter>
     </CudaCompile>
-    <CudaCompile Include="Resolution\AnisotropicFSC.cu">
+    <CudaCompile Include="src\Resolution\AnisotropicFSC.cu">
       <Filter>Resolution</Filter>
     </CudaCompile>
-    <CudaCompile Include="ImageManipulation\AnisotropicLowpass.cu">
+    <CudaCompile Include="src\ImageManipulation\AnisotropicLowpass.cu">
       <Filter>Image Manipulation</Filter>
     </CudaCompile>
-    <CudaCompile Include="Masking\IrregularSphereMask.cu">
+    <CudaCompile Include="src\Masking\IrregularSphereMask.cu">
       <Filter>Masking</Filter>
     </CudaCompile>
-    <CudaCompile Include="Reconstruction\RecFourier.cu">
+    <CudaCompile Include="src\Reconstruction\RecFourier.cu">
       <Filter>Reconstruction</Filter>
     </CudaCompile>
-    <CudaCompile Include="Tomography\InterpolateSingleAxis.cu">
+    <CudaCompile Include="src\Tomography\InterpolateSingleAxis.cu">
       <Filter>Tomography</Filter>
     </CudaCompile>
-    <CudaCompile Include="Resolution\LocalAnisotropicFSC.cu">
+    <CudaCompile Include="src\Resolution\LocalAnisotropicFSC.cu">
       <Filter>Resolution</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\Helpers\TextureObject.cu" />
+    <CudaCompile Include="src\Reconstruction\RecFourierAdd.cu">
+      <Filter>Reconstruction</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Helpers\TextureObject.cu">
+      <Filter>Helpers</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\IO\em.cpp">
+      <Filter>IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\mrc.cpp">
+      <Filter>IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\raw.cpp">
+      <Filter>IO</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

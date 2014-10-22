@@ -1,0 +1,5 @@
+#ifndef DEVICE_FUNCTIONS
+#define DEVICE_FUNCTIONS
+
+
+#endif

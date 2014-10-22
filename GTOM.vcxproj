@@ -15,86 +15,103 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <None Include="DeviceFunctions.cuh" />
-    <None Include="Functions.cuh" />
-    <None Include="GLMFunctions.cuh" />
-    <None Include="Prerequisites.cuh" />
+    <None Include="include\DeviceFunctions.cuh" />
+    <None Include="include\GTOM.cuh" />
+    <None Include="include\Angles.cuh" />
+    <None Include="include\Prerequisites.cuh" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CubicSplines\internal\cutil_math_bugfixes.h" />
+    <ClInclude Include="include\Alignment.cuh" />
+    <ClInclude Include="include\Binary.cuh" />
+    <ClInclude Include="include\Correlation.cuh" />
+    <ClInclude Include="include\CubicInterp.cuh" />
+    <ClInclude Include="include\cutil_math_bugfixes.h" />
+    <ClInclude Include="include\FFT.cuh" />
+    <ClInclude Include="include\Generics.cuh" />
+    <ClInclude Include="include\Helper.cuh" />
+    <ClInclude Include="include\ImageManipulation.cuh" />
+    <ClInclude Include="include\IO.cuh" />
+    <ClInclude Include="include\Masking.cuh" />
+    <ClInclude Include="include\Projection.cuh" />
+    <ClInclude Include="include\Reconstruction.cuh" />
+    <ClInclude Include="include\Resolution.cuh" />
+    <ClInclude Include="include\Tomography.cuh" />
+    <ClInclude Include="include\Transformation.cuh" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="IO\em.cpp" />
-    <ClCompile Include="IO\mrc.cpp" />
-    <ClCompile Include="IO\raw.cpp" />
+    <CudaCompile Include="src\Alignment\Align2D.cu" />
+    <CudaCompile Include="src\Alignment\Align3D.cu" />
+    <CudaCompile Include="src\BinaryManipulation\Binarize.cu" />
+    <CudaCompile Include="src\BinaryManipulation\Dilate.cu" />
+    <CudaCompile Include="src\Correlation\CCF.cu" />
+    <CudaCompile Include="src\Correlation\LocalPeaks.cu" />
+    <CudaCompile Include="src\Correlation\Peak.cu" />
+    <CudaCompile Include="src\CubicSplines\cubicPrefilter2D.cu" />
+    <CudaCompile Include="src\CubicSplines\cubicPrefilter3D.cu" />
+    <CudaCompile Include="src\CubicSplines\cubicTex.cu" />
+    <CudaCompile Include="src\CubicSplines\internal\bspline_kernel.cu" />
+    <CudaCompile Include="src\CubicSplines\internal\cubicPrefilter_kernel.cu" />
+    <CudaCompile Include="src\CubicSplines\internal\cubicTexKernels.cu" />
+    <CudaCompile Include="src\CubicSplines\internal\math_func.cu" />
+    <CudaCompile Include="src\CubicSplines\internal\version.cu" />
+    <CudaCompile Include="src\CubicSplines\memcpy.cu" />
+    <CudaCompile Include="src\FFT\FFT.cu" />
+    <CudaCompile Include="src\FFT\FFTRemap.cu" />
+    <CudaCompile Include="src\FFT\FFTResize.cu" />
+    <CudaCompile Include="src\FFT\IFFT.cu" />
+    <CudaCompile Include="src\Generics\Arithmetics.cu" />
+    <CudaCompile Include="src\Generics\CompositeArithmetics.cu" />
+    <CudaCompile Include="src\Generics\Extraction.cu" />
+    <CudaCompile Include="src\Generics\Histogram.cu" />
+    <CudaCompile Include="src\Generics\IndexOf.cu" />
+    <CudaCompile Include="src\Generics\LocalStdDev.cu" />
+    <CudaCompile Include="src\Generics\MakeAtlas.cu" />
+    <CudaCompile Include="src\Generics\MinMax.cu" />
+    <CudaCompile Include="src\Generics\MinMaxMonolithic.cu" />
+    <CudaCompile Include="src\Generics\Padding.cu" />
+    <CudaCompile Include="src\Generics\Reductions.cu" />
+    <CudaCompile Include="src\Generics\Sum.cu" />
+    <CudaCompile Include="src\Generics\Dev.cu" />
+    <CudaCompile Include="src\Generics\SumMinMax.cu" />
+    <CudaCompile Include="src\Helpers\AngularSpacing.cu" />
+    <CudaCompile Include="src\Helpers\Euler.cu" />
+    <CudaCompile Include="src\Helpers\HermitianSymmetry.cu" />
+    <CudaCompile Include="src\Helpers\MDPointer.cu" />
+    <CudaCompile Include="src\Helpers\Memory.cu" />
+    <CudaCompile Include="src\Helpers\Misc.cu" />
+    <CudaCompile Include="src\Helpers\TextureObject.cu" />
+    <CudaCompile Include="src\Helpers\TypeConversion.cu" />
+    <CudaCompile Include="src\ImageManipulation\AnisotropicLowpass.cu" />
+    <CudaCompile Include="src\ImageManipulation\Bandpass.cu" />
+    <CudaCompile Include="src\ImageManipulation\LocalLowpass.cu" />
+    <CudaCompile Include="src\ImageManipulation\Norm.cu" />
+    <CudaCompile Include="src\ImageManipulation\Xray.cu" />
+    <CudaCompile Include="src\Masking\IrregularSphereMask.cu" />
+    <CudaCompile Include="src\Masking\Windows.cu" />
+    <CudaCompile Include="src\Projection\Backward.cu" />
+    <CudaCompile Include="src\Projection\Forward.cu" />
+    <CudaCompile Include="src\Projection\Forward2.cu" />
+    <CudaCompile Include="src\Reconstruction\RecFourier.cu" />
+    <CudaCompile Include="src\Reconstruction\RecFourierAdd.cu" />
+    <CudaCompile Include="src\Resolution\AnisotropicFSC.cu" />
+    <CudaCompile Include="src\Resolution\FSC.cu" />
+    <CudaCompile Include="src\Resolution\LocalAnisotropicFSC.cu" />
+    <CudaCompile Include="src\Resolution\LocalFSC.cu" />
+    <CudaCompile Include="src\Tomography\InterpolateSingleAxis.cu" />
+    <CudaCompile Include="src\Transformation\Rotation.cu" />
+    <CudaCompile Include="src\Reconstruction\ART.cu" />
+    <CudaCompile Include="src\Transformation\Shift.cu" />
+    <CudaCompile Include="src\Transformation\Bin.cu" />
+    <CudaCompile Include="src\Transformation\Coordinates.cu" />
+    <CudaCompile Include="src\Transformation\Scale.cu" />
+    <CudaCompile Include="src\Masking\RectangleMask.cu" />
+    <CudaCompile Include="src\Masking\Remap.cu" />
+    <CudaCompile Include="src\Masking\SphereMask.cu" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="Alignment\Align2D.cu" />
-    <CudaCompile Include="Alignment\Align3D.cu" />
-    <CudaCompile Include="BinaryManipulation\Binarize.cu" />
-    <CudaCompile Include="BinaryManipulation\Dilate.cu" />
-    <CudaCompile Include="Correlation\CCF.cu" />
-    <CudaCompile Include="Correlation\LocalPeaks.cu" />
-    <CudaCompile Include="Correlation\Peak.cu" />
-    <CudaCompile Include="CubicSplines\cubicPrefilter2D.cu" />
-    <CudaCompile Include="CubicSplines\cubicPrefilter3D.cu" />
-    <CudaCompile Include="CubicSplines\cubicTex.cu" />
-    <CudaCompile Include="CubicSplines\internal\bspline_kernel.cu" />
-    <CudaCompile Include="CubicSplines\internal\cubicPrefilter_kernel.cu" />
-    <CudaCompile Include="CubicSplines\internal\cubicTexKernels.cu" />
-    <CudaCompile Include="CubicSplines\internal\math_func.cu" />
-    <CudaCompile Include="CubicSplines\internal\version.cu" />
-    <CudaCompile Include="CubicSplines\memcpy.cu" />
-    <CudaCompile Include="FFT\FFT.cu" />
-    <CudaCompile Include="FFT\FFTRemap.cu" />
-    <CudaCompile Include="FFT\FFTResize.cu" />
-    <CudaCompile Include="FFT\IFFT.cu" />
-    <CudaCompile Include="Generics\Arithmetics.cu" />
-    <CudaCompile Include="Generics\CompositeArithmetics.cu" />
-    <CudaCompile Include="Generics\Extraction.cu" />
-    <CudaCompile Include="Generics\Histogram.cu" />
-    <CudaCompile Include="Generics\IndexOf.cu" />
-    <CudaCompile Include="Generics\LocalStdDev.cu" />
-    <CudaCompile Include="Generics\MakeAtlas.cu" />
-    <CudaCompile Include="Generics\MinMax.cu" />
-    <CudaCompile Include="Generics\MinMaxMonolithic.cu" />
-    <CudaCompile Include="Generics\Padding.cu" />
-    <CudaCompile Include="Generics\Reductions.cu" />
-    <CudaCompile Include="Generics\Sum.cu" />
-    <CudaCompile Include="Generics\Dev.cu" />
-    <CudaCompile Include="Generics\SumMinMax.cu" />
-    <CudaCompile Include="Helpers\AngularSpacing.cu" />
-    <CudaCompile Include="Helpers\Euler.cu" />
-    <CudaCompile Include="Helpers\HermitianSymmetry.cu" />
-    <CudaCompile Include="Helpers\MDPointer.cu" />
-    <CudaCompile Include="Helpers\Memory.cu" />
-    <CudaCompile Include="Helpers\Misc.cu" />
-    <CudaCompile Include="Helpers\TypeConversion.cu" />
-    <CudaCompile Include="ImageManipulation\AnisotropicLowpass.cu" />
-    <CudaCompile Include="ImageManipulation\Bandpass.cu" />
-    <CudaCompile Include="ImageManipulation\LocalLowpass.cu" />
-    <CudaCompile Include="ImageManipulation\Norm.cu" />
-    <CudaCompile Include="ImageManipulation\Xray.cu" />
-    <CudaCompile Include="Masking\IrregularSphereMask.cu" />
-    <CudaCompile Include="Masking\Windows.cu" />
-    <CudaCompile Include="Projection\Backward.cu" />
-    <CudaCompile Include="Projection\Forward.cu" />
-    <CudaCompile Include="Projection\Forward2.cu" />
-    <CudaCompile Include="Reconstruction\RecFourier.cu" />
-    <CudaCompile Include="Resolution\AnisotropicFSC.cu" />
-    <CudaCompile Include="Resolution\FSC.cu" />
-    <CudaCompile Include="Resolution\LocalAnisotropicFSC.cu" />
-    <CudaCompile Include="Resolution\LocalFSC.cu" />
-    <CudaCompile Include="Tomography\InterpolateSingleAxis.cu" />
-    <CudaCompile Include="Transformation\Rotation.cu" />
-    <CudaCompile Include="Reconstruction\ART.cu" />
-    <CudaCompile Include="Transformation\Shift.cu" />
-    <CudaCompile Include="Transformation\Bin.cu" />
-    <CudaCompile Include="Transformation\Coordinates.cu" />
-    <CudaCompile Include="Transformation\Scale.cu" />
-    <CudaCompile Include="Masking\RectangleMask.cu" />
-    <CudaCompile Include="Masking\Remap.cu" />
-    <CudaCompile Include="Masking\SphereMask.cu" />
+    <ClCompile Include="src\IO\em.cpp" />
+    <ClCompile Include="src\IO\mrc.cpp" />
+    <ClCompile Include="src\IO\raw.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C5083A95-7B41-47E7-99A5-FE08DC0ECDB1}</ProjectGuid>
@@ -137,9 +154,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
     <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -161,7 +182,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_20,sm_20</CodeGeneration>
+      <CodeGeneration>compute_30,sm_30</CodeGeneration>
       <PtxAsOptionV>true</PtxAsOptionV>
       <AdditionalCompilerOptions>/openmp</AdditionalCompilerOptions>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
@@ -190,7 +211,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_20,sm_20</CodeGeneration>
+      <CodeGeneration>compute_30,sm_30</CodeGeneration>
       <PtxAsOptionV>true</PtxAsOptionV>
       <AdditionalCompilerOptions>/openmp</AdditionalCompilerOptions>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
@@ -214,7 +235,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"

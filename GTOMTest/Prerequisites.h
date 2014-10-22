@@ -16,7 +16,7 @@
 #include <cublas_v2.h>
 
 #include "gtest/gtest.h"
-#include "../Functions.cuh"
+#include "../include/GTOM.cuh"
 
 using namespace std;
 

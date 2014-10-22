@@ -1,5 +1,4 @@
 #include "Prerequisites.h"
-#include "..\GLMFunctions.cuh"
 
 TEST(Alignment, Align3D)
 {

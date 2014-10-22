@@ -94,5 +94,8 @@
     <ClCompile Include="Generics\Norm.cu">
       <Filter>Source Files\Generics</Filter>
     </ClCompile>
+    <ClCompile Include="Reconstruction\RecFourierAdd.cu">
+      <Filter>Source Files\Reconstruction</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
