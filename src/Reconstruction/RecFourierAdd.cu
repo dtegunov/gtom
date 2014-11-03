@@ -46,7 +46,7 @@ void d_ReconstructFourierAdd(tcomplex* d_volumeft, tfloat* d_samples, tfloat* d_
 
 	for (int b = 0; b < dimsproj.z; b++)
 	{
-		glm::mat4 mat = GetEulerRotation(h_angles[b]);
+		glm::mat4 mat = Matrix4EulerLegacy(h_angles[b]);
 		h_vecX[b] = glm::vec3(mat[0][0], mat[0][1], mat[0][2]);
 		h_vecY[b] = glm::vec3(mat[1][0], mat[1][1], mat[1][2]);
 	}

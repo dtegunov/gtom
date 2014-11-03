@@ -4,15 +4,6 @@
 #include "Helper.cuh"
 #include "Projection.cuh"
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_INLINE
-#define GLM_FORCE_CUDA
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtx/quaternion.hpp"
-#include "glm/gtx/euler_angles.hpp"
-#include "glm/gtc/type_ptr.hpp"
-
 #define CorrectionTpB 64
 
 texture<tfloat, 2> texArtCorrectionAtlas;
@@ -29,50 +20,32 @@ __global__ void CorrectionsKernel(tfloat* d_volume, int3 dimsvolume, int3 dimspr
 //Performs 3D reconstruction using ART//
 ////////////////////////////////////////
 
-void d_ART(tfloat* d_projections, int3 dimsproj, char* d_masks, tfloat* d_volume, tfloat* d_volumeerrors, int3 dimsvolume, tfloat2* h_angles, int iterations)
+//NEEDS TO BE REWRITTEN, start around line 57
+/*void d_ART(tfloat* d_projections, int3 dimsproj, char* d_masks, tfloat* d_volume, tfloat* d_volumeerrors, int3 dimsvolume, tfloat3* h_angles, int iterations)
 {
-	tfloat2* d_angles = (tfloat2*)CudaMallocFromHostArray(h_angles, dimsproj.z * sizeof(tfloat2));
+	tfloat2* d_angles = (tfloat2*)CudaMallocFromHostArray(h_angles, dimsproj.z * sizeof(tfloat3));
 	tfloat* d_forwproj;
 	cudaMalloc((void**)&d_forwproj, Elements(dimsproj) * sizeof(tfloat));
 	tfloat* d_samples;
 	cudaMalloc((void**)&d_samples, Elements(dimsproj) * sizeof(tfloat));
 	d_ValueFill(d_volume, Elements(dimsvolume), (tfloat)0);
-	//d_ValueFill(d_volume+43, 1, (tfloat)1);
 
-	glm::vec3* h_vecX = (glm::vec3*)malloc(dimsproj.z * sizeof(glm::vec3));
-	glm::vec3* h_vecY = (glm::vec3*)malloc(dimsproj.z * sizeof(glm::vec3));
-	glm::vec3* h_vecZ = (glm::vec3*)malloc(dimsproj.z * sizeof(glm::vec3));
-
-	glm::vec4 vecX(1.0f, 0.0f, 0.0f, 1.0f);
-	glm::vec4 vecY(0.0f, 1.0f, 0.0f, 1.0f);
-	glm::vec4 vecZ(0.0f, 0.0f, 1.0f, 1.0f);
+	glm::mat3x2* h_matrices = (glm::mat3x2*)malloc(dimsproj.z * sizeof(glm::mat3x2));
 
 	for (int b = 0; b < dimsproj.z; b++)
 	{
-		glm::mat4 rotationmat = glm::inverse(GetEulerRotation(h_angles[b]));
-		glm::vec4 transvecX = rotationmat * vecX;
-		h_vecX[b] = glm::vec3(transvecX.x, transvecX.y, transvecX.z);
-		glm::vec4 transvecY = rotationmat * vecY;
-		h_vecY[b] = glm::vec3(transvecY.x, transvecY.y, transvecY.z);
-		glm::vec4 transvecZ = rotationmat * vecZ;
-		h_vecZ[b] = glm::vec3(transvecZ.x, transvecZ.y, transvecZ.z);
+		glm::mat3 r = Matrix3Euler(h_angles[b]);
+		h_matrices[b] = glm::mat3x2(r[0][0], r[1][0], r[0][1], r[1][1], r[0][2], r[1][2]);
 	}
 
-	glm::vec3* d_vecX = (glm::vec3*)CudaMallocFromHostArray(h_vecX, dimsproj.z * sizeof(glm::vec3));
-	glm::vec3* d_vecY = (glm::vec3*)CudaMallocFromHostArray(h_vecY, dimsproj.z * sizeof(glm::vec3));
-	glm::vec3* d_vecZ = (glm::vec3*)CudaMallocFromHostArray(h_vecZ, dimsproj.z * sizeof(glm::vec3));
-	
-	free(h_vecX);
-	free(h_vecY);
-	free(h_vecZ);
+	glm::mat3x2* d_matrices = (glm::mat3x2*)CudaMallocFromHostArray(h_matrices, dimsproj.z * sizeof(glm::mat3x2));
 
 	for (int i = 0; i < iterations; i++)
 	{
-		d_ProjForward(d_volume, dimsvolume, d_forwproj, d_samples, toInt3(dimsproj.x, dimsproj.y, 1), h_angles, dimsproj.z);
+		d_ProjForward(d_volume, dimsvolume, d_forwproj, toInt3(dimsproj.x, dimsproj.y, 1), h_angles, dimsproj.z);
 		tfloat* h_forwproj = (tfloat*)MallocFromDeviceArray(d_forwproj, Elements(dimsproj) * sizeof(tfloat));
 		tfloat* h_samples = (tfloat*)MallocFromDeviceArray(d_samples, Elements(dimsproj) * sizeof(tfloat));
 		d_SubtractVector(d_projections, d_forwproj, d_forwproj, Elements(dimsproj));
-		d_DivideSafeByVector(d_forwproj, d_samples, d_forwproj, Elements(dimsproj));
 		int3 atlasdims;
 		int2 atlasprimitivesperdim;
 		int2* h_atlascoords = (int2*)malloc(dimsproj.z * sizeof(int2));
@@ -160,4 +133,4 @@ __global__ void CorrectionsKernel(tfloat* d_volume, int3 dimsvolume, int3 dimspr
 	}
 
 	d_volume[(blockIdx.z * dimsvolume.y + blockIdx.y) * dimsvolume.x + xvol] += correctionval / (tfloat)dimsproj.z;
-}
+}*/

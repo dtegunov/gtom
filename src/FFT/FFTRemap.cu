@@ -6,8 +6,8 @@
 ////////////////////////////
 
 template <class T> __global__ void RemapFull2HalfFFTKernel(T* d_input, T* d_output, int3 dims);
-template <class T> __global__ void RemapFullFFT2FullKernel(T* d_input, T* d_output, int3 dims);
-template <class T> __global__ void RemapFull2FullFFTKernel(T* d_input, T* d_output, int3 dims);
+template <class T> __global__ void RemapFullFFT2FullKernel(T* d_input, T* d_output, uint3 dims, uint elements);
+template <class T> __global__ void RemapFull2FullFFTKernel(T* d_input, T* d_output, uint3 dims, uint elements);
 template <class T> __global__ void RemapHalfFFT2HalfKernel(T* d_input, T* d_output, int3 dims);
 template <class T> __global__ void RemapHalf2HalfFFTKernel(T* d_input, T* d_output, int3 dims);
 
@@ -38,11 +38,11 @@ template <class T> void d_RemapFullFFT2Full(T* d_input, T* d_output, int3 dims, 
 	dim3 grid = dim3(dims.y, dims.z, batch);
 	if(d_input != d_output)
 	{
-		RemapFullFFT2FullKernel <<<grid, TpB>>> (d_input, d_output, dims);
+		RemapFullFFT2FullKernel <<<grid, TpB>>> (d_input, d_output, make_uint3(dims.x, dims.y, dims.z), Elements(dims));
 	}
 	else		
 	{
-		RemapFullFFT2FullKernel <<<grid, TpB>>> (d_input, d_intermediate, dims);
+		RemapFullFFT2FullKernel <<<grid, TpB >>> (d_input, d_intermediate, make_uint3(dims.x, dims.y, dims.z), Elements(dims));
 		cudaMemcpy(d_output, d_intermediate, elements * batch * sizeof(T), cudaMemcpyDeviceToDevice);
 	}
 	cudaStreamQuery(0);
@@ -65,12 +65,12 @@ template <class T> void d_RemapFull2FullFFT(T* d_input, T* d_output, int3 dims, 
 	dim3 grid = dim3(dims.y, dims.z, batch);
 	if(d_input != d_output)
 	{
-		RemapFull2FullFFTKernel <<<grid, TpB>>> (d_input, d_output, dims);
+		RemapFull2FullFFTKernel <<<grid, TpB>>> (d_input, d_output, make_uint3(dims.x, dims.y, dims.z), Elements(dims));
 		cudaStreamQuery(0);
 	}
 	else		
 	{
-		RemapFull2FullFFTKernel <<<grid, TpB>>> (d_input, d_intermediate, dims);
+		RemapFull2FullFFTKernel <<<grid, TpB>>> (d_input, d_intermediate, make_uint3(dims.x, dims.y, dims.z), Elements(dims));
 		cudaMemcpy(d_output, d_intermediate, elements * batch * sizeof(T), cudaMemcpyDeviceToDevice);
 		cudaStreamQuery(0);
 	}
@@ -158,33 +158,33 @@ template <class T> __global__ void RemapFull2HalfFFTKernel(T* d_input, T* d_outp
 	}
 }
 
-template <class T> __global__ void RemapFullFFT2FullKernel(T* d_input, T* d_output, int3 dims)
+template <class T> __global__ void RemapFullFFT2FullKernel(T* d_input, T* d_output, uint3 dims, uint elements)
 {
-	d_input += Elements(dims) * blockIdx.z;
-	d_output += Elements(dims) * blockIdx.z;
+	uint ry = ((blockIdx.x + dims.y / 2) % dims.y);
+	uint rz = ((blockIdx.y + dims.z / 2) % dims.z);
 
-	for(uint x = threadIdx.x; x < dims.x; x += blockDim.x)
+	d_output += elements * blockIdx.z + (rz * dims.y + ry) * dims.x;
+	d_input += elements * blockIdx.z + (blockIdx.y * dims.y + blockIdx.x) * dims.x;
+
+	for (uint x = threadIdx.x; x < dims.x; x += blockDim.x)
 	{
 		uint rx = ((x + dims.x / 2) % dims.x);
-		uint ry = ((blockIdx.x + dims.y / 2) % dims.y);
-		uint rz = ((blockIdx.y + dims.z / 2) % dims.z);
-
-		d_output[(rz * dims.y + ry) * dims.x + rx] = d_input[(blockIdx.y * dims.y + blockIdx.x) * dims.x + x];
+		d_output[rx] = d_input[x];
 	}
 }
 
-template <class T> __global__ void RemapFull2FullFFTKernel(T* d_input, T* d_output, int3 dims)
+template <class T> __global__ void RemapFull2FullFFTKernel(T* d_input, T* d_output, uint3 dims, uint elements)
 {
-	d_input += Elements(dims) * blockIdx.z;
-	d_output += Elements(dims) * blockIdx.z;
+	uint ry = ((blockIdx.x + (dims.y + 1) / 2) % dims.y);
+	uint rz = ((blockIdx.y + (dims.z + 1) / 2) % dims.z);
+
+	d_output += elements * blockIdx.z + (rz * dims.y + ry) * dims.x;
+	d_input += elements * blockIdx.z + (blockIdx.y * dims.y + blockIdx.x) * dims.x;
 
 	for(uint x = threadIdx.x; x < dims.x; x += blockDim.x)
 	{
 		uint rx = ((x + (dims.x + 1) / 2) % dims.x);
-		uint ry = ((blockIdx.x + (dims.y + 1) / 2) % dims.y);
-		uint rz = ((blockIdx.y + (dims.z + 1) / 2) % dims.z);
-
-		d_output[(rz * dims.y + ry) * dims.x + rx] = d_input[(blockIdx.y * dims.y + blockIdx.x) * dims.x + x];
+		d_output[rx] = d_input[x];
 	}
 }
 

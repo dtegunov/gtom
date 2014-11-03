@@ -295,9 +295,6 @@
     <CudaCompile Include="src\Helpers\AngularSpacing.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\Projection\Forward2.cu">
-      <Filter>Projection</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\Resolution\AnisotropicFSC.cu">
       <Filter>Resolution</Filter>
     </CudaCompile>
@@ -316,12 +313,20 @@
     <CudaCompile Include="src\Resolution\LocalAnisotropicFSC.cu">
       <Filter>Resolution</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\Helpers\TextureObject.cu" />
     <CudaCompile Include="src\Reconstruction\RecFourierAdd.cu">
       <Filter>Reconstruction</Filter>
     </CudaCompile>
     <CudaCompile Include="src\Helpers\TextureObject.cu">
       <Filter>Helpers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Helpers\TextureObject.cu">
+      <Filter>Helpers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Projection\Weighting.cu">
+      <Filter>Projection</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Transformation\Combined.cu">
+      <Filter>Transformation</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

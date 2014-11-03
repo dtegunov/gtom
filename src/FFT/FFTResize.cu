@@ -7,7 +7,7 @@
 
 __global__ void FFTCropEvenKernel(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims);
 __global__ void FFTCropOddKernel(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims);
-__global__ void FFTFullCropKernel(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims);
+template <class T> __global__ void FFTFullCropKernel(T* d_input, T* d_output, int3 olddims, int3 newdims);
 __global__ void FFTPadEvenKernel(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims);
 __global__ void FFTFullPadEvenKernel(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims);
 
@@ -35,7 +35,7 @@ void d_FFTCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims
 		FFTCropOddKernel <<<grid, TpB>>> (d_input, d_output, olddims, newdims);
 }
 
-void d_FFTFullCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch)
+template <class T> void d_FFTFullCrop(T* d_input, T* d_output, int3 olddims, int3 newdims, int batch)
 {
 	size_t elementsnew = Elements(newdims);
 	size_t elementsold = Elements(olddims);
@@ -45,6 +45,8 @@ void d_FFTFullCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 new
 	FFTFullCropKernel <<<grid, TpB>>> (d_input, d_output, olddims, newdims);
 	cudaStreamQuery(0);
 }
+template void d_FFTFullCrop<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch);
+template void d_FFTFullCrop<tfloat>(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, int batch);
 
 void d_FFTPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch)
 {
@@ -131,32 +133,25 @@ __global__ void FFTCropOddKernel(tcomplex* d_input, tcomplex* d_output, int3 old
 	}
 }
 
-__global__ void FFTFullCropKernel(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims)
+template <class T> __global__ void FFTFullCropKernel(T* d_input, T* d_output, int3 olddims, int3 newdims)
 {
-	d_input += Elements(olddims) * blockIdx.z;
-	d_output += Elements(newdims) * blockIdx.z;
+	int oldy = blockIdx.x;
+	if (oldy >= newdims.y / 2)
+		oldy += olddims.y - newdims.y;
+	int oldz = blockIdx.y;
+	if (oldz >= newdims.z / 2)
+		oldz += olddims.z - newdims.z;
+
+	d_input += Elements(olddims) * blockIdx.z + (oldz * olddims.y + oldy) * olddims.x;
+	d_output += Elements(newdims) * blockIdx.z + (blockIdx.y * newdims.y + blockIdx.x) * newdims.x;
 
 	for(int x = threadIdx.x; x < newdims.x; x += blockDim.x)
 	{
-		int newrx = ((x + (newdims.x + 1) / 2) % newdims.x);
-		int newry = ((blockIdx.x + (newdims.y + 1) / 2) % newdims.y);
-		int newrz = ((blockIdx.y + (newdims.z + 1) / 2) % newdims.z);
-	
-		int oldrx = (olddims.x - newdims.x + ((olddims.x & 1 - (newdims.x & 1)) % 2)) / 2 + newrx;
-		int oldry = (olddims.y - newdims.y + ((olddims.y & 1 - (newdims.y & 1)) % 2)) / 2 + newry;
-		int oldrz = (olddims.z - newdims.z + ((olddims.z & 1 - (newdims.z & 1)) % 2)) / 2 + newrz;
-	
-		int oldx = ((oldrx + (olddims.x) / 2) % olddims.x);
-		int oldy = ((oldry + (olddims.y) / 2) % olddims.y);
-		int oldz = ((oldrz + (olddims.z) / 2) % olddims.z);
-		if(x == newdims.x / 2)
-			oldx = newdims.x / 2;
-		if(blockIdx.x == newdims.y / 2)
-			oldy = newdims.y / 2;
-		if(blockIdx.y == newdims.z / 2)
-			oldz = newdims.z / 2;
+		int oldx = x;
+		if (oldx >= newdims.x / 2)
+			oldx += olddims.x - newdims.x;
 
-		d_output[(blockIdx.y * newdims.y + blockIdx.x) * newdims.x + x] = d_input[(oldz * olddims.y + oldy) * olddims.x + oldx];
+		d_output[x] = d_input[oldx];
 	}
 }
 
@@ -181,7 +176,7 @@ __global__ void FFTPadEvenKernel(tcomplex* d_input, tcomplex* d_output, int3 old
 			d_output[(blockIdx.y * newdims.y + blockIdx.x) * (newdims.x / 2 + 1) + x] = d_input[(oldz * olddims.y + oldy) * (olddims.x / 2 + 1) + x];
 		}
 		else
-			d_output[(blockIdx.y * newdims.y + blockIdx.x) * (newdims.x / 2 + 1) + x] = toTcomplex((tfloat)0, (tfloat)0);
+			d_output[(blockIdx.y * newdims.y + blockIdx.x) * (newdims.x / 2 + 1) + x] = toTcomplex(0.0f, 0.0f);
 	}
 }
 
@@ -209,6 +204,6 @@ __global__ void FFTFullPadEvenKernel(tcomplex* d_input, tcomplex* d_output, int3
 			d_output[(blockIdx.y * newdims.y + blockIdx.x) * newdims.x + x] = d_input[(oldz * olddims.y + oldy) * olddims.x + oldx];
 		}
 		else
-			d_output[(blockIdx.y * newdims.y + blockIdx.x) * newdims.x + x] = toTcomplex((tfloat)0, (tfloat)0);
+			d_output[(blockIdx.y * newdims.y + blockIdx.x) * newdims.x + x] = toTcomplex(0.0f, 0.0f);
 	}
 }

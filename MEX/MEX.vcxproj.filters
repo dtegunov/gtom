@@ -34,6 +34,9 @@
     <Filter Include="Source Files\Alignment">
       <UniqueIdentifier>{7cac749a-96fd-43c3-8fc9-661d10f546ed}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Projection">
+      <UniqueIdentifier>{c05441bb-475c-47df-bd41-03ff52c6bf60}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Helper.cu">
@@ -81,6 +84,9 @@
     <None Include="Alignment\Align3D.cu">
       <Filter>Source Files\Alignment</Filter>
     </None>
+    <None Include="Projection\ForwardProj.cu">
+      <Filter>Source Files\Projection</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">
@@ -96,6 +102,9 @@
     </ClCompile>
     <ClCompile Include="Reconstruction\RecFourierAdd.cu">
       <Filter>Source Files\Reconstruction</Filter>
+    </ClCompile>
+    <ClCompile Include="Projection\Weighting.cu">
+      <Filter>Source Files\Projection</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

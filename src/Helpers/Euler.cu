@@ -1,81 +1,110 @@
 #include "Prerequisites.cuh"
 #include "Angles.cuh"
 
-glm::mat4 GetEulerRotation(tfloat3 angles)
+glm::mat4 Matrix4Euler(tfloat3 angles)
 {
 	float phi = angles.x;
 	float theta = angles.y;
 	float psi = angles.z;
 
-	float cosphi = cos(phi), sinphi = sin(phi);
-	float cospsi = cos(psi), sinpsi = sin(psi);
-	float costheta = cos(theta), sintheta = sin(theta);
-
-	glm::mat4 rotationMat;
-
-	//IMPORTANT: mat[x][y] points to y'th element of the x'th column according to GLSL specification
-
-	rotationMat[0][0] = cospsi * cosphi - costheta * sinpsi * sinphi;
-	rotationMat[0][1] = sinpsi * cosphi + costheta * cospsi * sinphi;
-	rotationMat[0][2] = sintheta * sinphi;
-	rotationMat[0][3] = 0.0f;
-	rotationMat[1][0] = -cospsi * sinphi - costheta * sinpsi * cosphi;
-	rotationMat[1][1] = -sinpsi * sinphi + costheta * cospsi * cosphi;
-	rotationMat[1][2] = sintheta * cosphi;
-	rotationMat[1][3] = 0.0f;
-	rotationMat[2][0] = sintheta * sinpsi;
-	rotationMat[2][1] = -sintheta * cospsi;
-	rotationMat[2][2] = costheta;
-	rotationMat[2][3] = 0.0f;
-	rotationMat[3][0] = 0.0f;
-	rotationMat[3][1] = 0.0f;
-	rotationMat[3][2] = 0.0f;
-	rotationMat[3][3] = 1.0f;
-
-	return rotationMat;
+	return Matrix4RotationZ(psi) * Matrix4RotationY(theta) * Matrix4RotationZ(phi);
 }
 
-glm::mat3 GetEulerRotation3(tfloat3 angles)
+glm::mat3 Matrix3Euler(tfloat3 angles)
 {
 	float phi = angles.x;
 	float theta = angles.y;
 	float psi = angles.z;
 
-	float cosphi = cos(phi), sinphi = sin(phi);
-	float cospsi = cos(psi), sinpsi = sin(psi);
-	float costheta = cos(theta), sintheta = sin(theta);
-
-	glm::mat3 rotationMat;
-
-	//Result of Rz(psi) * Rx(theta) * Rz(phi)
-	//IMPORTANT: mat[x][y] points to y'th element of the x'th column according to GLSL specification
-
-	rotationMat[0][0] = cospsi * cosphi - costheta * sinpsi * sinphi;
-	rotationMat[0][1] = sinpsi * cosphi + costheta * cospsi * sinphi;
-	rotationMat[0][2] = sintheta * sinphi;
-	rotationMat[1][0] = -cospsi * sinphi - costheta * sinpsi * cosphi;
-	rotationMat[1][1] = -sinpsi * sinphi + costheta * cospsi * cosphi;
-	rotationMat[1][2] = sintheta * cosphi;
-	rotationMat[2][0] = sintheta * sinpsi;
-	rotationMat[2][1] = -sintheta * cospsi;
-	rotationMat[2][2] = costheta;
-
-	return rotationMat;
+	return Matrix3RotationZ(psi) * Matrix3RotationY(theta) * Matrix3RotationZ(phi);
 }
 
-glm::mat4 GetEulerRotation(tfloat2 angles)
+glm::mat4 Matrix4EulerLegacy(tfloat2 angles)
 {
 	float phi = PI / 2.0f - angles.x;
 	float psi = angles.x - PI / 2.0f;
 	float theta = angles.y;
 	
-	return glm::inverse(GetEulerRotation(tfloat3(phi, theta, psi)));
+	return glm::transpose(Matrix4Euler(tfloat3(phi, theta, psi)));
 }
 
-glm::mat2 Get2DRotation(tfloat angle)
+glm::mat4 Matrix4Translation(tfloat3 translation)
 {
-	float cosangle = cos(angle), sinangle = sin(angle);
-	glm::mat2 rotationMat = glm::mat2(cosangle, sinangle, -sinangle, cosangle);
+	return glm::mat4(1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  translation.x, translation.y, translation.z, 1);
+}
 
-	return rotationMat;
+glm::mat4 Matrix4Scale(tfloat3 scale)
+{
+	return glm::mat4(scale.x, 0, 0, 0,  0, scale.y, 0, 0,  0, 0, scale.z, 0,  0, 0, 0, 1);
+}
+
+glm::mat4 Matrix4RotationX(tfloat angle)
+{
+	double c = cos(angle);
+	double s = sin(angle);
+
+	return glm::mat4(1, 0, 0, 0,  0, c, s, 0,  0, -s, c, 0,  0, 0, 0, 1);
+}
+
+glm::mat4 Matrix4RotationY(tfloat angle)
+{
+	double c = cos(angle);
+	double s = sin(angle);
+
+	return glm::mat4(c, 0, -s, 0,  0, 1, 0, 0,  s, 0, c, 0,  0, 0, 0, 1);
+}
+
+glm::mat4 Matrix4RotationZ(tfloat angle)
+{
+	double c = cos(angle);
+	double s = sin(angle);
+
+	return glm::mat4(c, s, 0, 0,  -s, c, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1);
+}
+
+glm::mat3 Matrix3Translation(tfloat2 translation)
+{
+	return glm::mat3(1, 0, 0,  0, 1, 0,  translation.x, translation.y, 1);
+}
+
+glm::mat3 Matrix3Scale(tfloat3 scale)
+{
+	return glm::mat3(scale.x, 0, 0,  0, scale.y, 0,  0, 0, scale.z);
+}
+
+glm::mat3 Matrix3RotationX(tfloat angle)
+{
+	double c = cos(angle);
+	double s = sin(angle);
+
+	return glm::mat3(1, 0, 0,  0, c, s,  0, -s, c);
+}
+
+glm::mat3 Matrix3RotationY(tfloat angle)
+{
+	double c = cos(angle);
+	double s = sin(angle);
+
+	return glm::mat3(c, 0, -s,  0, 1, 0,  s, 0, c);
+}
+
+glm::mat3 Matrix3RotationZ(tfloat angle)
+{
+	double c = cos(angle);
+	double s = sin(angle);
+
+	return glm::mat3(c, s, 0,  -s, c, 0,  0, 0, 1);
+}
+
+glm::mat2 Matrix2Scale(tfloat2 scale)
+{
+	return glm::mat2(scale.x, 0,  0, scale.y);
+}
+
+glm::mat2 Matrix2Rotation(tfloat angle)
+{
+	double c = cos(angle);
+	double s = sin(angle);
+
+	return glm::mat2(c, s, -s, c);
 }

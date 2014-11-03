@@ -90,7 +90,7 @@
     <CudaCompile Include="src\Masking\Windows.cu" />
     <CudaCompile Include="src\Projection\Backward.cu" />
     <CudaCompile Include="src\Projection\Forward.cu" />
-    <CudaCompile Include="src\Projection\Forward2.cu" />
+    <CudaCompile Include="src\Projection\Weighting.cu" />
     <CudaCompile Include="src\Reconstruction\RecFourier.cu" />
     <CudaCompile Include="src\Reconstruction\RecFourierAdd.cu" />
     <CudaCompile Include="src\Resolution\AnisotropicFSC.cu" />
@@ -101,6 +101,7 @@
     <CudaCompile Include="src\Transformation\Rotation.cu" />
     <CudaCompile Include="src\Reconstruction\ART.cu" />
     <CudaCompile Include="src\Transformation\Shift.cu" />
+    <CudaCompile Include="src\Transformation\Combined.cu" />
     <CudaCompile Include="src\Transformation\Bin.cu" />
     <CudaCompile Include="src\Transformation\Coordinates.cu" />
     <CudaCompile Include="src\Transformation\Scale.cu" />

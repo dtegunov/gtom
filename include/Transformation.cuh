@@ -10,6 +10,9 @@
 //Bin.cu:
 void d_Bin(tfloat* d_input, tfloat* d_output, int3 dims, int bincount, int batch = 1);
 
+//Combined.cu:
+void d_ScaleRotateShift2D(tfloat* d_input, tfloat* d_output, int2 dims, tfloat2* h_scales, tfloat* h_angles, tfloat2* h_shifts, T_INTERP_MODE mode, bool outputzerocentered, int batch);
+
 //Coordinates.cu:
 void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE interpolation, int batch = 1);
 void d_CartAtlas2Polar(tfloat* d_input, tfloat* d_output, tfloat2* d_offsets, int2 atlasdims, int2 dims, T_INTERP_MODE interpolation, int batch);

@@ -79,7 +79,7 @@ void d_Rotate3D(cudaArray* a_input, cudaChannelFormatDesc channelDesc, tfloat* d
 	glm::vec3* h_vec = (glm::vec3*)malloc(batch * 3 * sizeof(glm::vec3));
 	for (int b = 0; b < batch; b++)
 	{
-		glm::mat4 rotationmat = glm::inverse(GetEulerRotation(angles[b]));
+		glm::mat4 rotationmat = glm::inverse(Matrix4Euler(angles[b]));
 	
 		glm::vec4 vecX = rotationmat * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		glm::vec4 vecY = rotationmat * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
