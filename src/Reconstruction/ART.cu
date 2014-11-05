@@ -2,7 +2,6 @@
 #include "Angles.cuh"
 #include "Generics.cuh"
 #include "Helper.cuh"
-#include "Projection.cuh"
 
 #define CorrectionTpB 64
 

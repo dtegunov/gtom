@@ -27,7 +27,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	tfloat* d_weights;
 	cudaMalloc((void**)&d_weights, (dimsimage.x / 2 + 1) * dimsimage.y * nimages * sizeof(tfloat));
 
-	d_ExactWeighting(d_weights, dimsimage, h_angles, nimages, dimsimage.x / 2, true);
+	d_Exact2DWeighting(d_weights, dimsimage, h_angles, nimages, dimsimage.x / 2, true);
 
 	mwSize outputdims[3];
 	outputdims[0] = dimsimage.x / 2 + 1;

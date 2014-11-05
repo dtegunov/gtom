@@ -228,7 +228,6 @@ void mxArrayAdapter::SetFromDeviceTFloat(tfloat* d_original)
 		cudaMemcpy(mxGetPr(underlyingarray), d_copy, mxGetNumberOfElements(underlyingarray) * sizeof(float), cudaMemcpyDeviceToHost);
 	}
 	
-	cudaDeviceSynchronize();
 	if(d_copy != d_original)
 		cudaFree(d_copy);
 }

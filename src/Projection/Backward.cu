@@ -12,23 +12,24 @@ texture<tfloat, 2> texBackprojImage;
 ////////////////////////////
 
 __global__ void ProjBackwardKernel(tfloat* d_volume, int3 dimsvolume, int3 dimsimage, glm::mat4 rotation, float weight);
-__global__ void ProjBackwardSincKernel(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int2 dimsimage, glm::mat4 transform);
+template <bool iscentered> __global__ void ProjBackwardSincKernel(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int2 dimsimage, glm::mat4 transform);
 
 
 /////////////////////////////////////////////
 //Equivalent of TOM's tom_backproj3d method//
 /////////////////////////////////////////////
 
-void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter, tfloat* d_image, int3 dimsimage, tfloat3* h_angles, tfloat2* h_offsets, tfloat2* h_scales, T_INTERP_MODE mode, int batch)
+void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter, tfloat* d_image, int3 dimsimage, tfloat3* h_angles, tfloat2* h_offsets, tfloat2* h_scales, T_INTERP_MODE mode, bool outputzerocentered, int batch)
 {
 	glm::mat4* h_transforms = (glm::mat4*)malloc(batch * sizeof(glm::mat4));
 	for (int b = 0; b < batch; b++)
 	{
-		h_transforms[b] = Matrix4Translation(tfloat3(-dimsvolume.x / 2, -dimsvolume.y / 2, -dimsvolume.z / 2)) *
-						  Matrix4Translation(offsetfromcenter) *
-						  glm::transpose(Matrix4Euler(h_angles[b])) *
+		h_transforms[b] = Matrix4Translation(tfloat3(dimsimage.x / 2, dimsimage.y / 2, 0)) *
 						  Matrix4Scale(tfloat3(1.0f / h_scales[b].x, 1.0f / h_scales[b].y, 1.0f)) *
-						  Matrix4Translation(tfloat3(dimsimage.x / 2 - h_offsets[b].x, dimsimage.y / 2 - h_offsets[b].y, 0.0f));
+						  glm::transpose(Matrix4Euler(h_angles[b])) *
+						  Matrix4Translation(tfloat3(-h_offsets[b].x, -h_offsets[b].y, 0.0f)) *
+						  Matrix4Translation(offsetfromcenter) *
+						  Matrix4Translation(tfloat3(-dimsvolume.x / 2, -dimsvolume.y / 2, -dimsvolume.z / 2));
 	}
 
 	if (mode == T_INTERP_LINEAR)
@@ -59,7 +60,10 @@ void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter,
 		dim3 grid = dim3(dimsvolume.x, dimsvolume.y, dimsvolume.z);
 
 		for (int b = 0; b < batch; b++)
-			ProjBackwardSincKernel <<<grid, TpB>>> (d_volume, dimsvolume, d_image + Elements(dimsimage) * b, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
+			if (outputzerocentered)
+				ProjBackwardSincKernel<true> <<<grid, TpB >>> (d_volume, dimsvolume, d_image + Elements(dimsimage) * b, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
+			else
+				ProjBackwardSincKernel<false> <<<grid, TpB >>> (d_volume, dimsvolume, d_image + Elements(dimsimage) * b, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
 	}
 
 	free(h_transforms);
@@ -91,15 +95,15 @@ __global__ void ProjBackwardKernel(tfloat* d_volume, int3 dimsvolume, int3 dimsi
 
 template <bool iscentered> __global__ void ProjBackwardSincKernel(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int2 dimsimage, glm::mat4 transform)
 {
-	__shared__ tfloat s_sums[SincWindow][SincWindow];
+	__shared__ float s_sums[SincWindow][SincWindow];
 	s_sums[threadIdx.y][threadIdx.x] = 0.0f;
 
 	int outx, outy, outz;
 	if (!iscentered)
 	{
-		outx = gridDim.x / 2 - blockIdx.x;
-		outy = gridDim.y - 1 - ((blockIdx.y + gridDim.y / 2 - 1) % gridDim.y);
-		outz = gridDim.z - 1 - ((blockIdx.z + gridDim.z / 2 - 1) % gridDim.z);
+		outx = dimsvolume.x / 2 - blockIdx.x;
+		outy = dimsvolume.y - 1 - ((blockIdx.y + dimsvolume.y / 2 - 1) % dimsvolume.y);
+		outz = dimsvolume.z - 1 - ((blockIdx.z + dimsvolume.z / 2 - 1) % dimsvolume.z);
 	}
 	else
 	{
@@ -108,33 +112,28 @@ template <bool iscentered> __global__ void ProjBackwardSincKernel(tfloat* d_volu
 		outz = blockIdx.z;
 	}
 
-	glm::vec4 position = glm::vec4(blockIdx.x, blockIdx.y, blockIdx.z, 1.0f);
+	glm::vec4 position = glm::vec4((int)blockIdx.x, (int)blockIdx.y, (int)blockIdx.z, 1);
 	position = transform * position;
 	if (position.x < 0 || position.x > dimsimage.x - 1 || position.y < 0 || position.y > dimsimage.y - 1)
 	{
-		d_volume[(outz * gridDim.y + outy) * gridDim.x + outx] = 0.0f;
+		if (threadIdx.y == 0 && threadIdx.x == 0)
+			d_volume[(outz * gridDim.y + outy) * gridDim.x + outx] = 0.0f;
 		return;
 	}
 
-	short startx = (short)position.x - SincWindow / 2;
-	short starty = (short)position.y - SincWindow / 2;
-	float sum = 0.0f;
+	int startx = (int)position.x - SincWindow / 2;
+	int starty = (int)position.y - SincWindow / 2;
+	float sum = 0.0;
 
-	for (short y = threadIdx.y; y < SincWindow; y += blockDim.y)
-	{
-		short yy = y + starty;
-		float weighty = sinc(position.y - (float)yy);
-		int addressy = (yy + dimsimage.y) % dimsimage.y;
+	int y = (int)threadIdx.y + starty;
+	int addressy = (y + dimsimage.y) % dimsimage.y;
 
-		for (int x = threadIdx.x; x < SincWindow; x += blockDim.x)
-		{
-			int xx = x + startx;
-			float weight = sinc(position.x - (float)xx) * weighty;
-			int addressx = (xx + dimsimage.x) % dimsimage.x;
+	int x = (int)threadIdx.x + startx;
+	float weight = sinc(position.x - (float)x) * sinc(position.y - (float)y);
+	int addressx = (x + dimsimage.x) % dimsimage.x;
 
-			sum += d_image[addressy * dimsimage.x + addressx] * weight;
-		}
-	}
+	sum += d_image[addressy * dimsimage.x + addressx] * weight;
+
 	s_sums[threadIdx.y][threadIdx.x] = sum;
 	__syncthreads();
 	

@@ -20,10 +20,10 @@ void d_ScaleRotateShift2D(tfloat* d_input, tfloat* d_output, int2 dims, tfloat2*
 {	
 	glm::mat3* h_transforms = (glm::mat3*)malloc(batch * sizeof(glm::mat3));
 	for (int b = 0; b < batch; b++)
-		h_transforms[b] = Matrix3Translation(tfloat2(-dims.x / 2, -dims.y / 2)) *
-						  Matrix3Scale(tfloat3(h_scales[b].x, h_scales[b].y, 1.0f)) *
+		h_transforms[b] = Matrix3Translation(tfloat2(dims.x / 2, dims.y / 2)) *
+						  Matrix3Scale(tfloat3(1.0f / h_scales[b].x, 1.0f / h_scales[b].y, 1.0f)) *
 						  Matrix3RotationZ(-h_angles[b]) *
-						  Matrix3Translation(tfloat2(dims.x / 2 - h_shifts[b].x, dims.y / 2 - h_shifts[b].y));
+						  Matrix3Translation(tfloat2(-dims.x / 2 - h_shifts[b].x, -dims.y / 2 - h_shifts[b].y));
 
 	dim3 TpB = dim3(SincWindow, SincWindow);
 	dim3 grid = dim3(dims.x, dims.y);

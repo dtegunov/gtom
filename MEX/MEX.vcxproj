@@ -25,6 +25,7 @@
     <None Include="Helper.cu" />
     <None Include="ImageManipulation\AnisotropicLowpass.cu" />
     <None Include="ImageManipulation\LocalLowpass.cu" />
+    <None Include="Projection\BackwardProj.cu" />
     <None Include="Projection\ForwardProj.cu" />
     <None Include="Reconstruction\RecFourier.cu" />
     <None Include="Reconstruction\SIRT.cu" />

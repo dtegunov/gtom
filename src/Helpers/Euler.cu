@@ -7,7 +7,7 @@ glm::mat4 Matrix4Euler(tfloat3 angles)
 	float theta = angles.y;
 	float psi = angles.z;
 
-	return Matrix4RotationZ(psi) * Matrix4RotationY(theta) * Matrix4RotationZ(phi);
+	return Matrix4RotationZ(phi) * Matrix4RotationY(theta) * Matrix4RotationZ(psi);
 }
 
 glm::mat3 Matrix3Euler(tfloat3 angles)
@@ -16,7 +16,7 @@ glm::mat3 Matrix3Euler(tfloat3 angles)
 	float theta = angles.y;
 	float psi = angles.z;
 
-	return Matrix3RotationZ(psi) * Matrix3RotationY(theta) * Matrix3RotationZ(phi);
+	return Matrix3RotationZ(phi) * Matrix3RotationY(theta) * Matrix3RotationZ(psi);
 }
 
 glm::mat4 Matrix4EulerLegacy(tfloat2 angles)

@@ -87,6 +87,9 @@
     <None Include="Projection\ForwardProj.cu">
       <Filter>Source Files\Projection</Filter>
     </None>
+    <None Include="Projection\BackwardProj.cu">
+      <Filter>Source Files\Projection</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">
