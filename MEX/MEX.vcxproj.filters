@@ -37,58 +37,76 @@
     <Filter Include="Source Files\Projection">
       <UniqueIdentifier>{c05441bb-475c-47df-bd41-03ff52c6bf60}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Transformation">
+      <UniqueIdentifier>{b9f95947-8f4c-484a-9ca8-915bdbb02fe2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CTF">
+      <UniqueIdentifier>{ff4ec6b2-bc38-4275-a28f-4c50170febfe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Helper.cu">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="FFT\FFTR2C.cu">
-      <Filter>Source Files\FFT</Filter>
+    <None Include="Projection\cgtom_proj_backward.cu">
+      <Filter>Source Files\Projection</Filter>
     </None>
-    <None Include="FFT\FFTR2CFull.cu">
-      <Filter>Source Files\FFT</Filter>
+    <None Include="Projection\cgtom_proj_forward.cu">
+      <Filter>Source Files\Projection</Filter>
     </None>
-    <None Include="FFT\FFTC2C.cu">
-      <Filter>Source Files\FFT</Filter>
+    <None Include="Projection\cgtom_proj_forward_raytrace.cu">
+      <Filter>Source Files\Projection</Filter>
     </None>
-    <None Include="FFT\IFFTC2R.cu">
-      <Filter>Source Files\FFT</Filter>
-    </None>
-    <None Include="FFT\IFFTC2RFull.cu">
-      <Filter>Source Files\FFT</Filter>
-    </None>
-    <None Include="FFT\IFFTC2C.cu">
-      <Filter>Source Files\FFT</Filter>
-    </None>
-    <None Include="Resolution\LocalFSC.cu">
-      <Filter>Source Files\Resolution</Filter>
-    </None>
-    <None Include="ImageManipulation\LocalLowpass.cu">
-      <Filter>Source Files\Image Manipulation</Filter>
-    </None>
-    <None Include="Resolution\AnisotropicFSCMap.cu">
-      <Filter>Source Files\Resolution</Filter>
-    </None>
-    <None Include="ImageManipulation\AnisotropicLowpass.cu">
-      <Filter>Source Files\Image Manipulation</Filter>
-    </None>
-    <None Include="Reconstruction\SIRT.cu">
+    <None Include="Reconstruction\cgtom_rec_fourier.cu">
       <Filter>Source Files\Reconstruction</Filter>
     </None>
-    <None Include="Reconstruction\RecFourier.cu">
+    <None Include="Reconstruction\cgtom_rec_sirt.cu">
       <Filter>Source Files\Reconstruction</Filter>
     </None>
-    <None Include="Tomography\InterpolateSingleAxis.cu">
-      <Filter>Source Files\Tomography</Filter>
+    <None Include="Resolution\cgtom_fsc_anisotropic.cu">
+      <Filter>Source Files\Resolution</Filter>
     </None>
-    <None Include="Alignment\Align3D.cu">
+    <None Include="Resolution\cgtom_fsc_local.cu">
+      <Filter>Source Files\Resolution</Filter>
+    </None>
+    <None Include="Transformation\cgtom_transform.cu">
+      <Filter>Source Files\Transformation</Filter>
+    </None>
+    <None Include="ImageManipulation\cgtom_lowpass_local.cu">
+      <Filter>Source Files\Image Manipulation</Filter>
+    </None>
+    <None Include="ImageManipulation\cgtom_lowpass_anisotropic.cu">
+      <Filter>Source Files\Image Manipulation</Filter>
+    </None>
+    <None Include="FFT\cgtom_ifftc2r_full.cu">
+      <Filter>Source Files\FFT</Filter>
+    </None>
+    <None Include="FFT\cgtom_ifftc2r.cu">
+      <Filter>Source Files\FFT</Filter>
+    </None>
+    <None Include="FFT\cgtom_ifftc2c.cu">
+      <Filter>Source Files\FFT</Filter>
+    </None>
+    <None Include="FFT\cgtom_fftc2c.cu">
+      <Filter>Source Files\FFT</Filter>
+    </None>
+    <None Include="FFT\cgtom_fftr2c.cu">
+      <Filter>Source Files\FFT</Filter>
+    </None>
+    <None Include="FFT\cgtom_fftr2c_full.cu">
+      <Filter>Source Files\FFT</Filter>
+    </None>
+    <None Include="CTF\cgtom_wiener_correct.cu">
+      <Filter>Source Files\CTF</Filter>
+    </None>
+    <None Include="CTF\cgtom_ctf_fit_correct.cu">
+      <Filter>Source Files\CTF</Filter>
+    </None>
+    <None Include="Alignment\cgtom_align3d.cu">
       <Filter>Source Files\Alignment</Filter>
     </None>
-    <None Include="Projection\ForwardProj.cu">
-      <Filter>Source Files\Projection</Filter>
-    </None>
-    <None Include="Projection\BackwardProj.cu">
-      <Filter>Source Files\Projection</Filter>
+    <None Include="Reconstruction\cgtom_rec_fourier_finalize.cu">
+      <Filter>Source Files\Reconstruction</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -100,14 +118,17 @@
     <ClCompile Include="complexinterleaved.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Generics\Norm.cu">
-      <Filter>Source Files\Generics</Filter>
+    <ClCompile Include="Projection\cgtom_proj_weighting.cu">
+      <Filter>Source Files\Projection</Filter>
     </ClCompile>
-    <ClCompile Include="Reconstruction\RecFourierAdd.cu">
+    <ClCompile Include="Reconstruction\cgtom_rec_fourier_add.cu">
       <Filter>Source Files\Reconstruction</Filter>
     </ClCompile>
-    <ClCompile Include="Projection\Weighting.cu">
-      <Filter>Source Files\Projection</Filter>
+    <ClCompile Include="Generics\cgtom_norm.cu">
+      <Filter>Source Files\Generics</Filter>
+    </ClCompile>
+    <ClCompile Include="ImageManipulation\cgtom_bandpass.cu">
+      <Filter>Source Files\Image Manipulation</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

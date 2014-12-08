@@ -25,7 +25,7 @@ TEST(Reductions, Sum)
 
 		tfloat* h_input = MallocValueFilled<tfloat>(size, 1);
 		for(int j = 0; j < size; j++)
-			h_input[j] = (tfloat)(rand() % 100000) * 0.00001f;
+			h_input[j] = (tfloat)(std::rand() % 100000) * 0.00001f;
 
 		tfloat preciseSum = KahanSum<tfloat>(h_input, size);
 		tfloat naiveSum = 0;

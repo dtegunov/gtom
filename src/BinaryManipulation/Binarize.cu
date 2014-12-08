@@ -20,6 +20,8 @@ template <class T> void d_Binarize(tfloat* d_input, T* d_output, size_t elements
 }
 template void d_Binarize<char>(tfloat* d_input, char* d_output, size_t elements, tfloat threshold, int batch);
 template void d_Binarize<int>(tfloat* d_input, int* d_output, size_t elements, tfloat threshold, int batch);
+template void d_Binarize<float>(tfloat* d_input, float* d_output, size_t elements, tfloat threshold, int batch);
+template void d_Binarize<double>(tfloat* d_input, double* d_output, size_t elements, tfloat threshold, int batch);
 
 ////////////////
 //CUDA kernels//
@@ -30,5 +32,5 @@ template <class T> __global__ void BinarizeKernel(tfloat* d_input, T* d_output, 
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
 		id < elements; 
 		id += blockDim.x * gridDim.x)
-		d_output[id] = d_input[id] >= threshold;
+		d_output[id] = d_input[id] >= threshold ? (T)1 : (T)0;
 }

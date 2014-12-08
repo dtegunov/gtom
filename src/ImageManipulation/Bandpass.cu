@@ -2,6 +2,7 @@
 #include "FFT.cuh"
 #include "Generics.cuh"
 #include "Helper.cuh"
+#include "ImageManipulation.cuh"
 #include "Masking.cuh"
 
 
@@ -10,6 +11,26 @@
 ///////////////////////////////////////////
 
 void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, tfloat* d_mask, cufftHandle* planforw, cufftHandle* planback, int batch)
+{
+	tcomplex* d_inputft;
+	cudaMalloc((void**)&d_inputft, ElementsFFT(dims) * sizeof(tcomplex));
+
+	if (planforw == NULL)
+		d_FFTR2C(d_input, d_inputft, DimensionCount(dims), dims, batch);
+	else
+		d_FFTR2C(d_input, d_inputft, planforw);
+
+	d_Bandpass(d_inputft, d_inputft, dims, low, high, smooth, d_mask, batch);
+
+	if (planback == NULL)
+		d_IFFTC2R(d_inputft, d_output, DimensionCount(dims), dims, batch);
+	else
+		d_IFFTC2R(d_inputft, d_output, planback);
+
+	cudaFree(d_inputft);
+}
+
+void d_Bandpass(tcomplex* d_inputft, tcomplex* d_outputft, int3 dims, tfloat low, tfloat high, tfloat smooth, tfloat* d_mask, int batch)
 {
 	int dimensions = DimensionCount(dims);
 
@@ -47,28 +68,9 @@ void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat
 	else
 		d_localmask = d_mask;
 
-	//Forward FFT:
-
-	tcomplex* d_inputFFT;
-	cudaMalloc((void**)&d_inputFFT, ElementsFFT(dims) * sizeof(tcomplex));
-
-	if(planforw == NULL)
-		d_FFTR2C(d_input, d_inputFFT, dimensions, dims, batch);
-	else
-		d_FFTR2C(d_input, d_inputFFT, planforw);
-
 	//Mask FFT:
 
-	d_ComplexMultiplyByVector(d_inputFFT, d_localmask, d_inputFFT, ElementsFFT(dims), batch);
-
-	//Inverse FFT:
-
-	if(planforw == NULL)
-		d_IFFTC2R(d_inputFFT, d_output, dimensions, dims, batch);
-	else
-		d_IFFTC2R(d_inputFFT, d_output, planback);
-
-	cudaFree(d_inputFFT);
+	d_ComplexMultiplyByVector(d_inputft, d_localmask, d_outputft, ElementsFFT(dims), batch);
 
 	if(d_mask == NULL)
 		cudaFree(d_localmask);

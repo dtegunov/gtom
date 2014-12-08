@@ -1,0 +1,1 @@
+mex 'Transformation\ScaleRotateShift.cu' Helper.cu;

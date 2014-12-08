@@ -1,3 +1,3 @@
-mex 'Reconstruction\SIRT.cu' Helper.cu;
-mex 'Reconstruction\RecFourier.cu' Helper.cu;
-mex 'Reconstruction\RecFourierAdd.cu' Helper.cu;
+mex 'Reconstruction\cgtom_rec_fourier.cu' Helper.cu;
+mex 'Reconstruction\cgtom_rec_fourier_add.cu' Helper.cu;
+mex 'Reconstruction\cgtom_rec_fourier_finalize.cu' Helper.cu;

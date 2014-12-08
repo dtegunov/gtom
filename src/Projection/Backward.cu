@@ -1,8 +1,8 @@
 #include "Prerequisites.cuh"
 #include "Angles.cuh"
+#include "CubicInterp.cuh"
 #include "DeviceFunctions.cuh"
-
-texture<tfloat, 2> texBackprojImage;
+#include "Helper.cuh"
 
 #define SincWindow 16
 
@@ -11,7 +11,7 @@ texture<tfloat, 2> texBackprojImage;
 //CUDA kernel declarations//
 ////////////////////////////
 
-__global__ void ProjBackwardKernel(tfloat* d_volume, int3 dimsvolume, int3 dimsimage, glm::mat4 rotation, float weight);
+template <bool iscentered, bool cubicinterp> __global__ void ProjBackwardKernel(tfloat* d_volume, int3 dimsvolume, cudaTextureObject_t t_image, int2 dimsimage, glm::mat4 transform);
 template <bool iscentered> __global__ void ProjBackwardSincKernel(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int2 dimsimage, glm::mat4 transform);
 
 
@@ -24,35 +24,51 @@ void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter,
 	glm::mat4* h_transforms = (glm::mat4*)malloc(batch * sizeof(glm::mat4));
 	for (int b = 0; b < batch; b++)
 	{
-		h_transforms[b] = Matrix4Translation(tfloat3(dimsimage.x / 2, dimsimage.y / 2, 0)) *
+		h_transforms[b] = Matrix4Translation(tfloat3((tfloat)dimsimage.x / 2.0f + 0.5f, (tfloat)dimsimage.y / 2.0f + 0.5f, 0.0f)) *
 						  Matrix4Scale(tfloat3(1.0f / h_scales[b].x, 1.0f / h_scales[b].y, 1.0f)) *
-						  glm::transpose(Matrix4Euler(h_angles[b])) *
 						  Matrix4Translation(tfloat3(-h_offsets[b].x, -h_offsets[b].y, 0.0f)) *
+						  glm::transpose(Matrix4Euler(h_angles[b])) *
 						  Matrix4Translation(offsetfromcenter) *
 						  Matrix4Translation(tfloat3(-dimsvolume.x / 2, -dimsvolume.y / 2, -dimsvolume.z / 2));
 	}
 
-	if (mode == T_INTERP_LINEAR)
+	if (mode == T_INTERP_LINEAR || mode == T_INTERP_CUBIC)
 	{
-		cudaChannelFormatDesc descInput = cudaCreateChannelDesc<tfloat>();
-		texBackprojImage.normalized = false;
-		texBackprojImage.filterMode = cudaFilterModeLinear;
+		cudaArray* a_image;
+		cudaTextureObject_t t_image;
+		tfloat* d_temp;
+		cudaMalloc((void**)&d_temp, Elements(dimsimage) * sizeof(tfloat));
 
-		size_t TpB = min(192, NextMultipleOf(dimsvolume.x, 32));
-		dim3 grid = dim3((dimsvolume.x + TpB - 1) / TpB, dimsvolume.y, dimsvolume.z);
 		for (int b = 0; b < batch; b++)
 		{
-			cudaBindTexture2D(0,
-				texBackprojImage,
-				d_image + Elements(dimsimage) * b,
-				descInput,
-				dimsimage.x,
-				dimsimage.y,
-				dimsimage.x * sizeof(tfloat));
+			cudaMemcpy(d_temp, d_image + Elements(dimsimage) * b, Elements(dimsimage) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+			if (mode == T_INTERP_CUBIC)
+				d_CubicBSplinePrefilter2D(d_temp, dimsimage.x * sizeof(tfloat), toInt2(dimsimage.x, dimsimage.y));
+			d_BindTextureToArray(d_temp, a_image, t_image, toInt2(dimsimage.x, dimsimage.y), cudaFilterModeLinear, false);
 
+			dim3 TpB = dim3(16, 16);
+			dim3 grid = dim3((dimsvolume.x + 15) / 16, (dimsvolume.y + 15) / 16, dimsvolume.z);
+			
+			if (outputzerocentered)
+			{
+				if (mode == T_INTERP_LINEAR)
+					ProjBackwardKernel<true, false> << <grid, TpB >> > (d_volume, dimsvolume, t_image, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
+				else
+					ProjBackwardKernel<true, true> << <grid, TpB >> > (d_volume, dimsvolume, t_image, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
+			}
+			else
+			{
+				if (mode == T_INTERP_LINEAR)
+					ProjBackwardKernel<false, false> << <grid, TpB >> > (d_volume, dimsvolume, t_image, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
+				else
+					ProjBackwardKernel<false, true> << <grid, TpB >> > (d_volume, dimsvolume, t_image, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
+			}
 
-			cudaUnbindTexture(texBackprojImage);
+			cudaDestroyTextureObject(t_image);
+			cudaFreeArray(a_image);
 		}
+
+		cudaFree(d_temp);
 	}
 	else if (mode == T_INTERP_SINC)
 	{
@@ -74,23 +90,37 @@ void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter,
 //CUDA kernels//
 ////////////////
 
-__global__ void ProjBackwardKernel(tfloat* d_volume, int3 dimsvolume, int3 dimsimage, glm::mat4 rotation, float weight)
+template <bool iscentered, bool cubicinterp> __global__ void ProjBackwardKernel(tfloat* d_volume, int3 dimsvolume, cudaTextureObject_t t_image, int2 dimsimage, glm::mat4 transform)
 {
-	int xvol = blockIdx.x * blockDim.x + threadIdx.x;
-	if(xvol >= dimsvolume.x)
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx >= dimsvolume.x)
 		return;
+	int idy = blockIdx.y * blockDim.y + threadIdx.y;
+	if (idy >= dimsvolume.y)
+		return;
+	int idz = blockIdx.z;
 
-	glm::vec4 voxelpos = glm::vec4((tfloat)(xvol - dimsvolume.x / 2), 
-								   (tfloat)((int)blockIdx.y - dimsvolume.y / 2), 
-								   (tfloat)((int)blockIdx.z - dimsvolume.z / 2), 
-								   1.0f);
-	glm::vec4 rotated = rotation * voxelpos;
+	int outx, outy, outz;
+	if (!iscentered)
+	{
+		outx = (idx + (dimsvolume.x + 1) / 2) % dimsvolume.x;
+		outy = (idy + (dimsvolume.y + 1) / 2) % dimsvolume.y;
+		outz = (idz + (dimsvolume.z + 1) / 2) % dimsvolume.z;
+	}
+	else
+	{
+		outx = idx;
+		outy = idy;
+		outz = idz;
+	}
 
-	rotated.x += (tfloat)(dimsimage.x / 2) + (tfloat)0.5;
-	rotated.y += (tfloat)(dimsimage.y / 2) + (tfloat)0.5;
-	d_volume[(blockIdx.z * dimsvolume.y + blockIdx.y) * dimsvolume.x + xvol] += weight * tex2D(texBackprojImage, 
-																								rotated.x, 
-																								rotated.y);
+	glm::vec4 position = glm::vec4(idx, idy, idz, 1);
+	position = transform * position;
+
+	if (cubicinterp)
+		d_volume[(outz * dimsvolume.y + outy) * dimsvolume.x + outx] += cubicTex2D(t_image, position.x, position.y);
+	else
+		d_volume[(outz * dimsvolume.y + outy) * dimsvolume.x + outx] += tex2D<tfloat>(t_image, position.x, position.y);
 }
 
 template <bool iscentered> __global__ void ProjBackwardSincKernel(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int2 dimsimage, glm::mat4 transform)
@@ -101,9 +131,9 @@ template <bool iscentered> __global__ void ProjBackwardSincKernel(tfloat* d_volu
 	int outx, outy, outz;
 	if (!iscentered)
 	{
-		outx = dimsvolume.x / 2 - blockIdx.x;
-		outy = dimsvolume.y - 1 - ((blockIdx.y + dimsvolume.y / 2 - 1) % dimsvolume.y);
-		outz = dimsvolume.z - 1 - ((blockIdx.z + dimsvolume.z / 2 - 1) % dimsvolume.z);
+		outx = (blockIdx.x + (dimsvolume.x + 1) / 2) % dimsvolume.x;
+		outy = (blockIdx.y + (dimsvolume.y + 1) / 2) % dimsvolume.y;
+		outz = (blockIdx.z + (dimsvolume.z + 1) / 2) % dimsvolume.z;
 	}
 	else
 	{
@@ -115,11 +145,7 @@ template <bool iscentered> __global__ void ProjBackwardSincKernel(tfloat* d_volu
 	glm::vec4 position = glm::vec4((int)blockIdx.x, (int)blockIdx.y, (int)blockIdx.z, 1);
 	position = transform * position;
 	if (position.x < 0 || position.x > dimsimage.x - 1 || position.y < 0 || position.y > dimsimage.y - 1)
-	{
-		if (threadIdx.y == 0 && threadIdx.x == 0)
-			d_volume[(outz * gridDim.y + outy) * gridDim.x + outx] = 0.0f;
 		return;
-	}
 
 	int startx = (int)position.x - SincWindow / 2;
 	int starty = (int)position.y - SincWindow / 2;
@@ -151,6 +177,6 @@ template <bool iscentered> __global__ void ProjBackwardSincKernel(tfloat* d_volu
 		#pragma unroll
 		for (char i = 1; i < SincWindow; i++)
 			sum += s_sums[i][0];
-		d_volume[(outz * gridDim.y + outy) * gridDim.x + outx] = sum;
+		d_volume[(outz * gridDim.y + outy) * gridDim.x + outx] += sum;
 	}
 }

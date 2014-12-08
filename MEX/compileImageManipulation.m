@@ -1,1 +1,1 @@
-mex 'ImageManipulation\LocalLowpass.cu' Helper.cu;
+mex 'ImageManipulation\cgtom_bandpass.cu' Helper.cu;

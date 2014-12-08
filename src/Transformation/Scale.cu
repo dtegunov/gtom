@@ -9,17 +9,7 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-__global__ void Interpolate1DLinearKernel(tfloat* d_output, double step, int newdim);
-__global__ void Interpolate1DCubicKernel(tfloat* d_output, double step, int newdim);
-
-
-///////////
-//Globals//
-///////////
-
-texture<tfloat, 1, cudaReadModeElementType> texScaleInput1d;
-texture<tfloat, 2, cudaReadModeElementType> texScaleInput2d;
-texture<tfloat, 3, cudaReadModeElementType> texScaleInput3d;
+template <int ndims, bool cubicinterp> __global__ void InterpolateKernel(tfloat* d_output, int3 dimsnew, cudaTextureObject_t t_input, int3 dimsold, tfloat3 factor, tfloat3 offset);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,55 +31,74 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 	if(biggerdims != 0 && biggerdims != ndims)
 		throw;
 
-	size_t elementsold = olddims.x * olddims.y * olddims.z;
-	size_t elementsoldFFT = (olddims.x / 2 + 1) * olddims.y * olddims.z;
-	size_t elementsnew = newdims.x * newdims.y * newdims.z;
-	size_t elementsnewFFT = (newdims.x / 2 + 1) * newdims.y * newdims.z;
-
 	if(mode == T_INTERP_MODE::T_INTERP_LINEAR || mode == T_INTERP_MODE::T_INTERP_CUBIC)
 	{
-		if(ndims == 1)
-		{		
-			cudaChannelFormatDesc channelDescInput = cudaCreateChannelDesc<tfloat>();
-			cudaArray *d_inputArray = 0;
-			cudaMallocArray(&d_inputArray, &channelDescInput, olddims.x, 1);
+		cudaArray* a_image;
+		cudaTextureObject_t t_image;
+		tfloat* d_temp;
+		cudaMalloc((void**)&d_temp, Elements(olddims) * sizeof(tfloat));
 
-			for(int b = 0; b < batch; b++)
+		for (int b = 0; b < batch; b++)
+		{
+			cudaMemcpy(d_temp, d_input + Elements(olddims) * b, Elements(olddims) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+			if (mode == T_INTERP_CUBIC)
 			{
-				cudaMemcpyToArray(d_inputArray, 0, 0, d_input + elementsold * b, olddims.x * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-				cudaBindTextureToArray(texScaleInput1d, d_inputArray, channelDescInput);
-				texScaleInput1d.normalized = false;
-				texScaleInput1d.filterMode = cudaFilterModeLinear;
-
-				int TpB = min(256, newdims.x);
-				dim3 grid = dim3(min(8192, (newdims.x + TpB - 1) / TpB));
-				if(mode == T_INTERP_MODE::T_INTERP_LINEAR)
-					Interpolate1DLinearKernel <<<grid, TpB>>> (d_output + elementsnew * b, (double)olddims.x / (double)newdims.x, newdims.x);
-				else
-					Interpolate1DCubicKernel <<<grid, TpB>>> (d_output + elementsnew * b, (double)olddims.x / (double)newdims.x, newdims.x);
-
-				cudaUnbindTexture(texScaleInput1d);
+				if (ndims == 2)
+					d_CubicBSplinePrefilter2D(d_temp, olddims.x * sizeof(tfloat), toInt2(olddims));
+				else if (ndims == 3)
+					d_CubicBSplinePrefilter3D(d_temp, olddims.x * sizeof(tfloat), olddims);
 			}
+			if (ndims == 3)
+				d_BindTextureTo3DArray(d_temp, a_image, t_image, olddims, cudaFilterModeLinear, false);
+			else
+				d_BindTextureToArray(d_temp, a_image, t_image, toInt2(olddims), cudaFilterModeLinear, false);
+
+			dim3 TpB, grid;
+			if (ndims > 1)
+			{
+				TpB = dim3(16, 16);
+				grid = dim3((newdims.x + 15) / 16, (newdims.y + 15) / 16, newdims.z);
+			}
+			else
+			{
+				TpB = dim3(256);
+				grid = dim3((newdims.x + 255) / 256);
+			}
+
+			tfloat3 factor = tfloat3((tfloat)olddims.x / (tfloat)newdims.x, (tfloat)olddims.y / (tfloat)newdims.y, (tfloat)olddims.z / (tfloat)newdims.z);
+			tfloat3 offset = tfloat3(0.5f * factor.x, 0.5f * factor.y, 0.5f * factor.z);
+
+			if (mode == T_INTERP_CUBIC)
+			{
+				if (ndims == 1)
+					InterpolateKernel<1, true> << <grid, TpB >> > (d_output + Elements(newdims) * b, newdims, t_image, olddims, factor, offset);
+				else if (ndims == 2)
+					InterpolateKernel<2, true> << <grid, TpB >> > (d_output + Elements(newdims) * b, newdims, t_image, olddims, factor, offset);
+				else if (ndims == 3)
+					InterpolateKernel<3, true> << <grid, TpB >> > (d_output + Elements(newdims) * b, newdims, t_image, olddims, factor, offset);
+			}
+			else
+			{
+				if (ndims == 1)
+					InterpolateKernel<1, false> << <grid, TpB >> > (d_output + Elements(newdims) * b, newdims, t_image, olddims, factor, offset);
+				else if (ndims == 2)
+					InterpolateKernel<2, false> << <grid, TpB >> > (d_output + Elements(newdims) * b, newdims, t_image, olddims, factor, offset);
+				else if (ndims == 3)
+					InterpolateKernel<3, false> << <grid, TpB >> > (d_output + Elements(newdims) * b, newdims, t_image, olddims, factor, offset);
+			}
+
+			cudaDestroyTextureObject(t_image);
+			cudaFreeArray(a_image);
 		}
-		else if(ndims == 2)
-		{
-	
-		}
-		else if(ndims == 3)
-		{
-	
-		}
-		else
-			throw;
+
+		cudaFree(d_temp);
 	}
 	else if(mode == T_INTERP_MODE::T_INTERP_FOURIER)
 	{
 		tcomplex* d_inputFFT;
-		cudaMalloc((void**)&d_inputFFT, elementsoldFFT * batch * sizeof(tcomplex));
-		tcomplex* d_inputFFT2;
-		cudaMalloc((void**)&d_inputFFT2, elementsold * batch * sizeof(tcomplex));
+		cudaMalloc((void**)&d_inputFFT, ElementsFFT(olddims) * batch * sizeof(tcomplex));
 		tcomplex* d_outputFFT;
-		cudaMalloc((void**)&d_outputFFT, elementsnew * batch * sizeof(tcomplex));
+		cudaMalloc((void**)&d_outputFFT, ElementsFFT(newdims) * batch * sizeof(tcomplex));
 
 		tfloat normfactor = (tfloat)newdims.x / (tfloat)olddims.x * (tfloat)newdims.y / (tfloat)olddims.y * (tfloat)newdims.z / (tfloat)olddims.z;
 
@@ -99,26 +108,21 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 				d_FFTR2C(d_input, d_inputFFT, ndims, olddims, batch);
 			else
 				d_FFTR2C(d_input, d_inputFFT, planforw);
-
-			d_HermitianSymmetryPad(d_inputFFT, d_inputFFT2, olddims, batch);
 			
 			if(newdims.x > olddims.x)
-				d_FFTFullPad(d_inputFFT2, d_outputFFT, olddims, newdims, batch);
+				d_FFTPad(d_inputFFT, d_outputFFT, olddims, newdims, batch);
 			else
-				d_FFTFullCrop(d_inputFFT2, d_outputFFT, olddims, newdims, batch);
+				d_FFTCrop(d_inputFFT, d_outputFFT, olddims, newdims, batch);
 
 			if(planback == NULL)
-				d_IFFTC2C(d_outputFFT, d_outputFFT, ndims, newdims, batch);
+				d_IFFTC2R(d_outputFFT, d_output, ndims, newdims, batch);
 			else
-				d_IFFTC2C(d_outputFFT, d_outputFFT, planback, newdims);
-
-			d_Re(d_outputFFT, d_output, elementsnew * batch);
+				d_IFFTC2R(d_outputFFT, d_output, planback, newdims);
 		}
 
-		d_MultiplyByScalar(d_output, d_output, elementsnew * batch, normfactor);
+		d_MultiplyByScalar(d_output, d_output, Elements(newdims) * batch, normfactor);
 		
 		cudaFree(d_inputFFT);
-		cudaFree(d_inputFFT2);
 		cudaFree(d_outputFFT);
 	}
 }
@@ -128,24 +132,36 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 //CUDA kernels//
 ////////////////
 
-__global__ void Interpolate1DLinearKernel(tfloat* d_output, double step, int newdim)
+template <int ndims, bool cubicinterp> __global__ void InterpolateKernel(tfloat* d_output, int3 dimsnew, cudaTextureObject_t t_input, int3 dimsold, tfloat3 factor, tfloat3 offset)
 {
-	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
-		id < newdim; 
-		id += blockDim.x * gridDim.x)
-	{
-		tfloat x = (tfloat)((double)id * step);
-		d_output[id] = tex1D(texScaleInput1d, x);
-	}
-}
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx >= dimsnew.x)
+		return;
+	int idy = blockIdx.y * blockDim.y + threadIdx.y;
+	if (idy >= dimsnew.y)
+		return;
+	int idz = blockIdx.z;
 
-__global__ void Interpolate1DCubicKernel(tfloat* d_output, double step, int newdim)
-{
-	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
-		id < newdim; 
-		id += blockDim.x * gridDim.x)
+	tfloat3 position = tfloat3(idx - dimsnew.x / 2, idy - dimsnew.y / 2, idz - dimsnew.z / 2);
+	position = tfloat3(position.x * factor.x, position.y * factor.y, position.z * factor.z);
+	position = tfloat3(position.x + dimsold.x / 2 + offset.x, position.y + dimsold.y / 2 + offset.y, position.z + dimsold.z / 2 + offset.z);
+
+	if (cubicinterp)
 	{
-		float x = (float)((double)id * step);
-		d_output[id] = cubicTex1D(texScaleInput1d, x);
+		if (ndims == 1)
+			d_output[idx] = cubicTex1D(t_input, position.x);
+		else if (ndims == 2)
+			d_output[idy * dimsnew.x + idx] = cubicTex2D(t_input, position.x, position.y);
+		else if (ndims == 3)
+			d_output[(idz * dimsnew.y + idy) * dimsnew.x + idx] = cubicTex3D(t_input, position.x, position.y, position.z);
+	}
+	else
+	{
+		if (ndims == 1)
+			d_output[idx] = tex1D<tfloat>(t_input, position.x);
+		else if (ndims == 2)
+			d_output[idy * dimsnew.x + idx] = tex2D<tfloat>(t_input, position.x, position.y);
+		else if (ndims == 3)
+			d_output[(idz * dimsnew.y + idy) * dimsnew.x + idx] = tex3D<tfloat>(t_input, position.x, position.y, position.z);
 	}
 }

@@ -90,6 +90,13 @@ tfloat* MixedToHostTfloat(void* h_input, EM_DATATYPE datatype, size_t elements)
 	return h_output;
 }
 
+void WriteToBinaryFile(string path, void* data, size_t bytes)
+{
+	FILE* outputfile = fopen(path.c_str(), "wb");
+	fwrite(data, sizeof(char), bytes, outputfile);
+	fclose(outputfile);
+}
+
 
 /////////////////
 //Device memory//
@@ -321,6 +328,78 @@ tfloat* MixedToDeviceTfloat(void* h_input, EM_DATATYPE datatype, size_t elements
 
 	return d_output;
 }
+
+int GetFileSize(string path)
+{
+	ifstream inputfile(path, ios::in | ios::binary | ios::ate);
+	int size = inputfile.tellg();
+	inputfile.close();
+
+	return size;
+}
+
+void* MallocFromBinaryFile(string path)
+{
+	ifstream inputfile(path, ios::in | ios::binary | ios::ate);
+	int size = inputfile.tellg();
+	void* output = malloc(size);
+	inputfile.seekg(0, ios::beg);
+	inputfile.read((char*)output, size);
+	inputfile.close();
+
+	return output;
+}
+
+void* CudaMallocFromBinaryFile(string path)
+{
+	void* h_array = MallocFromBinaryFile(path);
+	void* d_array = CudaMallocFromHostArray(h_array, GetFileSize(path));
+	free(h_array);
+
+	return d_array;
+}
+
+void CudaWriteToBinaryFile(string path, void* d_data, size_t elements)
+{
+	void* h_data = MallocFromDeviceArray(d_data, elements);
+	WriteToBinaryFile(path, h_data, elements);
+
+	free(h_data);
+}
+
+
+////////////////////
+//3D device memory//
+////////////////////
+
+cudaPitchedPtr CopyVolumeDeviceToDevice(tfloat* d_input, int3 dims)
+{
+	cudaPitchedPtr deviceTo = { 0 };
+	const cudaExtent extent = make_cudaExtent(dims.x * sizeof(tfloat), dims.y, dims.z);
+	cudaMalloc3D(&deviceTo, extent);
+	cudaMemcpy3DParms p = { 0 };
+	p.srcPtr = make_cudaPitchedPtr((void*)d_input, dims.x * sizeof(float), dims.x, dims.y);
+	p.dstPtr = deviceTo;
+	p.extent = extent;
+	p.kind = cudaMemcpyDeviceToDevice;
+	cudaMemcpy3D(&p);
+	return deviceTo;
+}
+
+cudaPitchedPtr CopyVolumeHostToDevice(tfloat* h_input, int3 dims)
+{
+	cudaPitchedPtr deviceTo = { 0 };
+	const cudaExtent extent = make_cudaExtent(dims.x * sizeof(tfloat), dims.y, dims.z);
+	cudaMalloc3D(&deviceTo, extent);
+	cudaMemcpy3DParms p = { 0 };
+	p.srcPtr = make_cudaPitchedPtr((void*)h_input, dims.x * sizeof(float), dims.x, dims.y);
+	p.dstPtr = deviceTo;
+	p.extent = extent;
+	p.kind = cudaMemcpyHostToDevice;
+	cudaMemcpy3D(&p);
+	return deviceTo;
+}
+
 
 ////////////////
 //CUDA kernels//

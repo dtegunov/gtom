@@ -241,4 +241,4 @@ template <class T> void d_RemapHalf2HalfFFT(T* d_input, T* d_output, int3 dims, 
 void d_FFTCrop(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
 template <class T> void d_FFTFullCrop(T* d_input, T* d_output, int3 olddims, int3 newdims, int batch = 1);
 void d_FFTPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
-void d_FFTFullPad(tcomplex* d_input, tcomplex* d_output, int3 olddims, int3 newdims, int batch = 1);
+template <class T> void d_FFTFullPad(T* d_input, T* d_output, int3 olddims, int3 newdims, int batch = 1);

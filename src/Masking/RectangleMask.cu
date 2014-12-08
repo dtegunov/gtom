@@ -1,15 +1,11 @@
 #include "Prerequisites.cuh"
-#include "FFT.cuh"
-#include "Generics.cuh"
-#include "Helper.cuh"
-#include "Masking.cuh"
 
 
 ////////////////////////////
 //CUDA kernel declarations//
 ////////////////////////////
 
-template <class T> __global__ void RectangleMaskKernel(T* d_input, T* d_output, int3 size, int2 limx, int2 limy, int2 limz);
+template <class T> __global__ void RectangleMaskKernel(T* d_input, T* d_output, int3 size, tfloat radius, tfloat sigma, tfloat3 center);
 
 
 ////////////////
@@ -17,79 +13,80 @@ template <class T> __global__ void RectangleMaskKernel(T* d_input, T* d_output, 
 ////////////////
 
 template <class T> void d_RectangleMask(T* d_input, 
-										T* d_output, 
-										int3 size,
-										int3 rectsize,
-										tfloat sigma,
-										int3* center,
-										int batch)
+									    T* d_output, 
+									    int3 dimsmask, 
+									    int3 dimsbox,
+									    int3* center,
+									    int batch)
 {
-	size_t elements = size.x * size.y * size.z;
-	size_t elementsFFT = (size.x / 2 + 1) * size.y * size.z;
+	int3 _center = center != NULL ? *center : toInt3(dimsmask.x / 2, dimsmask.y / 2, dimsmask.z / 2);
 
-	int3 _center = center != NULL ? *center : toInt3(size.x / 2, size.y / 2, size.z / 2);
-
-	int2 limx = toInt2(_center.x - rectsize.x / 2, _center.x + rectsize.x / 2);
-	int2 limy = toInt2(_center.y - rectsize.y / 2, _center.y + rectsize.y / 2);
-	int2 limz = toInt2(_center.z - rectsize.z / 2, _center.z + rectsize.z / 2);
-
-	int TpB = min(256, size.x);
-	dim3 grid = dim3(size.y, size.z, batch);
-	RectangleMaskKernel<T> <<<grid, TpB>>> (d_input, d_output, size, limx, limy, limz);
-
-	if(sigma > 0)
-	{
-		tfloat* d_mask = CudaMallocValueFilled(elements, (tfloat)1);
-		d_SphereMask(d_mask, d_mask, size, &sigma, (tfloat)0, (tfloat3*)NULL);
-		tfloat* d_summask;
-		cudaMalloc((void**)&d_summask, sizeof(tfloat));
-		d_Sum(d_mask, d_summask, elements);
-		tfloat* h_summask = (tfloat*)MallocFromDeviceArray(d_summask, sizeof(tfloat));
-		cudaFree(d_summask);
-
-		tcomplex* d_maskFFT;
-		cudaMalloc((void**)&d_maskFFT, elementsFFT * sizeof(tcomplex));
-		d_FFTR2C(d_mask, d_maskFFT, DimensionCount(size), size);
-		cudaFree(d_mask);
-
-		tcomplex* d_outputFFT;
-		cudaMalloc((void**)&d_outputFFT, elementsFFT * sizeof(tcomplex));
-		d_FFTR2C(d_output, d_outputFFT, DimensionCount(size), size);
-
-		d_ComplexMultiplyByVector(d_outputFFT, d_maskFFT, d_outputFFT, elementsFFT);
-		cudaFree(d_maskFFT);
-
-		tfloat* d_intermediate;
-		cudaMalloc((void**)&d_intermediate, elements * sizeof(tfloat));
-		d_IFFTC2R(d_outputFFT, d_intermediate, DimensionCount(size), size);
-		cudaFree(d_outputFFT);
-
-		d_RemapFullFFT2Full(d_intermediate, d_output, size);
-		d_MultiplyByScalar(d_output, d_output, elements, (tfloat)1 / h_summask[0]);
-		cudaFree(d_intermediate);
-	}
+	int TpB = 256;
+	dim3 grid = dim3(dimsmask.y, dimsmask.z, batch);
+	if (DimensionCount(dimsmask) == 3)
+		RectangleMaskKernel<T, 3> << <grid, TpB >> > (d_input, d_output, dimsmask, dimsbox, _center);
+	else if (DimensionCount(dimsmask) == 2)
+		RectangleMaskKernel<T, 2> << <grid, TpB >> > (d_input, d_output, dimsmask, dimsbox, _center);
+	else if (DimensionCount(dimsmask) == 1)
+		RectangleMaskKernel<T, 1> << <grid, TpB >> > (d_input, d_output, dimsmask, dimsbox, _center);
 }
-template void d_RectangleMask<tfloat>(tfloat* d_input, tfloat* d_output, int3 size, int3 rectsize, tfloat sigma, int3* center, int batch);
-
+template void d_RectangleMask<tfloat>(tfloat* d_input, tfloat* d_output, int3 dimsmask, int3 dimsbox, int3* center, int batch);
+template void d_RectangleMask<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 dimsmask, int3 dimsbox, int3* center, int batch);
 
 ////////////////
 //CUDA kernels//
 ////////////////
 
-template <class T> __global__ void RectangleMaskKernel(T* d_input, T* d_output, int3 size, int2 limx, int2 limy, int2 limz)
+template <class T, int ndims> __global__ void RectangleMaskKernel(T* d_input, T* d_output, int3 dims, int3 dimsbox, int3 center)
 {
-	if(threadIdx.x >= size.x)
-		return;
-	//For batch mode
-	int offset = blockIdx.z * size.x * size.y * size.z + blockIdx.y * size.x * size.y + blockIdx.x * size.x;
+	d_input += Elements(dims) * blockIdx.z;
+	d_output += Elements(dims) * blockIdx.z;
 
-	if(blockIdx.x >= limy.x && blockIdx.x <= limy.y && blockIdx.y >= limz.x && blockIdx.y <= limz.y)
-		for(int x = threadIdx.x; x < size.x; x += blockDim.x)
-			if(x >= limx.x && x <= limx.y)
-				d_output[offset + x] = (T)1;
+	int mask = 1;
+
+	if (ndims > 2)
+	{
+		int idz = blockIdx.y;
+		int offsetz = idz - center.z;
+		if (offsetz < -dimsbox.z / 2 || offsetz > (dimsbox.z - 1) / 2)
+			mask = 0;
+	}
+	if (ndims > 1)
+	{
+		if (mask == 1)
+		{
+			int idy = blockIdx.x;
+			int offsety = idy - center.y;
+			if (offsety < -dimsbox.y / 2 || offsety > (dimsbox.y - 1) / 2)
+				mask = 0;
+		}
+	}
+
+	if (ndims == 3)
+	{
+		d_input += (blockIdx.y * dims.y + blockIdx.x) * dims.x;
+		d_output += (blockIdx.y * dims.y + blockIdx.x) * dims.x;
+	}
+	else if (ndims == 2)
+	{
+		d_input += blockIdx.x * dims.x;
+		d_output += blockIdx.x * dims.x;
+	}
+
+	if (mask == 1)
+	{
+		for (int idx = threadIdx.x; idx < dims.x; idx += blockDim.x)
+		{
+			int offsetx = idx - center.x;
+			if (offsetx < -dimsbox.x / 2 || offsetx >(dimsbox.x - 1) / 2)
+				d_output[idx] = d_input[idx] * 0;
 			else
-				d_output[offset + x] = d_input[offset + x];
+				d_output[idx] = d_input[idx];
+		}
+	}
 	else
-		for(int x = threadIdx.x; x < size.x; x += blockDim.x)
-			d_output[offset + x] = d_input[offset + x];
+	{
+		for (int idx = threadIdx.x; idx < dims.x; idx += blockDim.x)
+			d_output[idx] = d_input[idx] * 0;
+	}
 }

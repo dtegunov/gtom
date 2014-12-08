@@ -20,8 +20,8 @@ template <class T> void d_SphereMask(T* d_input,
 									 tfloat3* center,
 									 int batch)
 {
-	tfloat _radius = radius != NULL ? *radius : (min(min(size.x, size.y), size.z) - 1) / 2;
-	tfloat3 _center = center != NULL ? *center : tfloat3(size.x / 2 + 1, size.y / 2 + 1, size.z / 2 + 1);
+	tfloat _radius = radius != NULL ? *radius : min(min(size.x, size.y), size.z > 1 ? size.z : size.x) / 2;
+	tfloat3 _center = center != NULL ? *center : tfloat3(size.x / 2, size.y / 2, size.z / 2);
 
 	int TpB = 256;
 	dim3 grid = dim3(size.y, size.z, batch);
@@ -47,11 +47,11 @@ template <class T> __global__ void SphereMaskKernel(T* d_input, T* d_output, int
 	T maskvalue;
 	
 	//Squared y and z distance from center
-	ysq = (tfloat)(blockIdx.x + 1) - center.y;
+	ysq = (tfloat)blockIdx.x - center.y;
 	ysq *= ysq;
 	if(size.z > 1)
 	{
-		zsq = (tfloat)(blockIdx.y + 1) - center.z;
+		zsq = (tfloat)blockIdx.y - center.z;
 		zsq *= zsq;
 	}
 	else
@@ -59,7 +59,7 @@ template <class T> __global__ void SphereMaskKernel(T* d_input, T* d_output, int
 
 	for(int x = threadIdx.x; x < size.x; x += blockDim.x)
 	{
-		xsq = (tfloat)(x + 1) - center.x;
+		xsq = (tfloat)x - center.x;
 		xsq *= xsq;
 		//Distance from center
 		length = sqrt(xsq + ysq + zsq);

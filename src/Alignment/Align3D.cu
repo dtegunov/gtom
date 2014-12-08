@@ -264,7 +264,7 @@ void d_Align3D(tfloat* d_input,
 				if(batchsize < 20)
 					d_Norm(d_rotated, d_rotated, Elements(dimsscaled), (char*)NULL, T_NORM_MEAN01STD, 0, currentbatch);
 				else
-					d_NormMonolithic(d_rotated, d_rotated, Elements(dimsscaled), T_NORM_MEAN01STD, currentbatch);
+					d_NormMonolithic(d_rotated, d_rotated, Elements(dimsscaled), NULL, T_NORM_MEAN01STD, currentbatch);
 
 				for(int t = 0; t < numtargets; t++)
 				{
@@ -342,7 +342,7 @@ void d_Align3D(tfloat* d_input,
 					if(batchsize < 20)
 						d_Norm(d_rotated, d_rotated, Elements(dimsscaled), (char*)NULL, T_NORM_MEAN01STD, 0, currentbatch);
 					else
-						d_NormMonolithic(d_rotated, d_rotated, Elements(dimsscaled), T_NORM_MEAN01STD, currentbatch);
+						d_NormMonolithic(d_rotated, d_rotated, Elements(dimsscaled), NULL, T_NORM_MEAN01STD, currentbatch);
 
 						d_MultiplyByVector(d_rotated, d_normtargets + t * Elements(dimsscaled), d_corr, Elements(dimsscaled), currentbatch);
 						if(batchsize < 20)

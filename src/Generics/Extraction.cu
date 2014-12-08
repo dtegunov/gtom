@@ -1,16 +1,8 @@
 #include "Prerequisites.cuh"
+#include "Angles.cuh"
 #include "CubicInterp.cuh"
 #include "DeviceFunctions.cuh"
 #include "Helper.cuh"
-
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_INLINE
-#define GLM_FORCE_CUDA
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtx/quaternion.hpp"
-#include "glm/gtx/euler_angles.hpp"
-#include "glm/gtc/type_ptr.hpp"
 
 
 ////////////////////////////
@@ -19,15 +11,7 @@
 
 template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3 regionorigin);
 template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3* d_regionorigins);
-__global__ void Extract2DTransformedLinearKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::vec2* vecx, glm::vec2* vecy, glm::vec2* veccenter);
-__global__ void Extract2DTransformedCubicKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::vec2* vecx, glm::vec2* vecy, glm::vec2* veccenter);
-
-
-///////////
-//Globals//
-///////////
-
-texture<tfloat, 2, cudaReadModeElementType> texExtractInput2d;
+template <bool cubicinterp> __global__ void Extract2DTransformedKernel(cudaTextureObject_t t_input, tfloat* d_output, int2 sourcedims, int2 regiondims, glm::mat3* d_transforms);
 
 
 /////////////////////////////////////////////////////////////////////
@@ -70,69 +54,41 @@ template void d_Extract<char>(char* d_input, char* d_output, int3 sourcedims, in
 //Extract a portion of 2-dimensional data with translation and rotation applied//
 /////////////////////////////////////////////////////////////////////////////////
 
-void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, tfloat2* h_scale, tfloat* h_rotation, tfloat2* h_translation, T_INTERP_MODE mode, int batch)
+void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int2 dimsinput, int2 dimsregion, tfloat2* h_scale, tfloat* h_rotation, tfloat2* h_translation, T_INTERP_MODE mode, int batch)
 {
-	texExtractInput2d.normalized = false;
-	texExtractInput2d.filterMode = cudaFilterModeLinear;
-
-	int pitchedwidth = sourcedims.x * sizeof(tfloat);
-	tfloat* d_pitched = (tfloat*)CudaMallocAligned2D(sourcedims.x * sizeof(tfloat), sourcedims.y, &pitchedwidth);
-	for (int y = 0; y < sourcedims.y; y++)
-		cudaMemcpy((char*)d_pitched + y * pitchedwidth, 
-					d_input + y * sourcedims.x, 
-					sourcedims.x * sizeof(tfloat), 
-					cudaMemcpyDeviceToDevice);
-
-	if(mode == T_INTERP_CUBIC)
-		d_CubicBSplinePrefilter2D(d_pitched, pitchedwidth, toInt2(sourcedims.x, sourcedims.y));
-
-	cudaChannelFormatDesc desc = cudaCreateChannelDesc<tfloat>();
-	cudaBindTexture2D(NULL, 
-						texExtractInput2d, 
-						d_pitched, 
-						desc, 
-						sourcedims.x, 
-						sourcedims.y, 
-						pitchedwidth);
-	
-	glm::vec2* h_vecx = (glm::vec2*)malloc(batch * sizeof(glm::vec2));
-	glm::vec2* h_vecy = (glm::vec2*)malloc(batch * sizeof(glm::vec2));
-	glm::vec2* h_veccenter = (glm::vec2*)malloc(batch * sizeof(glm::vec2));
-	for (int b = 0; b < batch; b++)
+	cudaArray* a_input;
+	cudaTextureObject_t t_input;
+	if (mode == T_INTERP_LINEAR)
+		d_BindTextureToArray(d_input, a_input, t_input, dimsinput, cudaFilterModeLinear, false);
+	else
 	{
-		h_vecx[b] = glm::vec2(cos(h_rotation[b]), sin(h_rotation[b])) * h_scale[b].x;
-		h_vecy[b] = glm::vec2(cos(h_rotation[b] + PI / (tfloat)2), sin(h_rotation[b] + PI / (tfloat)2)) * h_scale[b].y;
-		h_veccenter[b] = glm::vec2(h_translation[b].x, h_translation[b].y);
+		tfloat* d_temp;
+		cudaMalloc((void**)&d_temp, Elements2(dimsinput) * sizeof(tfloat));
+		cudaMemcpy(d_temp, d_input, Elements2(dimsinput) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+		d_CubicBSplinePrefilter2D(d_temp, dimsinput.x * sizeof(tfloat), dimsinput);
+		d_BindTextureToArray(d_temp, a_input, t_input, dimsinput, cudaFilterModeLinear, false);
+		cudaFree(d_temp);
 	}
+	
+	glm::mat3* h_transforms = (glm::mat3*)malloc(batch * sizeof(glm::mat3));
+	for (int b = 0; b < batch; b++)
+		h_transforms[b] = Matrix3Translation(tfloat2(h_translation[b].x + dimsregion.x / 2 + 0.5f, h_translation[b].y + dimsregion.y / 2 + 0.5f))*
+						  Matrix3Scale(tfloat3(h_scale[b].x, h_scale[b].y, 1.0f)) *
+						  glm::transpose(Matrix3RotationZ(h_rotation[b])) *
+						  Matrix3Translation(tfloat2(-dimsregion.x / 2, -dimsregion.y / 2));
+	glm::mat3* d_transforms = (glm::mat3*)CudaMallocFromHostArray(h_transforms, batch * sizeof(glm::mat3));
 
-	glm::vec2* d_vecx = (glm::vec2*)CudaMallocFromHostArray(h_vecx, batch * sizeof(glm::vec2));
-	glm::vec2* d_vecy = (glm::vec2*)CudaMallocFromHostArray(h_vecy, batch * sizeof(glm::vec2));
-	glm::vec2* d_veccenter = (glm::vec2*)CudaMallocFromHostArray(h_veccenter, batch * sizeof(glm::vec2));
-
-	free(h_vecx);
-	free(h_vecy);
-	free(h_veccenter);
-
-	size_t TpB = min(256, NextMultipleOf(regiondims.x, 32));
-	dim3 grid = dim3((regiondims.x + TpB - 1) / TpB, regiondims.y, batch);
+	dim3 TpB = dim3(16, 16);
+	dim3 grid = dim3((dimsregion.x + 15) / 16, (dimsregion.y + 15) / 16, batch);
 	
 	if(mode == T_INTERP_MODE::T_INTERP_LINEAR)
-		Extract2DTransformedLinearKernel <<<grid, (int)TpB>>> (d_output, sourcedims, regiondims, d_vecx, d_vecy, d_veccenter);
+		Extract2DTransformedKernel<false> << <grid, TpB >> > (t_input, d_output, dimsinput, dimsregion, d_transforms);
 	else if(mode == T_INTERP_MODE::T_INTERP_CUBIC)
-		Extract2DTransformedCubicKernel <<<grid, (int)TpB>>> (d_output, sourcedims, regiondims, d_vecx, d_vecy, d_veccenter);
+		Extract2DTransformedKernel<true> << <grid, TpB >> > (t_input, d_output, dimsinput, dimsregion, d_transforms);
 
-	cudaStreamQuery(0);
-
-	cudaUnbindTexture(texExtractInput2d);
-	cudaFree(d_vecx);
-	cudaFree(d_vecy);
-	cudaFree(d_veccenter);
-	cudaFree(d_pitched);
-}
-
-glm::mat4 GetTransform2D(tfloat2 scale, tfloat rotation, tfloat2 translation)
-{
-	return glm::translate(glm::rotate(glm::scale(glm::mat4(1.0f), glm::vec3(scale.x, scale.y, 1.0f)), glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(translation.x, translation.y, 0.0f));
+	cudaFree(d_transforms);
+	cudaDestroyTextureObject(t_input);
+	cudaFreeArray(a_input);
 }
 
 
@@ -170,16 +126,19 @@ template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, in
 	d_output[x] = d_input[x];
 }
 
-__global__ void Extract2DTransformedLinearKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::vec2* vecx, glm::vec2* vecy, glm::vec2* veccenter)
+template <bool cubicinterp> __global__ void Extract2DTransformedKernel(cudaTextureObject_t t_input, tfloat* d_output, int2 sourcedims, int2 regiondims, glm::mat3* d_transforms)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if(idx >= regiondims.x)
 		return;
-	int idy = blockIdx.y;
+	int idy = blockIdx.y * blockDim.y + threadIdx.y;
+	if (idy >= regiondims.y)
+		return;
+	int idz = blockIdx.z;
 
-	d_output += blockIdx.z * Elements(regiondims) + getOffset(idx, idy, regiondims.x);
+	d_output += (idz * regiondims.y + idy) * regiondims.x + idx;
 
-	glm::vec2 pos = veccenter[blockIdx.z] + (vecx[blockIdx.z] * (float)(idx - regiondims.x / 2)) + (vecy[blockIdx.z] * (float)(idy - regiondims.y / 2)) + glm::vec2(0.5f, 0.5f);
+	glm::vec3 pos = d_transforms[idz] * glm::vec3(idx, idy, 1.0f);
 
 	if(pos.x < 0.0f || pos.x > (float)sourcedims.x || pos.y < 0.0f || pos.y > (float)sourcedims.y)
 	{
@@ -188,28 +147,9 @@ __global__ void Extract2DTransformedLinearKernel(tfloat* d_output, int3 sourcedi
 	}
 	else
 	{
-		*d_output = tex2D(texExtractInput2d, pos.x, pos.y);
-	}
-}
-
-__global__ void Extract2DTransformedCubicKernel(tfloat* d_output, int3 sourcedims, int3 regiondims, glm::vec2* vecx, glm::vec2* vecy, glm::vec2* veccenter)
-{
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	if(idx >= regiondims.x)
-		return;
-	int idy = blockIdx.y;
-
-	d_output += blockIdx.z * Elements(regiondims) + getOffset(idx, idy, regiondims.x);
-
-	glm::vec2 pos = veccenter[blockIdx.z] + (vecx[blockIdx.z] * (float)(idx - regiondims.x / 2)) + (vecy[blockIdx.z] * (float)(idy - regiondims.y / 2)) + glm::vec2(0.5f, 0.5f);
-
-	if(pos.x < 0.0f || pos.x > (float)sourcedims.x || pos.y < 0.0f || pos.y > (float)sourcedims.y)
-	{
-		*d_output = (tfloat)0;
-		return;
-	}
-	else
-	{
-		*d_output = cubicTex2D(texExtractInput2d, pos.x, pos.y);
+		if (cubicinterp)
+			*d_output = cubicTex2D(t_input, pos.x, pos.y);
+		else
+			*d_output = tex2D<tfloat>(t_input, pos.x, pos.y);
 	}
 }

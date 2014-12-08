@@ -62,15 +62,18 @@ TEST(Transformation, Rotation)
 
 	//Case 2:
 	{
-		int3 dims = {64, 64, 1};
-		tfloat angle = ToRad(30);
+		int3 dims = {512, 512, 1};
+		tfloat angle = ToRad(1);
 		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\Transformation\\Input_Rotate2D_1.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Transformation\\Output_Rotate2D_1.bin");
 		tfloat* d_output = CudaMallocValueFilled(Elements(dims), (tfloat)-1);
 
-		d_Rotate2D(d_input, d_output, dims, angle, 1);
+		cudaMemcpy(d_output, d_input, Elements(dims) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+		for (int i = 0; i < 360; i++)
+			d_Rotate2D(d_output, d_output, dims, &angle, 1);
 
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_output, Elements(dims) * sizeof(tfloat));
+		CudaWriteToBinaryFile("Data\\Transformation\\Output_Rotate2D_512x512_float.bin", d_output, Elements(dims) * sizeof(tfloat));
 	
 		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_output, Elements(dims));
 		//ASSERT_LE(MeanRelative, 1e-5);

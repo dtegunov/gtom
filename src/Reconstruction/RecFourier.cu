@@ -1,5 +1,6 @@
 #include "Prerequisites.cuh"
 #include "Angles.cuh"
+#include "CTF.cuh"
 #include "FFT.cuh"
 #include "Generics.cuh"
 #include "Helper.cuh"
@@ -16,13 +17,14 @@
 //Performs 3D reconstruction using Fourier inversion//
 //////////////////////////////////////////////////////
 
-void d_ReconstructFourier(tfloat* d_projections, int3 dimsproj, tfloat* d_volume, int3 dimsvolume, tfloat2* h_angles)
+void d_ReconstructFourier(tfloat* d_projections, tfloat* d_weights, CTFParams* h_ctf, int3 dimsproj, tfloat* d_volume, int3 dimsvolume, tfloat3* h_angles)
 {
 	tcomplex* d_volumeft = (tcomplex*)CudaMallocValueFilled(ElementsFFT(dimsvolume) * 2, (tfloat)0);
 	tfloat* d_samples = CudaMallocValueFilled(ElementsFFT(dimsvolume), (tfloat)0);
 
-	d_ReconstructFourierAdd(d_volumeft, d_samples, d_projections, dimsproj, dimsvolume, h_angles);
+	d_ReconstructFourierAdd(d_volumeft, d_samples, d_projections, d_weights, h_ctf, dimsproj, dimsvolume, h_angles);
 
+	d_MaxOp(d_samples, (tfloat)1, d_samples, ElementsFFT(dimsvolume));
 	d_Inv(d_samples, d_samples, ElementsFFT(dimsvolume));
 	d_ComplexMultiplyByVector(d_volumeft, d_samples, d_volumeft, ElementsFFT(dimsvolume));
 	cudaFree(d_samples);

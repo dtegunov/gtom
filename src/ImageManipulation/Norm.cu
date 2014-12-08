@@ -3,7 +3,7 @@
 #include "Helper.cuh"
 #include "ImageManipulation.cuh"
 
-#define MonoTpB 160
+#define MonoTpB 192
 
 
 ////////////////////////////
@@ -15,7 +15,8 @@ __global__ void NormStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d
 __global__ void NormMeanStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements);
 __global__ void NormCustomScfKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements, tfloat scf);
 
-__global__ void NormMeanStdDevMonoKernel(tfloat* d_input, tfloat* d_output, int elements, int batch);
+template<bool outputmu> __global__ void NormMeanStdDevMonoKernel(tfloat* d_input, tfloat* d_output, tfloat2* d_mu, size_t elements);
+template<bool outputmu> __global__ void NormMeanStdDevMonoMaskedKernel(tfloat* d_input, tfloat* d_output, tfloat2* d_mu, tfloat* d_mask, size_t elements);
 
 
 ///////////////////////////////////////
@@ -64,11 +65,44 @@ template void d_Norm<bool>(tfloat* d_input, tfloat* d_output, size_t elements, b
 
 void d_NormMonolithic(tfloat* d_input, tfloat* d_output, size_t elements, T_NORM_MODE mode, int batch)
 {
-	size_t TpB = MonoTpB;
-	size_t totalblocks = min(batch, 32768);
-	dim3 grid = dim3((uint)totalblocks);
+	for (int b = 0; b < batch; b += 32768)
+	{
+		dim3 grid = dim3(min(batch - b, 32768));
+		NormMeanStdDevMonoKernel<false> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, NULL, elements);
+	}
+}
 
-	NormMeanStdDevMonoKernel <<<grid, TpB>>> (d_input, d_output, elements, batch);
+void d_NormMonolithic(tfloat* d_input, tfloat* d_output, tfloat2* d_mu, size_t elements, T_NORM_MODE mode, int batch)
+{
+	for (int b = 0; b < batch; b += 32768)
+	{
+		dim3 grid = dim3(min(batch - b, 32768));
+		NormMeanStdDevMonoKernel<true> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, d_mu + b, elements);
+	}
+}
+
+void d_NormMonolithic(tfloat* d_input, tfloat* d_output, size_t elements, tfloat* d_mask, T_NORM_MODE mode, int batch)
+{
+	if (d_mask != NULL)
+		for (int b = 0; b < batch; b += 32768)
+		{
+			dim3 grid = dim3(min(batch - b, 32768));
+			NormMeanStdDevMonoMaskedKernel<false> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, NULL, d_mask + elements * b, elements);
+		}
+	else
+		d_NormMonolithic(d_input, d_output, elements, mode, batch);
+}
+
+void d_NormMonolithic(tfloat* d_input, tfloat* d_output, tfloat2* d_mu, size_t elements, tfloat* d_mask, T_NORM_MODE mode, int batch)
+{
+	if (d_mask != NULL)
+		for (int b = 0; b < batch; b += 32768)
+		{
+			dim3 grid = dim3(min(batch - b, 32768));
+			NormMeanStdDevMonoMaskedKernel<true> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, d_mu + b, d_mask + elements * b, elements);
+		}
+	else
+		d_NormMonolithic(d_input, d_output, d_mu, elements, mode, batch);
 }
 
 
@@ -157,56 +191,97 @@ __global__ void NormCustomScfKernel(tfloat* d_input, tfloat* d_output, imgstats5
 			d_output[id + offset] = d_input[id + offset];
 }
 
-__global__ void NormMeanStdDevMonoKernel(tfloat* d_input, tfloat* d_output, int elements, int batch)
+template<bool outputmu> __global__ void NormMeanStdDevMonoKernel(tfloat* d_input, tfloat* d_output, tfloat2* d_mu, size_t elements)
 {
-	__shared__ tfloat means[MonoTpB];
-	__shared__ tfloat mean;
-	__shared__ tfloat stddev;
+	__shared__ double s_sums1[MonoTpB];
+	__shared__ double s_sums2[MonoTpB];
+	__shared__ double s_mean, s_stddev;
 
-	for (int b = blockIdx.x; b < batch; b += gridDim.x)
+	d_input += elements * blockIdx.x;
+	d_output += elements * blockIdx.x;
+
+	double sum1 = 0.0, sum2 = 0.0;
+
+	for (int i = threadIdx.x; i < elements; i += blockDim.x)
 	{
-		tfloat localmean, localstddev;
-		means[threadIdx.x] = (tfloat)0;
-
-		tfloat* offsetinput = d_input + (size_t)elements * (size_t)b;
-		tfloat* offsetoutput = d_output + (size_t)elements * (size_t)b;
-
-		for (int i = threadIdx.x; i < elements; i += MonoTpB)
-			means[threadIdx.x] += offsetinput[i];
-
-		__syncthreads();
-
-		if(threadIdx.x == 0)
-		{
-			mean = (tfloat)0;
-			for (int i = 0; i < MonoTpB; i++)
-				mean += means[i];
-			mean /= (tfloat)elements;
-		}
-		__syncthreads();
-
-		localmean = mean;
-		means[threadIdx.x] = (tfloat)0;
-
-		tfloat diff;
-		for (int i = threadIdx.x; i < elements; i += MonoTpB)
-		{
-			diff = offsetinput[i] - localmean;
-			means[threadIdx.x] += diff * diff;
-		}
-		__syncthreads();
-
-		if(threadIdx.x == 0)
-		{
-			stddev = (tfloat)0;
-			for (int i = 0; i < MonoTpB; i++)
-				stddev += means[i];
-			stddev = sqrt(stddev / (tfloat)(elements - 1));
-		}
-		__syncthreads();
-
-		localstddev = stddev;
-		for (int i = threadIdx.x; i < elements; i += MonoTpB)
-			offsetoutput[i] = (offsetinput[i] - localmean) / localstddev;
+		double val = d_input[i];
+		sum1 += val;
+		sum2 += val * val;
 	}
+	s_sums1[threadIdx.x] = sum1;
+	s_sums2[threadIdx.x] = sum2;
+	__syncthreads();
+
+	if (threadIdx.x == 0)
+	{
+		for (int i = 1; i < MonoTpB; i++)
+		{
+			sum1 += s_sums1[i];
+			sum2 += s_sums2[i];
+		}
+
+		s_mean = sum1 / (double)elements;
+		s_stddev = sqrt(((double)elements * sum2 - (sum1 * sum1))) / (double)elements;
+	}
+	__syncthreads();
+	
+	double mean = s_mean;
+	double stddev = s_stddev;
+
+	for (int i = threadIdx.x; i < elements; i += blockDim.x)
+		d_output[i] = (d_input[i] - mean) / stddev;
+
+	if (outputmu && threadIdx.x == 0)
+		d_mu[blockIdx.x] = tfloat2(mean, stddev);
+}
+
+template<bool outputmu> __global__ void NormMeanStdDevMonoMaskedKernel(tfloat* d_input, tfloat* d_output, tfloat2* d_mu, tfloat* d_mask, size_t elements)
+{
+	__shared__ double s_sums1[MonoTpB];
+	__shared__ double s_sums2[MonoTpB];
+	__shared__ double s_samples[MonoTpB];
+	__shared__ double s_mean, s_stddev;
+
+	d_input += elements * blockIdx.x;
+	d_output += elements * blockIdx.x;
+	d_mask += elements * blockIdx.x;
+
+	double sum1 = 0.0, sum2 = 0.0, samples = 0.0;
+
+	for (int i = threadIdx.x; i < elements; i += blockDim.x)
+	{
+		double val = d_input[i];
+		double mask = d_mask[i];
+		val *= mask;
+		sum1 += val;
+		sum2 += val * val;
+		samples += mask;
+	}
+	s_sums1[threadIdx.x] = sum1;
+	s_sums2[threadIdx.x] = sum2;
+	s_samples[threadIdx.x] = samples;
+	__syncthreads();
+
+	if (threadIdx.x == 0)
+	{
+		for (int i = 1; i < MonoTpB; i++)
+		{
+			sum1 += s_sums1[i];
+			sum2 += s_sums2[i];
+			samples += s_samples[i];
+		}
+
+		s_mean = sum1 / samples;
+		s_stddev = sqrt((samples * sum2 - (sum1 * sum1))) / samples;
+	}
+	__syncthreads();
+
+	double mean = s_mean;
+	double stddev = s_stddev;
+
+	for (int i = threadIdx.x; i < elements; i += blockDim.x)
+		d_output[i] = (d_input[i] - mean) / stddev;
+
+	if (outputmu && threadIdx.x == 0)
+		d_mu[blockIdx.x] = tfloat2(mean, stddev);
 }

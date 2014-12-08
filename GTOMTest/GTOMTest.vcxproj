@@ -24,7 +24,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -145,7 +145,13 @@
     <ClCompile Include="Align2D.cpp" />
     <ClCompile Include="Align3D.cpp" />
     <ClCompile Include="AnisotropicFSC.cpp" />
-    <ClCompile Include="ART.cpp" />
+    <ClCompile Include="CTFCorrect.cpp" />
+    <ClCompile Include="CTFFit.cpp" />
+    <ClCompile Include="Decay.cpp" />
+    <ClCompile Include="Periodogram.cpp" />
+    <ClCompile Include="PolynomialFit.cpp" />
+    <ClCompile Include="RecCompare.cpp" />
+    <ClCompile Include="RecSIRT.cpp" />
     <ClCompile Include="Backward.cpp" />
     <ClCompile Include="Bandpass.cpp" />
     <ClCompile Include="BandpassNeat.cpp" />
@@ -167,6 +173,7 @@
     <ClCompile Include="Padding.cpp" />
     <ClCompile Include="Peak.cpp" />
     <ClCompile Include="RecFourier.cpp" />
+    <ClCompile Include="RecWBP.cpp" />
     <ClCompile Include="Rotation.cpp" />
     <ClCompile Include="Scale.cpp" />
     <ClCompile Include="Max.cpp" />
@@ -177,7 +184,7 @@
     <ClCompile Include="Shift.cpp" />
     <ClCompile Include="SphereMask.cpp" />
     <ClCompile Include="Sum.cpp" />
-    <ClCompile Include="TSAPreprocess.cpp" />
+    <ClCompile Include="Wiener.cpp" />
     <ClCompile Include="Xray.cpp" />
   </ItemGroup>
   <ItemGroup>

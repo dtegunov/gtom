@@ -1,4 +1,5 @@
 #include "Prerequisites.cuh"
+#include "CubicInterp.cuh"
 #include "Helper.cuh"
 
 
@@ -8,6 +9,7 @@
 
 template <class T> __global__ void RemapKernel(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch);
 template <class T> __global__ void RemapReverseKernel(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsdestination, T defvalue, int batch);
+template<bool cubicinterp> __global__ void RemapInterpolated2DKernel(cudaTextureObject_t t_input, tfloat* d_output, float2* d_addresses, int n);
 
 
 //////////////////
@@ -79,6 +81,50 @@ template <class T> __global__ void RemapReverseKernel(T* d_input, intptr_t* d_ma
 		address = d_map[id];
 		for(size_t b = 0; b < batch; b++)
 			d_output[address + elementsdestination * b] = d_input[id + elementsmapped * b];
+	}
+}
+
+
+/////////////////////
+//Texture remapping//
+/////////////////////
+
+void d_RemapInterpolated2D(tfloat* d_input, int2 dimsinput, tfloat* d_output, float2* d_addresses, int n, T_INTERP_MODE mode)
+{
+	cudaArray* a_input;
+	cudaTextureObject_t t_input;
+	if (mode == T_INTERP_LINEAR)
+		d_BindTextureToArray(d_input, a_input, t_input, dimsinput, cudaFilterModeLinear, false);
+	else if (mode == T_INTERP_CUBIC)
+	{
+		tfloat* d_temp;
+		cudaMalloc((void**)&d_temp, Elements2(dimsinput) * sizeof(tfloat));
+		cudaMemcpy(d_temp, d_input, Elements2(dimsinput) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+		d_CubicBSplinePrefilter2D(d_temp, dimsinput.x * sizeof(tfloat), dimsinput);
+		d_BindTextureToArray(d_temp, a_input, t_input, dimsinput, cudaFilterModeLinear, false);
+		cudaFree(d_temp);
+	}
+
+	int TpB = min(256, NextMultipleOf(n, 32));
+	int grid = min((n + TpB - 1) / TpB, 8192);
+	if (mode == T_INTERP_LINEAR)
+		RemapInterpolated2DKernel<false> <<<grid, TpB>>> (t_input, d_output, d_addresses, n);
+	else if (mode == T_INTERP_CUBIC)
+		RemapInterpolated2DKernel<true> <<<grid, TpB>>> (t_input, d_output, d_addresses, n);
+
+	cudaDestroyTextureObject(t_input);
+	cudaFreeArray(a_input);
+}
+
+template<bool cubicinterp> __global__ void RemapInterpolated2DKernel(cudaTextureObject_t t_input, tfloat* d_output, float2* d_addresses, int n)
+{
+	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < n; idx += gridDim.x * blockDim.x)
+	{
+		float2 address = d_addresses[idx];
+		if (cubicinterp)
+			d_output[idx] = cubicTex2D(t_input, address.x, address.y);
+		else
+			d_output[idx] = tex2D<tfloat>(t_input, address.x, address.y);
 	}
 }
 

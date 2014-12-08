@@ -43,7 +43,7 @@ template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t e
 	d_SquaredDistanceFromScalar(d_denseinput, d_means, d_meancentered, denseelements, batch);
 
 	d_Sum(d_meancentered, d_vars, denseelements, batch);
-	d_MultiplyByScalar(d_vars, d_vars, batch, (tfloat)1 / (tfloat)(denseelements - 1));
+	d_MultiplyByScalar(d_vars, d_vars, batch, (tfloat)1 / (tfloat)denseelements);
 
 	d_Sqrt(d_vars, d_devs, batch);
 

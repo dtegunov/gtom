@@ -46,6 +46,12 @@
     <Filter Include="Source Files\MEXProfiling">
       <UniqueIdentifier>{834dc913-7d69-4a06-aacd-ff762b8e70cc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Optimization">
+      <UniqueIdentifier>{be97e178-1914-4f6d-ab37-6453d4ec4132}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\CTF">
+      <UniqueIdentifier>{610af43e-0402-4869-926f-fa99296f2ff1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -138,9 +144,6 @@
     <ClCompile Include="Histogram.cpp">
       <Filter>Source Files\Generics</Filter>
     </ClCompile>
-    <ClCompile Include="ART.cpp">
-      <Filter>Source Files\Reconstruction</Filter>
-    </ClCompile>
     <ClCompile Include="Align3D.cpp">
       <Filter>Source Files\Alignment</Filter>
     </ClCompile>
@@ -156,8 +159,32 @@
     <ClCompile Include="RecFourier.cpp">
       <Filter>Source Files\Reconstruction</Filter>
     </ClCompile>
-    <ClCompile Include="TSAPreprocess.cpp">
-      <Filter>Source Files\MEXProfiling</Filter>
+    <ClCompile Include="RecSIRT.cpp">
+      <Filter>Source Files\Reconstruction</Filter>
+    </ClCompile>
+    <ClCompile Include="RecWBP.cpp">
+      <Filter>Source Files\Reconstruction</Filter>
+    </ClCompile>
+    <ClCompile Include="RecCompare.cpp">
+      <Filter>Source Files\Reconstruction</Filter>
+    </ClCompile>
+    <ClCompile Include="PolynomialFit.cpp">
+      <Filter>Source Files\Optimization</Filter>
+    </ClCompile>
+    <ClCompile Include="Periodogram.cpp">
+      <Filter>Source Files\CTF</Filter>
+    </ClCompile>
+    <ClCompile Include="Decay.cpp">
+      <Filter>Source Files\CTF</Filter>
+    </ClCompile>
+    <ClCompile Include="CTFFit.cpp">
+      <Filter>Source Files\CTF</Filter>
+    </ClCompile>
+    <ClCompile Include="CTFCorrect.cpp">
+      <Filter>Source Files\CTF</Filter>
+    </ClCompile>
+    <ClCompile Include="Wiener.cpp">
+      <Filter>Source Files\CTF</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

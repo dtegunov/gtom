@@ -34,8 +34,8 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 		d_Extract(d_targets, d_targetscart, dims, effdims, toInt3(dims.x / 2, dims.y / 2, 0), numtargets);
 		d_Cart2Polar(d_targetscart, d_targetspolar, toInt2(effdims.x, effdims.y), T_INTERP_CUBIC, numtargets);
 
-		d_NormMonolithic(d_targetscart, d_targetscart, Elements(effdims), T_NORM_MEAN01STD, numtargets);
-		d_NormMonolithic(d_targetspolar, d_targetspolar, Elements(polardims), T_NORM_MEAN01STD, numtargets);
+		d_NormMonolithic(d_targetscart, d_targetscart, Elements(effdims), NULL, T_NORM_MEAN01STD, numtargets);
+		d_NormMonolithic(d_targetspolar, d_targetspolar, Elements(polardims), NULL, T_NORM_MEAN01STD, numtargets);
 
 		d_FFTR2C(d_targetscart, d_targetscartFFT, 2, effdims, numtargets);
 		d_FFTR2C(d_targetspolar, d_targetspolarFFT, 2, polardims, numtargets);
@@ -135,8 +135,8 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 					h_translation[b] = tfloat2((tfloat)h_atlascoords[b].x + (tfloat)(dims.x / 2), (tfloat)h_atlascoords[b].y + (tfloat)(dims.y / 2));
 				}
 
-				d_Extract2DTransformed(d_atlas, d_datacart, atlasdims, effdims, h_scale, h_rotation, h_translation, T_INTERP_LINEAR, batch);
-				d_NormMonolithic(d_datacart, d_datacart, Elements(effdims), T_NORM_MEAN01STD, batch);
+				d_Extract2DTransformed(d_atlas, d_datacart, toInt2(atlasdims), toInt2(effdims), h_scale, h_rotation, h_translation, T_INTERP_LINEAR, batch);
+				d_NormMonolithic(d_datacart, d_datacart, Elements(effdims), NULL, T_NORM_MEAN01STD, batch);
 				d_FFTR2C(d_datacart, d_datacartFFT, &planforwTrans);
 				d_ComplexMultiplyByConjVector(d_datacartFFT, d_targetscartFFT + ElementsFFT(effdims) * t, d_datacartFFT, ElementsFFT(effdims), batch);
 				d_IFFTC2R(d_datacartFFT, d_datacart, &planbackTrans, effdims);
@@ -178,9 +178,9 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 						h_translation[b] = tfloat2((tfloat)(h_atlascoords[b].x + padding) + h_params[b].x, (tfloat)(h_atlascoords[b].y + padding) + h_params[b].y);
 					cudaMemcpy(d_translation, h_translation, batch * sizeof(tfloat2), cudaMemcpyHostToDevice);
 
-					d_CartAtlas2Polar(d_atlas, d_datapolar, d_translation, toInt2(atlasdims.x, atlasdims.y), toInt2(effdims.x, effdims.y), T_INTERP_LINEAR, batch);
+					//d_CartAtlas2Polar(d_atlas, d_datapolar, d_translation, toInt2(atlasdims.x, atlasdims.y), toInt2(effdims.x, effdims.y), T_INTERP_LINEAR, batch);
 
-					d_NormMonolithic(d_datapolar, d_datapolar, Elements(polardims), T_NORM_MEAN01STD, batch);
+					d_NormMonolithic(d_datapolar, d_datapolar, Elements(polardims), NULL, T_NORM_MEAN01STD, batch);
 					d_FFTR2C(d_datapolar, d_datapolarFFT, &planforwRot);
 					d_ComplexMultiplyByConjVector(d_datapolarFFT, d_targetspolarFFT + ElementsFFT(polardims) * t, d_datapolarFFT, ElementsFFT(polardims), batch);
 					d_IFFTC2R(d_datapolarFFT, d_datapolar, &planbackRot, polardims);
@@ -220,8 +220,8 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 						h_translation[b] = tfloat2((tfloat)h_atlascoords[b].x + (tfloat)(dims.x / 2), (tfloat)h_atlascoords[b].y + (tfloat)(dims.y / 2));
 					}
 
-					d_Extract2DTransformed(d_atlas, d_datacart, atlasdims, effdims, h_scale, h_rotation, h_translation, T_INTERP_LINEAR, batch);
-					d_NormMonolithic(d_datacart, d_datacart, Elements(effdims), T_NORM_MEAN01STD, batch);
+					d_Extract2DTransformed(d_atlas, d_datacart, toInt2(atlasdims), toInt2(effdims), h_scale, h_rotation, h_translation, T_INTERP_LINEAR, batch);
+					d_NormMonolithic(d_datacart, d_datacart, Elements(effdims), NULL, T_NORM_MEAN01STD, batch);
 					d_FFTR2C(d_datacart, d_datacartFFT, &planforwTrans);
 					d_ComplexMultiplyByConjVector(d_datacartFFT, d_targetscartFFT + ElementsFFT(effdims) * t, d_datacartFFT, ElementsFFT(effdims), batch);
 					d_IFFTC2R(d_datacartFFT, d_datacart, &planbackTrans, effdims);

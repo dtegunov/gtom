@@ -6,6 +6,7 @@
 ////////////////////////////
 
 template<int mode, int ndims> __global__ void WindowMaskKernel(tfloat* d_input, tfloat* d_output, int3 dims, tfloat radius, tfloat3 center, int batch);
+template<int mode, int ndims> __global__ void WindowMaskBorderDistanceKernel(tfloat* d_input, tfloat* d_output, int3 dims, tfloat falloff, int batch);
 
 
 ////////////////
@@ -57,6 +58,30 @@ void d_GaussianMask(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* sigma,
 		WindowMaskKernel<2, 3> <<<grid, TpB>>> (d_input, d_output, dims, (tfloat)2 * _sigma * _sigma, _center, batch);
 }
 
+void d_HannMaskBorderDistance(tfloat* d_input, tfloat* d_output, int3 dims, tfloat falloff, int batch)
+{
+	int TpB = min(NextMultipleOf(dims.x, 32), 256);
+	dim3 grid = dim3(dims.y, dims.z, 1);
+	if (DimensionCount(dims) == 1)
+		WindowMaskBorderDistanceKernel<0, 1> << <grid, TpB >> > (d_input, d_output, dims, falloff, batch);
+	if (DimensionCount(dims) == 2)
+		WindowMaskBorderDistanceKernel<0, 2> << <grid, TpB >> > (d_input, d_output, dims, falloff, batch);
+	if (DimensionCount(dims) == 3)
+		WindowMaskBorderDistanceKernel<0, 3> << <grid, TpB >> > (d_input, d_output, dims, falloff, batch);
+}
+
+void d_HammingMaskBorderDistance(tfloat* d_input, tfloat* d_output, int3 dims, tfloat falloff, int batch)
+{
+	int TpB = min(NextMultipleOf(dims.x, 32), 256);
+	dim3 grid = dim3(dims.y, dims.z, 1);
+	if (DimensionCount(dims) == 1)
+		WindowMaskBorderDistanceKernel<1, 1> << <grid, TpB >> > (d_input, d_output, dims, falloff, batch);
+	if (DimensionCount(dims) == 2)
+		WindowMaskBorderDistanceKernel<1, 2> << <grid, TpB >> > (d_input, d_output, dims, falloff, batch);
+	if (DimensionCount(dims) == 3)
+		WindowMaskBorderDistanceKernel<1, 3> << <grid, TpB >> > (d_input, d_output, dims, falloff, batch);
+}
+
 ////////////////
 //CUDA kernels//
 ////////////////
@@ -64,8 +89,8 @@ void d_GaussianMask(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* sigma,
 template<int mode, int ndims> __global__ void WindowMaskKernel(tfloat* d_input, tfloat* d_output, int3 dims, tfloat radius, tfloat3 center, int batch)
 {
 	tfloat xsq, ysq, zsq, length;
-	
-	if(ndims > 1)
+
+	if (ndims > 1)
 	{
 		ysq = (tfloat)blockIdx.x - center.y;
 		ysq *= ysq;
@@ -73,7 +98,7 @@ template<int mode, int ndims> __global__ void WindowMaskKernel(tfloat* d_input, 
 	else
 		ysq = 0;
 
-	if(ndims > 2)
+	if (ndims > 2)
 	{
 		zsq = (tfloat)blockIdx.y - center.z;
 		zsq *= zsq;
@@ -81,30 +106,86 @@ template<int mode, int ndims> __global__ void WindowMaskKernel(tfloat* d_input, 
 	else
 		zsq = 0;
 
-	for(int x = threadIdx.x; x < dims.x; x += blockDim.x)
+	for (int x = threadIdx.x; x < dims.x; x += blockDim.x)
 	{
 		xsq = (tfloat)x - center.x;
 		xsq *= xsq;
 
 		length = sqrt(xsq + ysq + zsq);
-		
+
 		tfloat val = 0;
 		//Hann
-		if(mode == 0)
+		if (mode == 0)
 			val = pow(cos(min(length / radius, (tfloat)1) * PIHALF), (tfloat)2);
 		//Hamming
-		else if(mode == 1)
+		else if (mode == 1)
 			val = ((tfloat)0.54 + (tfloat)0.46 * cos(min(length / radius, (tfloat)1) * PI));
 		//Gaussian
-		else if(mode == 2)
+		else if (mode == 2)
 			val = exp(-(pow(length, (tfloat)2) / radius));
 
 		for (int b = 0; b < batch; b++)
 		{
-			if(ndims > 2)
+			if (ndims > 2)
 				d_output[Elements(dims) * b + (blockIdx.y * dims.y + blockIdx.x) * dims.x + x] = val * d_input[Elements(dims) * b + (blockIdx.y * dims.y + blockIdx.x) * dims.x + x];
 			else
-				d_output [Elements(dims) * b + blockIdx.x * dims.x + x] = val * d_input [Elements(dims) * b + blockIdx.x * dims.x + x];
+				d_output[Elements(dims) * b + blockIdx.x * dims.x + x] = val * d_input[Elements(dims) * b + blockIdx.x * dims.x + x];
+		}
+	}
+}
+
+template<int mode, int ndims> __global__ void WindowMaskBorderDistanceKernel(tfloat* d_input, tfloat* d_output, int3 dims, tfloat falloff, int batch)
+{
+	int x = 0, y = 0, z = 0;
+
+	if (ndims > 1)
+	{
+		if (blockIdx.x <= dims.y / 2)
+			y = blockIdx.x;
+		else
+			y = dims.y - 1 - (int)blockIdx.x;
+	}
+
+	if (ndims > 2)
+	{
+		if (blockIdx.y <= dims.z / 2)
+			z = blockIdx.y;
+		else
+			z = dims.z - 1 - (int)blockIdx.y;
+	}
+
+	for (int idx = threadIdx.x; idx < dims.x; idx += blockDim.x)
+	{
+		if (idx <= dims.x / 2)
+			x = idx;
+		else
+			x = dims.x - 1 - idx;
+
+
+		tfloat val = 0;
+		//Hann
+		if (mode == 0)
+		{
+			tfloat valx = pow(cos(min(max((falloff - (tfloat)x) / falloff, 0.0f), (tfloat)1) * PIHALF), (tfloat)2);
+			tfloat valy = pow(cos(min(max((falloff - (tfloat)y) / falloff, 0.0f), (tfloat)1) * PIHALF), (tfloat)2);
+			tfloat valz = pow(cos(min(max((falloff - (tfloat)z) / falloff, 0.0f), (tfloat)1) * PIHALF), (tfloat)2);
+			val = valx * valy * valz;
+		}
+		//Hamming
+		else if (mode == 1)
+		{
+			tfloat valx = ((tfloat)0.54 + (tfloat)0.46 * cos(min(max((falloff - (tfloat)x) / falloff, 0.0f), (tfloat)1) * PI));
+			tfloat valy = ((tfloat)0.54 + (tfloat)0.46 * cos(min(max((falloff - (tfloat)y) / falloff, 0.0f), (tfloat)1) * PI));
+			tfloat valz = ((tfloat)0.54 + (tfloat)0.46 * cos(min(max((falloff - (tfloat)z) / falloff, 0.0f), (tfloat)1) * PI));
+			val = valx * valy * valz;
+		}
+
+		for (int b = 0; b < batch; b++)
+		{
+			if (ndims > 2)
+				d_output[Elements(dims) * b + (blockIdx.y * dims.y + blockIdx.x) * dims.x + idx] = val * d_input[Elements(dims) * b + (blockIdx.y * dims.y + blockIdx.x) * dims.x + idx];
+			else
+				d_output[Elements(dims) * b + blockIdx.x * dims.x + idx] = val * d_input[Elements(dims) * b + blockIdx.x * dims.x + idx];
 		}
 	}
 }

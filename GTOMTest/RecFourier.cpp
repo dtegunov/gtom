@@ -10,7 +10,7 @@ TEST(Reconstruction, Fourier)
 		int3 dimsimage = {16, 16, 2249};
 
 		tfloat* d_inputproj = (tfloat*)CudaMallocFromBinaryFile("Data\\Reconstruction\\Input_ARTProj_2.bin");
-		tfloat2* h_inputangles = (tfloat2*)MallocFromBinaryFile("Data\\Reconstruction\\Input_ARTAngles_2.bin");
+		tfloat3* h_inputangles = (tfloat3*)MallocFromBinaryFile("Data\\Reconstruction\\Input_ARTAngles_2.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\Reconstruction\\Output_ART_2.bin");
 
 		tfloat* d_volume;

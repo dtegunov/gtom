@@ -24,7 +24,7 @@ TEST(Masking, Remap)
 	int* h_mask = (int*)malloc(size * size * sizeof(int));
 	for(int i = 0; i < size * size; i++)
 	{
-		h_mask[i] = i % ((rand() % 2) + 1) > 0;
+		h_mask[i] = i % ((std::rand() % 2) + 1) > 0;
 		if(h_mask[i] > 0)
 		{
 			masked_desired[mapped_desired] = h_image[i];

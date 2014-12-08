@@ -50,7 +50,7 @@ following papers:
 //! Straight forward implementation, using 4 nearest neighbour lookups.
 //! @param tex  1D texture
 //! @param x  unnormalized x texture coordinate
-__device__ tfloat cubicTex1DSimple(texture<tfloat, 1> tex, tfloat x)
+template <class T> __device__ tfloat cubicTex1DSimple(cudaTextureObject_t tex, tfloat x)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
 	const tfloat coord_grid = x - (tfloat)0.5;
@@ -58,12 +58,12 @@ __device__ tfloat cubicTex1DSimple(texture<tfloat, 1> tex, tfloat x)
 	const tfloat fraction = coord_grid - index;
 	index += (tfloat)0.5;  //move from [-0.5, extent-0.5] to [0, extent]
 
-	tfloat result = (tfloat)0;
+	T result = (T)0;
 	for (tfloat x=-1; x < (tfloat)2.5; x++)
 	{
 		tfloat bsplineX = bspline(x-fraction);
 		tfloat u = index + x;
-		result += bsplineX * tex1D(tex, u);
+		result += bsplineX * tex1D<T>(tex, u);
 	}
 	return result;
 }
@@ -73,8 +73,7 @@ __device__ tfloat cubicTex1DSimple(texture<tfloat, 1> tex, tfloat x)
 //! @param tex  2D texture
 //! @param x  unnormalized x texture coordinate
 //! @param y  unnormalized y texture coordinate
-template<class T, enum cudaTextureReadMode mode>
-__device__ float cubicTex2DSimple(texture<T, 2, mode> tex, float x, float y)
+template <class T> __device__ float cubicTex2DSimple(cudaTextureObject_t tex, float x, float y)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
 	const float2 coord_grid = make_float2(x - 0.5f, y - 0.5f);
@@ -83,7 +82,7 @@ __device__ float cubicTex2DSimple(texture<T, 2, mode> tex, float x, float y)
 	index.x += 0.5f;  //move from [-0.5, extent-0.5] to [0, extent]
 	index.y += 0.5f;  //move from [-0.5, extent-0.5] to [0, extent]
 
-	float result = 0.0f;
+	T result = (T)0;
 	for (float y=-1; y < 2.5f; y++)
 	{
 		float bsplineY = bspline(y-fraction.y);
@@ -92,7 +91,7 @@ __device__ float cubicTex2DSimple(texture<T, 2, mode> tex, float x, float y)
 		{
 			float bsplineXY = bspline(x-fraction.x) * bsplineY;
 			float u = index.x + x;
-			result += bsplineXY * tex2D(tex, u, v);
+			result += bsplineXY * tex2D<T>(tex, u, v);
 		}
 	}
 	return result;
@@ -102,16 +101,15 @@ __device__ float cubicTex2DSimple(texture<T, 2, mode> tex, float x, float y)
 //! Straight forward implementation, using 64 nearest neighbour lookups.
 //! @param tex  3D texture
 //! @param coord  unnormalized 3D texture coordinate
-template<class T, enum cudaTextureReadMode mode>
-__device__ float cubicTex3DSimple(texture<T, 3, mode> tex, float3 coord)
+template <class T> __device__ float cubicTex3DSimple(cudaTextureObject_t tex, float x, float y, float z)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
-	const float3 coord_grid = coord - 0.5f;
+	const float3 coord_grid = make_float3(x - 0.5f, y - 0.5f, z - 0.5f);
 	float3 index = floor(coord_grid);
 	const float3 fraction = coord_grid - index;
 	index = index + 0.5f;  //move from [-0.5, extent-0.5] to [0, extent]
 
-	float result = 0.0f;
+	T result = (T)0;
 	for (float z=-1; z < 2.5f; z++)  //range [-1, 2]
 	{
 		float bsplineZ = bspline(z-fraction.z);
@@ -124,7 +122,7 @@ __device__ float cubicTex3DSimple(texture<T, 3, mode> tex, float3 coord)
 			{
 				float bsplineXYZ = bspline(x-fraction.x) * bsplineYZ;
 				float u = index.x + x;
-				result += bsplineXYZ * tex3D(tex, u, v, w);
+				result += bsplineXYZ * tex3D<T>(tex, u, v, w);
 			}
 		}
 	}

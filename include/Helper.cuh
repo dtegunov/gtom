@@ -221,6 +221,8 @@ void* MallocPinnedFromDeviceArray(void* d_array, size_t size);
  */
 tfloat* MixedToHostTfloat(void* h_input, EM_DATATYPE datatype, size_t elements);
 
+void WriteToBinaryFile(string path, void* data, size_t bytes);
+
 /**
  * \brief Allocates an array in device memory with an alignment constraint (useful for odd-sized 2D textures).
  * \param[in] widthbytes	Array width in bytes
@@ -370,6 +372,15 @@ void MixedToDeviceTfloat(void* h_input, tfloat* d_output, EM_DATATYPE datatype, 
  */
 tfloat* MixedToDeviceTfloat(void* h_input, EM_DATATYPE datatype, size_t elements);
 
+int GetFileSize(string path);
+void* MallocFromBinaryFile(string path);
+void* CudaMallocFromBinaryFile(string path);
+void CudaWriteToBinaryFile(string path, void* d_data, size_t elements);
+
+
+cudaPitchedPtr CopyVolumeDeviceToDevice(tfloat* d_input, int3 dims);
+cudaPitchedPtr CopyVolumeHostToDevice(tfloat* h_input, int3 dims);
+
 //Misc.cu:
 
 /**
@@ -383,3 +394,4 @@ tfloat* MixedToDeviceTfloat(void* h_input, EM_DATATYPE datatype, size_t elements
  //TextureObject.cu:
 
  void d_BindTextureToArray(tfloat* d_input, cudaArray* &d_createdarray, cudaTextureObject_t &texture, int2 dims, cudaTextureFilterMode filtermode, bool normalizedcoords);
+ void d_BindTextureTo3DArray(tfloat* d_input, cudaArray* &d_createdarray, cudaTextureObject_t &texture, int3 dims, cudaTextureFilterMode filtermode, bool normalizedcoords);

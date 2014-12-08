@@ -1,20 +1,5 @@
 #pragma once
 
-#include "cuda.h"
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-
-#include <cufft.h>
-#include <cublas_v2.h>
-
 #include "gtest/gtest.h"
 #include "../include/GTOM.cuh"
 

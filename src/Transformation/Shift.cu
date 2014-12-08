@@ -95,47 +95,30 @@ void d_Shift(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* delta, b
 
 template<int ndims, bool iszerocentered> __global__ void ShiftFourierKernel(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3 delta)
 {
-	int x = blockIdx.x * blockDim.x + threadIdx.x;
-	if(x >= dims.x / 2 + 1)
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if(idx > dims.x / 2)
 		return;
-	int y, z;
+	int idy = blockIdx.y;
+	int idz = blockIdx.z;
 
+	int x, y, z;
 	if(!iszerocentered)
 	{
-		if(x == dims.x / 2)
-			x = (-x);
-		y = ((blockIdx.y + ((dims.y + 1) / 2)) % dims.y) - (dims.y / 2);
-		z = ((blockIdx.z + ((dims.z + 1) / 2)) % dims.z) - (dims.z / 2);
+		x = idx;
+		y = ((idy + ((dims.y + 1) / 2)) % dims.y) - dims.y / 2;
+		z = ((idz + ((dims.z + 1) / 2)) % dims.z) - dims.z / 2;
 	}
 	else
 	{
-		x = dims.x / 2 - x;
-		y = blockIdx.y - (dims.y / 2);
-		z = blockIdx.z - (dims.z / 2);
+		x = dims.x / 2 - idx;
+		y = dims.y / 2 - idy;
+		z = dims.z / 2 - idz;
 	}
 
-	tfloat factorx = delta.x * (tfloat)x * (tfloat)PI2;
-	tcomplex multx = { cos(factorx), sin(-factorx) };
-	if(dims.x % 2 == 0 && blockIdx.x * blockDim.x + threadIdx.x == dims.x / 2)
-		multx.y = (tfloat)0;
+	tfloat factor = (delta.x * (tfloat)x + delta.y * (tfloat)y + (ndims > 2 ? delta.z * (tfloat)z : (tfloat)0)) * (tfloat)PI2;
+	tcomplex multiplicator = make_cuComplex(cos(factor), sin(-factor));
 
-	tfloat factory = delta.y * (tfloat)y * (tfloat)PI2;
-	tcomplex multy = { cos(factory), sin(-factory) };
-	if(dims.y % 2 == 0 && blockIdx.y == dims.y / 2)
-		multy.y = (tfloat)0;
-
-	tcomplex multiplicator = cmul(multx, multy);
-
-	if(ndims > 2)
-	{
-		tfloat factorz = delta.z * (tfloat)z * (tfloat)PI2;
-		tcomplex multz = { cos(factorz), sin(-factorz) };
-		if(dims.z % 2 == 0 && blockIdx.z == dims.z / 2)
-			multz.y = (tfloat)0;
-		multiplicator = cmul(multiplicator, multz);
-	}	
-
-	size_t id = (blockIdx.z * dims.y + blockIdx.y) * (dims.x / 2 + 1) + blockIdx.x * blockDim.x + threadIdx.x;
+	size_t id = (idz * dims.y + idy) * (dims.x / 2 + 1) + idx;
 	d_output[id] = cmul(d_input[id], multiplicator);
 }
 

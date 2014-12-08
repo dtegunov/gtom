@@ -59,51 +59,6 @@ template <class T> void ASSERT_ARRAY_EQ(T* actual, T* expected, size_t n)
 template void ASSERT_ARRAY_EQ<tfloat>(tfloat* actual, tfloat* expected, size_t n);
 template void ASSERT_ARRAY_EQ<int>(int* actual, int* expected, size_t n);
 
-int GetFileSize(string path)
-{
-	ifstream inputfile(path, ios::in|ios::binary|ios::ate);
-	int size = inputfile.tellg();
-	inputfile.close();
-
-	return size;
-}
-
-void* CudaMallocFromBinaryFile(string path)
-{
-	void* h_array = MallocFromBinaryFile(path);
-	void* d_array = CudaMallocFromHostArray(h_array, GetFileSize(path));
-	free(h_array);
-
-	return d_array;
-}
-
-void CudaWriteToBinaryFile(string path, void* d_data, size_t elements)
-{
-	void* h_data = MallocFromDeviceArray(d_data, elements);
-	WriteToBinaryFile(path, h_data, elements);
-
-	free(h_data);
-}
-
-void* MallocFromBinaryFile(string path)
-{
-	ifstream inputfile(path, ios::in|ios::binary|ios::ate);
-	int size = inputfile.tellg();
-	void* output = malloc(size);
-	inputfile.seekg(0, ios::beg);
-	inputfile.read((char*)output, size);
-	inputfile.close();
-
-	return output;
-}
-
-void WriteToBinaryFile(string path, void* data, size_t bytes)
-{
-	FILE* outputfile = fopen(path.c_str(), "wb");
-	fwrite(data, sizeof(char), bytes, outputfile);
-	fclose(outputfile);
-}
-
 double GetMeanAbsoluteError(tfloat* const expected, tfloat* const actual, size_t n)
 {
 	double sum = 0.0;

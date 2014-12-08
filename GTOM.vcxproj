@@ -24,6 +24,7 @@
     <ClInclude Include="include\Alignment.cuh" />
     <ClInclude Include="include\Binary.cuh" />
     <ClInclude Include="include\Correlation.cuh" />
+    <ClInclude Include="include\CTF.cuh" />
     <ClInclude Include="include\CubicInterp.cuh" />
     <ClInclude Include="include\cutil_math_bugfixes.h" />
     <ClInclude Include="include\FFT.cuh" />
@@ -32,6 +33,7 @@
     <ClInclude Include="include\ImageManipulation.cuh" />
     <ClInclude Include="include\IO.cuh" />
     <ClInclude Include="include\Masking.cuh" />
+    <ClInclude Include="include\Optimization.cuh" />
     <ClInclude Include="include\Projection.cuh" />
     <ClInclude Include="include\Reconstruction.cuh" />
     <ClInclude Include="include\Resolution.cuh" />
@@ -46,12 +48,17 @@
     <CudaCompile Include="src\Correlation\CCF.cu" />
     <CudaCompile Include="src\Correlation\LocalPeaks.cu" />
     <CudaCompile Include="src\Correlation\Peak.cu" />
+    <CudaCompile Include="src\CTF\Correct.cu" />
+    <CudaCompile Include="src\CTF\Decay.cu" />
+    <CudaCompile Include="src\CTF\Fit.cu" />
+    <CudaCompile Include="src\CTF\Periodogram.cu" />
+    <CudaCompile Include="src\CTF\Simulate.cu" />
+    <CudaCompile Include="src\CTF\Wiener.cu" />
     <CudaCompile Include="src\CubicSplines\cubicPrefilter2D.cu" />
     <CudaCompile Include="src\CubicSplines\cubicPrefilter3D.cu" />
     <CudaCompile Include="src\CubicSplines\cubicTex.cu" />
     <CudaCompile Include="src\CubicSplines\internal\bspline_kernel.cu" />
     <CudaCompile Include="src\CubicSplines\internal\cubicPrefilter_kernel.cu" />
-    <CudaCompile Include="src\CubicSplines\internal\cubicTexKernels.cu" />
     <CudaCompile Include="src\CubicSplines\internal\math_func.cu" />
     <CudaCompile Include="src\CubicSplines\internal\version.cu" />
     <CudaCompile Include="src\CubicSplines\memcpy.cu" />
@@ -69,6 +76,7 @@
     <CudaCompile Include="src\Generics\MinMax.cu" />
     <CudaCompile Include="src\Generics\MinMaxMonolithic.cu" />
     <CudaCompile Include="src\Generics\Padding.cu" />
+    <CudaCompile Include="src\Generics\Polynomials.cu" />
     <CudaCompile Include="src\Generics\Reductions.cu" />
     <CudaCompile Include="src\Generics\Sum.cu" />
     <CudaCompile Include="src\Generics\Dev.cu" />
@@ -88,6 +96,7 @@
     <CudaCompile Include="src\ImageManipulation\Xray.cu" />
     <CudaCompile Include="src\Masking\IrregularSphereMask.cu" />
     <CudaCompile Include="src\Masking\Windows.cu" />
+    <CudaCompile Include="src\Optimization\PolynomialFit.cu" />
     <CudaCompile Include="src\Projection\Backward.cu" />
     <CudaCompile Include="src\Projection\Forward.cu" />
     <CudaCompile Include="src\Projection\Weighting.cu" />
@@ -99,20 +108,22 @@
     <CudaCompile Include="src\Resolution\LocalFSC.cu" />
     <CudaCompile Include="src\Tomography\InterpolateSingleAxis.cu" />
     <CudaCompile Include="src\Transformation\Rotation.cu" />
-    <CudaCompile Include="src\Reconstruction\ART.cu" />
-    <CudaCompile Include="src\Transformation\Shift.cu" />
-    <CudaCompile Include="src\Transformation\Combined.cu" />
+    <CudaCompile Include="src\Reconstruction\RecSIRT.cu" />
+    <CudaCompile Include="src\Reconstruction\RecWBP.cu" />
     <CudaCompile Include="src\Transformation\Bin.cu" />
+    <CudaCompile Include="src\Transformation\Combined.cu" />
     <CudaCompile Include="src\Transformation\Coordinates.cu" />
     <CudaCompile Include="src\Transformation\Scale.cu" />
-    <CudaCompile Include="src\Masking\RectangleMask.cu" />
+    <CudaCompile Include="src\Transformation\Shift.cu" />
     <CudaCompile Include="src\Masking\Remap.cu" />
+    <CudaCompile Include="src\Masking\RectangleMask.cu" />
     <CudaCompile Include="src\Masking\SphereMask.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\IO\em.cpp" />
     <ClCompile Include="src\IO\mrc.cpp" />
     <ClCompile Include="src\IO\raw.cpp" />
+    <ClCompile Include="src\Optimization\dlib\all\source.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C5083A95-7B41-47E7-99A5-FE08DC0ECDB1}</ProjectGuid>

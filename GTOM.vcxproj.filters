@@ -52,6 +52,12 @@
     <Filter Include="Tomography">
       <UniqueIdentifier>{3ed6bd75-1d43-4392-8ba8-1102c2283da7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Optimization">
+      <UniqueIdentifier>{e36a887e-c07a-4398-9b50-422219b88fa8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CTF">
+      <UniqueIdentifier>{18b7d81d-31a5-459f-8cef-f0316ea83217}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Alignment.cuh">
@@ -100,6 +106,12 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="include\cutil_math_bugfixes.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Optimization.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CTF.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
@@ -169,9 +181,6 @@
     <CudaCompile Include="src\FFT\FFTRemap.cu">
       <Filter>FFT</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\Masking\RectangleMask.cu">
-      <Filter>Masking</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\CubicSplines\cubicPrefilter2D.cu">
       <Filter>Cubic Splines</Filter>
     </CudaCompile>
@@ -191,9 +200,6 @@
       <Filter>Cubic Splines\internal</Filter>
     </CudaCompile>
     <CudaCompile Include="src\CubicSplines\internal\version.cu">
-      <Filter>Cubic Splines\internal</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\CubicSplines\internal\cubicTexKernels.cu">
       <Filter>Cubic Splines\internal</Filter>
     </CudaCompile>
     <CudaCompile Include="src\CubicSplines\cubicTex.cu">
@@ -286,9 +292,6 @@
     <CudaCompile Include="src\Helpers\Euler.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\Reconstruction\ART.cu">
-      <Filter>Reconstruction</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\Generics\MakeAtlas.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
@@ -328,6 +331,39 @@
     <CudaCompile Include="src\Transformation\Combined.cu">
       <Filter>Transformation</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\Masking\RectangleMask.cu">
+      <Filter>Masking</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Reconstruction\RecSIRT.cu">
+      <Filter>Reconstruction</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Reconstruction\RecWBP.cu">
+      <Filter>Reconstruction</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Optimization\PolynomialFit.cu">
+      <Filter>Optimization</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\Decay.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\Periodogram.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Generics\Polynomials.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\Fit.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\Simulate.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\Correct.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\Wiener.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\IO\em.cpp">
@@ -338,6 +374,9 @@
     </ClCompile>
     <ClCompile Include="src\IO\raw.cpp">
       <Filter>IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Optimization\dlib\all\source.cpp">
+      <Filter>Optimization</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

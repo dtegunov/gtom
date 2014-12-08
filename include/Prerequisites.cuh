@@ -55,9 +55,9 @@ struct tfloat3
 	tfloat y;
 	tfloat z;
 
-	tfloat3(tfloat x, tfloat y, tfloat z) : x(x), y(y), z(z) {}
-	tfloat3(int x, int y, int z) : x((tfloat)x), y((tfloat)y), z((tfloat)z) {}
-	tfloat3(tfloat val) : x(val), y(val), z(val) {}
+	__host__ __device__ tfloat3(tfloat x, tfloat y, tfloat z) : x(x), y(y), z(z) {}
+	__host__ __device__ tfloat3(int x, int y, int z) : x((tfloat)x), y((tfloat)y), z((tfloat)z) {}
+	__host__ __device__ tfloat3(tfloat val) : x(val), y(val), z(val) {}
 };
 
 struct tfloat4
@@ -67,7 +67,7 @@ struct tfloat4
 	tfloat z;
 	tfloat w;
 
-	tfloat4(tfloat x, tfloat y, tfloat z, tfloat w) : x(x), y(y), z(z), w(w) {}
+	__host__ __device__ tfloat4(tfloat x, tfloat y, tfloat z, tfloat w) : x(x), y(y), z(z), w(w) {}
 };
 
 struct tfloat5
@@ -78,42 +78,48 @@ struct tfloat5
 	tfloat w;
 	tfloat v;
 
-	tfloat5(tfloat x, tfloat y, tfloat z, tfloat w, tfloat v) : x(x), y(y), z(z), w(w), v(v) {}
+	__host__ __device__ tfloat5(tfloat x, tfloat y, tfloat z, tfloat w, tfloat v) : x(x), y(y), z(z), w(w), v(v) {}
 };
 
 inline int2 toInt2(int x, int y)
 {
-	int2 value = {x, y};
+	int2 value = { x, y };
+	return value;
+}
+
+inline int2 toInt2(int3 dims)
+{
+	int2 value = { dims.x, dims.y };
 	return value;
 }
 
 inline int3 toInt3(int x, int y, int z)
 {
-	int3 value = {x, y, z};
+	int3 value = { x, y, z };
 	return value;
 }
 
 inline uint3 toUint3(uint x, uint y, uint z)
 {
-	uint3 value = {x, y, z};
+	uint3 value = { x, y, z };
 	return value;
 }
 
 inline uint3 toUint3(int x, int y, int z)
 {
-	uint3 value = {(uint)x, (uint)y, (uint)z};
+	uint3 value = { (uint)x, (uint)y, (uint)z };
 	return value;
 }
 
 inline ushort3 toShort3(int x, int y, int z)
 {
-	ushort3 value = {(ushort)x, (ushort)y, (ushort)z};
+	ushort3 value = { (ushort)x, (ushort)y, (ushort)z };
 	return value;
 }
 
 inline int3 toInt3(int2 val)
 {
-	int3 value = {val.x, val.y, 1};
+	int3 value = { val.x, val.y, 1 };
 	return value;
 }
 
@@ -154,8 +160,11 @@ template <class T1, class T2> struct tuple2
 #define getZigzag(x, stride) ((stride - 1) <= 0 ? 0 : (abs((((x) + ((stride - 1) * 99999)) % ((stride - 1) * 2)) - (stride - 1))))
 #define DimensionCount(dims) (3 - max(2 - max((dims).z, 1), 0) - max(2 - max((dims).y, 1), 0) - max(2 - max((dims).x, 1), 0))
 #define NextMultipleOf(value, base) (((value) + (base) - 1) / (base) * (base))
-#define Elements(dims) ((dims).x * (dims).y * (dims).z)
-#define ElementsFFT(dims) (((dims).x / 2 + 1) * (dims).y * (dims).z)
+#define ElementsFFT1(dims) ((dims) / 2 + 1)
+#define Elements2(dims) ((dims).x * (dims).y)
+#define ElementsFFT2(dims) (ElementsFFT1((dims).x) * (dims).y)
+#define Elements(dims) (Elements2(dims) * (dims).z)
+#define ElementsFFT(dims) (ElementsFFT1((dims).x) * (dims).y * (dims).z)
 
 #define crossp(a, b) tfloat3((a).y * (b).z - (a).z * (b).y, (a).z * (b).x - (a).x * (b).z, (a).x * (b).y - (a).y - (b).x)
 #define dotp(a, b) ((a).x * (b).x + (a).y * (b).y + (a).z * (b).z)

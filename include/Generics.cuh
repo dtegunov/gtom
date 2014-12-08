@@ -263,6 +263,14 @@ template <class T> void d_Pow(T* d_input, T* d_output, size_t elements, T expone
 template <class T> void d_Abs(T* d_input, T* d_output, size_t elements);
 
 /**
+* \brief Computes the absolute value (magnitude) of every complex input element
+* \param[in] d_input	Array with complex numbers
+* \param[in] d_output	Array that will contain the result; d_output == d_input is not valid
+* \param[in] elements	Number of elements
+*/
+void d_Abs(tcomplex* d_input, tfloat* d_output, size_t elements);
+
+/**
  * \brief Computes the inverse (1/value) of every input element
  * \param[in] d_input	Array with numbers to be inversed
  * \param[in] d_output	Array that will contain the result; d_output == d_input is valid
@@ -270,6 +278,13 @@ template <class T> void d_Abs(T* d_input, T* d_output, size_t elements);
  */
 template <class T> void d_Inv(T* d_input, T* d_output, size_t elements);
 
+/**
+* \brief Computes the logarithm of every input element
+* \param[in] d_input	Array with positive numbers
+* \param[in] d_output	Array that will contain the result; d_output == d_input is valid
+* \param[in] elements	Number of elements
+*/
+template <class T> void d_Log(T* d_input, T* d_output, size_t elements);
 
 /**
  * \brief Transforms every complex input element from polar to cartesian form
@@ -297,14 +312,33 @@ void d_ComplexCartToPolar(tcomplex* d_cart, tcomplex* d_polar, size_t elements);
  */
 template <class T> void d_MaxOp(T* d_input1, T* d_input2, T* d_output, size_t elements);
 
+
 /**
- * \brief For each pair n of input elements, min(input1[n], input2[n]) is written to output
- * \param[in] d_input1	Array with the first numbers in each pair
- * \param[in] d_input2	Array with the second numbers in each pair
- * \param[in] d_output	Array that will contain the result; d_output == d_input is valid
- * \param[in] elements	Number of elements
- */
+* \brief For each input element, max(input1[n], input2) is written to output
+* \param[in] d_input1	Array with the first numbers in each pair
+* \param[in] input2		Scalar number to compare with
+* \param[in] d_output	Array that will contain the result; d_output == d_input is valid
+* \param[in] elements	Number of elements
+*/
+template <class T> void d_MaxOp(T* d_input1, T input2, T* d_output, size_t elements);
+
+/**
+* \brief For each pair n of input elements, min(input1[n], input2[n]) is written to output
+* \param[in] d_input1	Array with the first numbers in each pair
+* \param[in] d_input2	Array with the second numbers in each pair
+* \param[in] d_output	Array that will contain the result; d_output == d_input is valid
+* \param[in] elements	Number of elements
+*/
 template <class T> void d_MinOp(T* d_input1, T* d_input2, T* d_output, size_t elements);
+
+/**
+* \brief For each input element, min(input1[n], input2) is written to output
+* \param[in] d_input1	Array with the first numbers in each pair
+* \param[in] d_input2	Scalar number to compare with
+* \param[in] d_output	Array that will contain the result; d_output == d_input is valid
+* \param[in] elements	Number of elements
+*/
+template <class T> void d_MinOp(T* d_input1, T input2, T* d_output, size_t elements);
 
 
 /**
@@ -452,13 +486,23 @@ template <class T> T* d_MakeAtlas(T* d_input, int3 inputdims, int3 &outputdims, 
 template <class T> void d_Sum(T *d_input, T *d_output, size_t n, int batch = 1);
 
 /**
+* \brief Performs vector reduction by summing up the elements; use this version for many, but small vectors (one CUDA block is used per vector)
+* \param[in] d_input	Array with input numbers
+* \param[in] d_output	Array that will contain the sum; d_output == d_input is not valid
+* \param[in] n	Number of elements
+* \param[in] batch	Number of vectors to be reduced
+*/
+template <class T> void d_SumMonolithic(T* d_input, T* d_output, int n, int batch);
+
+/**
  * \brief Performs vector reduction by summing up the elements; use this version for many, but small vectors (one CUDA block is used per vector)
  * \param[in] d_input	Array with input numbers
  * \param[in] d_output	Array that will contain the sum; d_output == d_input is not valid
+ * \param[in] d_mask	Mask to be applied to d_input; pass NULL if not needed
  * \param[in] n	Number of elements
  * \param[in] batch	Number of vectors to be reduced
  */
-template <class T> void d_SumMonolithic(T* d_input, T* d_output, int n, int batch);
+template <class T> void d_SumMonolithic(T* d_input, T* d_output, tfloat* d_mask, int n, int batch);
 
 //MinMax.cu:
 
@@ -597,7 +641,7 @@ template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3
  * \param[in] mode	Interpolation mode; only T_INTERP_LINEAR and T_INTERP_CUBIC are supported
  * \param[in] batch	Number of images to be extracted
  */
-void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, tfloat2* h_scale, tfloat* h_rotation, tfloat2* h_translation, T_INTERP_MODE mode, int batch = 1);
+void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int2 sourcedims, int2 regiondims, tfloat2* h_scale, tfloat* h_rotation, tfloat2* h_translation, T_INTERP_MODE mode, int batch = 1);
 
 //Padding.cu:
 
@@ -626,14 +670,37 @@ enum T_PAD_MODE
 */
 template <class T> void d_Pad(T* d_input, T* d_output, int3 inputdims, int3 outputdims, T_PAD_MODE mode, T value, int batch = 1);
 
+//Polynomials.cu:
+
+/**
+* \brief Computes the values of a 1D polynomial with degree < 1024 at coordinates given in d_x.
+* \param[in] d_x	Array with input coordinates
+* \param[in] d_output	Array that will contain the polynomial values
+* \param[in] npoints	Number of coordinates in d_x
+* \param[in] d_factors	Array with the polynomial factors, first element is 0th order
+* \param[in] degree	The polynomial's degree
+* \param[in] batch	Number of coordinate and factor sets to compute values for
+*/
+void d_Polynomial1D(tfloat* d_x, tfloat* d_output, int npoints, tfloat* d_factors, int degree, int batch);
+
 //Reductions.cu:
 
 /**
 * \brief Sum over multiple vectors
 * \param[in] d_input	Array with input data
-* \param[in] d_output	Array that will contain the padded data
+* \param[in] d_output	Array that will contain the reduced data
 * \param[in] vectorlength	Vector length
 * \param[in] nvectors	Number of vectors to sum over
 * \param[in] batch	Number of vector sets to be reduced independently
 */
 template<class T> void d_ReduceAdd(T* d_input, T* d_output, int vectorlength, int nvectors, int batch = 1);
+
+/**
+* \brief Average over multiple vectors
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain the reduced data
+* \param[in] vectorlength	Vector length
+* \param[in] nvectors	Number of vectors to average over
+* \param[in] batch	Number of vector sets to be reduced independently
+*/
+template<class T> void d_ReduceMean(T* d_input, T* d_output, int vectorlength, int nvectors, int batch = 1);

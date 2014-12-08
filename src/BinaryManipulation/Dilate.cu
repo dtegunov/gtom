@@ -6,6 +6,7 @@
 ////////////////////////////
 
 template <class T> __global__ void Dilate2DKernel(T* d_input, T* d_output, int3 dims);
+template <class T> __global__ void Dilate3DKernel(T* d_input, T* d_output, int3 dims);
 
 
 //////////
@@ -14,12 +15,18 @@ template <class T> __global__ void Dilate2DKernel(T* d_input, T* d_output, int3 
 
 template <class T> void d_Dilate(T* d_input, T* d_output, int3 dims, int batch)
 {
-	size_t TpB = min(192, NextMultipleOf(dims.x, 32));
-	dim3 grid = dim3((dims.x + TpB - 1) / TpB, dims.y);
-	Dilate2DKernel <<<grid, TpB>>> (d_input, d_output, dims);
+	dim3 TpB = dim3(32, 8);
+	dim3 grid = dim3((dims.x + TpB.x - 1) / TpB.x, (dims.y + TpB.y - 1) / TpB.y, dims.z);
+	for (int b = 0; b < batch; b++)
+		if (DimensionCount(dims) <= 2)
+			Dilate2DKernel << <grid, TpB >> > (d_input + Elements(dims) * b, d_output + Elements(dims) * b, dims);
+		else
+			Dilate3DKernel << <grid, TpB >> > (d_input + Elements(dims) * b, d_output + Elements(dims) * b, dims);
 }
 template void d_Dilate<char>(char* d_input, char* d_output, int3 dims, int batch);
 template void d_Dilate<int>(int* d_input, int* d_output, int3 dims, int batch);
+template void d_Dilate<float>(float* d_input, float* d_output, int3 dims, int batch);
+template void d_Dilate<double>(double* d_input, double* d_output, int3 dims, int batch);
 
 
 ////////////////
@@ -31,28 +38,48 @@ template <class T> __global__ void Dilate2DKernel(T* d_input, T* d_output, int3 
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if(idx >= dims.x)
 		return;
-
-	if(idx > 0 && d_input[blockIdx.y * dims.x + idx - 1])
-	{
-		d_output[blockIdx.y * dims.x + idx] = (T)1;
+	int idy = blockIdx.y * blockDim.y + threadIdx.y;
+	if (idy >= dims.y)
 		return;
-	}
 
-	if(blockIdx.y > 0 && d_input[(blockIdx.y - 1) * dims.x + idx])
-	{
-		d_output[blockIdx.y * dims.x + idx] = (T)1;
-		return;
-	}
+	d_output += idy * dims.x + idx;
 
-	if(idx < dims.x - 1 && d_input[blockIdx.y * dims.x + idx + 1])
-	{
-		d_output[blockIdx.y * dims.x + idx] = (T)1;
-		return;
-	}
+	if(idx > 0 && d_input[idy * dims.x + idx - 1] > (T)0)
+		*d_output = (T)1;
+	else if (idx < dims.x - 1 && d_input[idy * dims.x + idx + 1] > (T)0)
+		*d_output = (T)1;
+	else if (blockIdx.y > 0 && d_input[(idy - 1) * dims.x + idx] > (T)0)
+		*d_output = (T)1;
+	else if (blockIdx.y < dims.y - 1 && d_input[(idy + 1) * dims.x + idx] > (T)0)
+		*d_output = (T)1;
+	else
+		*d_output = d_input[idy * dims.x + idx];
+}
 
-	if(blockIdx.y < dims.y - 1 && d_input[(blockIdx.y + 1) * dims.x + idx])
-	{
-		d_output[blockIdx.y * dims.x + idx] = (T)1;
+template <class T> __global__ void Dilate3DKernel(T* d_input, T* d_output, int3 dims)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx >= dims.x)
 		return;
-	}
+	int idy = blockIdx.y * blockDim.y + threadIdx.y;
+	if (idy >= dims.y)
+		return;
+	int idz = blockIdx.z;
+
+	d_output += (idz * dims.y + idy) * dims.x + idx;
+
+	if (idx > 0 && d_input[(idz * dims.y + idy) * dims.x + idx - 1] > (T)0)
+		*d_output = (T)1;
+	else if (idx < dims.x - 1 && d_input[(idz * dims.y + idy) * dims.x + idx + 1] > (T)0)
+		*d_output = (T)1;
+	else if (blockIdx.y > 0 && d_input[(idz * dims.y + idy - 1) * dims.x + idx] > (T)0)
+		*d_output = (T)1;
+	else if (blockIdx.y < dims.y - 1 && d_input[(idz * dims.y + idy + 1) * dims.x + idx] > (T)0)
+		*d_output = (T)1;
+	else if (blockIdx.z > 0 && d_input[((idz - 1) * dims.y + idy) * dims.x + idx] > (T)0)
+		*d_output = (T)1;
+	else if (blockIdx.y < dims.y - 1 && d_input[((idz + 1) * dims.y + idy) * dims.x + idx] > (T)0)
+		*d_output = (T)1;
+	else
+		*d_output = d_input[idy * dims.x + idx];
 }

@@ -1,13 +1,15 @@
 #include "Prerequisites.cuh"
 #include "Generics.cuh"
 
+#define MonoTpB 192
 
 ////////////////////////////
 //CUDA kernel declarations//
 ////////////////////////////
 
 template <class T, uint blockSize, bool nIsPow2> __global__ void SumKernel(T* d_input, T* d_output, size_t n);
-template <class T, uint blockSize> __global__ void SumMonolithicKernel(T* d_input, T* d_output, int n);
+template <class T> __global__ void SumMonolithicKernel(T* d_input, T* d_output, int n);
+template <class T> __global__ void SumMonolithicMaskedKernel(T* d_input, T* d_output, tfloat* d_mask, int n);
 
 
 ///////
@@ -135,26 +137,30 @@ template void d_Sum<int>(int* d_input, int* d_output, size_t n, int batch);
 
 template <class T> void d_SumMonolithic(T* d_input, T* d_output, int n, int batch)
 {
-	int TpB = min(n, 256);
-	dim3 grid = dim3(batch);
-	if(TpB <= 4)
-		SumMonolithicKernel <T, 4> <<<grid, TpB>>> (d_input, d_output, n);
-	else if(TpB <= 8)
-		SumMonolithicKernel <T, 8> <<<grid, TpB>>> (d_input, d_output, n);
-	else if(TpB <= 16)
-		SumMonolithicKernel <T, 16> <<<grid, TpB>>> (d_input, d_output, n);
-	else if(TpB <= 32)
-		SumMonolithicKernel <T, 32> <<<grid, TpB>>> (d_input, d_output, n);
-	else if(TpB <= 64)
-		SumMonolithicKernel <T, 64> <<<grid, TpB>>> (d_input, d_output, n);
-	else if(TpB <= 128)
-		SumMonolithicKernel <T, 128> <<<grid, TpB>>> (d_input, d_output, n);
-	else if(TpB <= 256)
-		SumMonolithicKernel <T, 256> <<<grid, TpB>>> (d_input, d_output, n);
+	for (int b = 0; b < batch; b += 32768)
+	{
+		dim3 grid = dim3(min(batch - b, 32768));
+		SumMonolithicKernel << <grid, MonoTpB >> > (d_input + n * b, d_output + b, n);
+	}
 }
 template void d_SumMonolithic<float>(float* d_input, float* d_output, int n, int batch);
 template void d_SumMonolithic<double>(double* d_input, double* d_output, int n, int batch);
 template void d_SumMonolithic<int>(int* d_input, int* d_output, int n, int batch);
+
+template <class T> void d_SumMonolithic(T* d_input, T* d_output, tfloat* d_mask, int n, int batch)
+{
+	if (d_mask != NULL)
+		for (int b = 0; b < batch; b += 32768)
+		{
+			dim3 grid = dim3(min(batch - b, 32768));
+			SumMonolithicMaskedKernel << <grid, MonoTpB >> > (d_input + n * b, d_output + b, d_mask + n * b, n);
+		}
+	else
+		d_SumMonolithic(d_input, d_output, n, batch);
+}
+template void d_SumMonolithic<float>(float* d_input, float* d_output, tfloat* d_mask, int n, int batch);
+template void d_SumMonolithic<double>(double* d_input, double* d_output, tfloat* d_mask, int n, int batch);
+template void d_SumMonolithic<int>(int* d_input, int* d_output, tfloat* d_mask, int n, int batch);
 
 
 ////////////////
@@ -281,9 +287,9 @@ template <class T, uint blockSize, bool nIsPow2> __global__ void SumKernel(T* d_
         d_output[blockIdx.x] = sdata[0];
 }
 
-template <class T, uint blockSize> __global__ void SumMonolithicKernel(T* d_input, T* d_output, int n)
+template <class T> __global__ void SumMonolithicKernel(T* d_input, T* d_output, int n)
 {
-	__shared__ T sums[blockSize];
+	__shared__ T sums[MonoTpB];
 
 	d_input += n * blockIdx.x;
 	
@@ -302,6 +308,41 @@ template <class T, uint blockSize> __global__ void SumMonolithicKernel(T* d_inpu
 	__syncthreads();
 
 	if(threadIdx.x == 0)
+	{
+		for (int i = 1; i < blockDim.x; i++)
+		{
+			y = sums[i] - c;
+			t = result + y;
+			c = (t - result) - y;
+			result = t;
+		}
+
+		d_output[blockIdx.x] = result;
+	}
+}
+
+template <class T> __global__ void SumMonolithicMaskedKernel(T* d_input, T* d_output, tfloat* d_mask, int n)
+{
+	__shared__ T sums[MonoTpB];
+
+	d_input += n * blockIdx.x;
+	d_mask += n * blockIdx.x;
+
+	T result = 0;
+	T c = 0, y, t;
+	for (int id = threadIdx.x; id < n; id += blockDim.x)
+	{
+		y = d_input[id] * d_mask[id] - c;
+		t = result + y;
+		c = (t - result) - y;
+		result = t;
+	}
+
+	sums[threadIdx.x] = result;
+
+	__syncthreads();
+
+	if (threadIdx.x == 0)
 	{
 		for (int i = 1; i < blockDim.x; i++)
 		{

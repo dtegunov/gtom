@@ -12,19 +12,28 @@ void d_Bin(tfloat* d_input, tfloat* d_output, int3 dims, int bincount, int batch
 
 //Combined.cu:
 void d_ScaleRotateShift2D(tfloat* d_input, tfloat* d_output, int2 dims, tfloat2* h_scales, tfloat* h_angles, tfloat2* h_shifts, T_INTERP_MODE mode, bool outputzerocentered, int batch);
+void d_ScaleRotateShiftCubic2D(cudaTextureObject_t t_input, tfloat* d_output, int2 dims, tfloat2 scale, tfloat angle, tfloat2 shift, bool outputzerocentered);
 
 //Coordinates.cu:
 void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE interpolation, int batch = 1);
-void d_CartAtlas2Polar(tfloat* d_input, tfloat* d_output, tfloat2* d_offsets, int2 atlasdims, int2 dims, T_INTERP_MODE interpolation, int batch);
 int2 GetCart2PolarSize(int2 dims);
+void d_Cart2PolarFFT(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE mode, int batch = 1);
+int2 GetCart2PolarFFTSize(int2 dims);
+uint GetCart2PolarNonredundantSize(int2 dims);
+uint GetCart2PolarNonredundantSize(int2 dims, int maskinner, int maskouter);
+float2* GetPolarNonredundantCoords(int2 dims);
+float2* GetPolarNonredundantCoords(int2 dims, int maskinner, int maskouter);
+uint GetCart2PolarFFTNonredundantSize(int2 dims);
+uint GetCart2PolarFFTNonredundantSize(int2 dims, int maskinner, int maskouter);
+float2* GetPolarFFTNonredundantCoords(int2 dims);
+float2* GetPolarFFTNonredundantCoords(int2 dims, int maskinner, int maskouter);
 
-//Rotate.cu:
-void d_Rotate3D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
-void d_Rotate3D(cudaArray* a_input, cudaChannelFormatDesc channelDesc, tfloat* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
-void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat angle, T_INTERP_MODE mode, int batch = 1);
-void d_Rotate2D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat angle, int batch = 1);
-void d_Rotate3DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
-void d_Rotate3DFT(cudaArray* a_inputRe, cudaChannelFormatDesc channelDescRe, cudaArray* a_inputIm, cudaChannelFormatDesc channelDescIm, tcomplex* d_output, int3 dims, tfloat3* angles, T_INTERP_MODE mode, int batch = 1);
+//Rotation.cu:
+void d_Rotate2D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* angles, int batch = 1);
+void d_Rotate3D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* h_angles, T_INTERP_MODE mode, int batch = 1);
+void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat* angles, tfloat maxfreq, T_INTERP_MODE mode, bool isoutputzerocentered, int batch = 1);
+void d_Rotate2DFT(cudaTextureObject_t t_inputRe, cudaTextureObject_t t_inputIm, tcomplex* d_output, int3 dims, tfloat angle, tfloat maxfreq, T_INTERP_MODE mode, bool isoutputzerocentered);
+void d_Rotate3DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* h_angles, T_INTERP_MODE mode, int batch = 1);
 
 //Shift.cu:
 void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, tcomplex* d_sharedintermediate = NULL, int batch = 1);

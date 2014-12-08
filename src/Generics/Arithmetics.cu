@@ -39,13 +39,17 @@ template <class T> __global__ void SquareKernel(T* d_input, T* d_output, size_t 
 template <class T> __global__ void SqrtKernel(T* d_input, T* d_output, size_t elements);
 template <class T> __global__ void PowKernel(T* d_input, T* d_output, size_t elements, T exponent);
 template <class T> __global__ void AbsKernel(T* d_input, T* d_output, size_t elements);
+__global__ void AbsKernel(tcomplex* d_input, tfloat* d_output, size_t elements);
 template <class T> __global__ void InvKernel(T* d_input, T* d_output, size_t elements);
+template <class T> __global__ void LogKernel(T* d_input, T* d_output, size_t elements);
 
 __global__ void ComplexPolarToCartKernel(tcomplex* d_polar, tcomplex* d_cart, size_t elements);
 __global__ void ComplexCartToPolarKernel(tcomplex* d_cart, tcomplex* d_polar, size_t elements);
 
 template <class T> __global__ void MaxOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements);
+template <class T> __global__ void MaxOpKernel(T* d_input1, T input2, T* d_output, size_t elements);
 template <class T> __global__ void MinOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements);
+template <class T> __global__ void MinOpKernel(T* d_input1, T input2, T* d_output, size_t elements);
 
 
 //////////////////
@@ -658,12 +662,32 @@ template <class T> void d_Abs(T* d_input, T* d_output, size_t elements)
 }
 template void d_Abs<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements);
 
+void d_Abs(tcomplex* d_input, tfloat* d_output, size_t elements)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	dim3 grid = dim3((uint)totalblocks);
+	AbsKernel << <grid, (uint)TpB >> > (d_input, d_output, elements);
+}
+
 template <class T> __global__ void AbsKernel(T* d_input, T* d_output, size_t elements)
 {
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
 		id < elements; 
 		id += blockDim.x * gridDim.x)
 		d_output[id] = abs(d_input[id]);
+}
+
+__global__ void AbsKernel(tcomplex* d_input, tfloat* d_output, size_t elements)
+{
+	for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+		id < elements;
+		id += blockDim.x * gridDim.x)
+	{
+		tfloat re = d_input[id].x;
+		tfloat im = d_input[id].y;
+		d_output[id] = sqrt(re * re + im * im);
+	}
 }
 
 
@@ -688,6 +712,29 @@ template <class T> __global__ void InvKernel(T* d_input, T* d_output, size_t ele
 		id += blockDim.x * gridDim.x)
 		if(d_input[id] != (T)0)
 			d_output[id] = (T)1 / d_input[id];
+}
+
+
+/////////////
+//Logarithm//
+/////////////
+
+template <class T> void d_Log(T* d_input, T* d_output, size_t elements)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	dim3 grid = dim3((uint)totalblocks);
+	LogKernel<T> << <grid, (uint)TpB >> > (d_input, d_output, elements);
+}
+template void d_Log<float>(float* d_input, float* d_output, size_t elements);
+template void d_Log<double>(double* d_input, double* d_output, size_t elements);
+
+template <class T> __global__ void LogKernel(T* d_input, T* d_output, size_t elements)
+{
+	for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+		id < elements;
+		id += blockDim.x * gridDim.x)
+		d_output[id] = log(d_input[id]);
 }
 
 
@@ -749,6 +796,17 @@ template void d_MaxOp<int>(int* d_input1, int* d_input2, int* d_output, size_t e
 template void d_MaxOp<float>(float* d_input1, float* d_input2, float* d_output, size_t elements);
 template void d_MaxOp<double>(double* d_input1, double* d_input2, double* d_output, size_t elements);
 
+template <class T> void d_MaxOp(T* d_input1, T input2, T* d_output, size_t elements)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	dim3 grid = dim3((uint)totalblocks);
+	MaxOpKernel<T> << <grid, (uint)TpB >> > (d_input1, input2, d_output, elements);
+}
+template void d_MaxOp<int>(int* d_input1, int input2, int* d_output, size_t elements);
+template void d_MaxOp<float>(float* d_input1, float input2, float* d_output, size_t elements);
+template void d_MaxOp<double>(double* d_input1, double input2, double* d_output, size_t elements);
+
 template <class T> void d_MinOp(T* d_input1, T* d_input2, T* d_output, size_t elements)
 {
 	size_t TpB = min(256, elements);
@@ -760,6 +818,17 @@ template void d_MinOp<int>(int* d_input1, int* d_input2, int* d_output, size_t e
 template void d_MinOp<float>(float* d_input1, float* d_input2, float* d_output, size_t elements);
 template void d_MinOp<double>(double* d_input1, double* d_input2, double* d_output, size_t elements);
 
+template <class T> void d_MinOp(T* d_input1, T input2, T* d_output, size_t elements)
+{
+	size_t TpB = min(256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	dim3 grid = dim3((uint)totalblocks);
+	MinOpKernel<T> << <grid, (uint)TpB >> > (d_input1,  input2, d_output, elements);
+}
+template void d_MinOp<int>(int* d_input1, int input2, int* d_output, size_t elements);
+template void d_MinOp<float>(float* d_input1, float input2, float* d_output, size_t elements);
+template void d_MinOp<double>(double* d_input1, double input2, double* d_output, size_t elements);
+
 template <class T> __global__ void MaxOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements)
 {
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
@@ -768,12 +837,28 @@ template <class T> __global__ void MaxOpKernel(T* d_input1, T* d_input2, T* d_ou
 		d_output[id] = max(d_input1[id], d_input2[id]);
 }
 
+template <class T> __global__ void MaxOpKernel(T* d_input1, T input2, T* d_output, size_t elements)
+{
+	for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+		id < elements;
+		id += blockDim.x * gridDim.x)
+		d_output[id] = max(d_input1[id], input2);
+}
+
 template <class T> __global__ void MinOpKernel(T* d_input1, T* d_input2, T* d_output, size_t elements)
 {
-	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
-		id < elements; 
+	for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+		id < elements;
 		id += blockDim.x * gridDim.x)
 		d_output[id] = min(d_input1[id], d_input2[id]);
+}
+
+template <class T> __global__ void MinOpKernel(T* d_input1, T input2, T* d_output, size_t elements)
+{
+	for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+		id < elements;
+		id += blockDim.x * gridDim.x)
+		d_output[id] = min(d_input1[id], input2);
 }
 
 

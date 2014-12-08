@@ -1,2 +1,2 @@
-mex 'Resolution\LocalFSC.cu' Helper.cu;
-mex 'Resolution\AnisotropicFSCMap.cu' Helper.cu;
+mex 'Resolution\cgtom_fsc_local.cu' Helper.cu;
+mex 'Resolution\cgtom_fsc_anisotropic.cu' Helper.cu;
