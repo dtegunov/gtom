@@ -181,18 +181,6 @@ enum T_INTERP_MODE
 	T_INTERP_SINC = 4
 };
 
-enum EM_DATATYPE
-{
-	EM_BYTE = 1,
-	EM_SHORT = 2,
-	EM_SHORTCOMPLEX = 3,
-	EM_LONG = 4,
-	EM_SINGLE = 5,
-	EM_SINGLECOMPLEX = 8,
-	EM_DOUBLE = 9,
-	EM_DOUBLECOMPLEX = 10
-};
-
 
 // Define this to turn on error checking
 #define CUDA_ERROR_CHECK

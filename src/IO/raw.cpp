@@ -1,4 +1,5 @@
 #include "Prerequisites.cuh"
+#include "IO.cuh"
 
 
 void ReadRAW(string path, void** data, EM_DATATYPE datatype, int3 dims, int nframe, size_t headerbytes)

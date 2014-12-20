@@ -1,4 +1,5 @@
 #include "Prerequisites.cuh"
+#include "IO.cuh"
 
 void ReadMRC(string path, void** data, EM_DATATYPE &datatype, int nframe, bool flipx)
 {
