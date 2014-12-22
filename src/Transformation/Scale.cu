@@ -100,7 +100,7 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 		tcomplex* d_outputFFT;
 		cudaMalloc((void**)&d_outputFFT, ElementsFFT(newdims) * batch * sizeof(tcomplex));
 
-		tfloat normfactor = (tfloat)newdims.x / (tfloat)olddims.x * (tfloat)newdims.y / (tfloat)olddims.y * (tfloat)newdims.z / (tfloat)olddims.z;
+		tfloat normfactor = (tfloat)1 / (tfloat)Elements(olddims);
 
 		//for (int b = 0; b < batch; b++)
 		{
@@ -115,9 +115,9 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 				d_FFTCrop(d_inputFFT, d_outputFFT, olddims, newdims, batch);
 
 			if(planback == NULL)
-				d_IFFTC2R(d_outputFFT, d_output, ndims, newdims, batch);
+				d_IFFTC2R(d_outputFFT, d_output, ndims, newdims, batch, false);
 			else
-				d_IFFTC2R(d_outputFFT, d_output, planback, newdims);
+				d_IFFTC2R(d_outputFFT, d_output, planback);
 		}
 
 		d_MultiplyByScalar(d_output, d_output, Elements(newdims) * batch, normfactor);

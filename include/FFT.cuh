@@ -95,8 +95,9 @@ cufftHandle d_FFTR2CGetPlan(int const ndimensions, int3 const dimensions, int ba
 * \param[in] ndimensions	Number of dimensions
 * \param[in] dimensions	Array dimensions
 * \param[in] batch	Number of arrays to transform
+* \param[in] renormalize	True if output should be divided by the number of elements
 */
-void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1);
+void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, int const ndimensions, int3 const dimensions, int batch = 1, bool renormalize = true);
 
 /**
 * \brief Performs inverse FFT on complex-valued data using a pre-cooked plan; input must have dimensions.x / 2 + 1 as its width

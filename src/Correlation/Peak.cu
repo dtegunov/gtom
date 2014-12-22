@@ -182,7 +182,7 @@ void d_PeakMakePlans(int3 dims, T_PEAK_MODE mode, cufftHandle* planforw, cufftHa
 		int3 dimsnew = toInt3(samples * subdivisions, dims.y == 1 ? 1 : samples * subdivisions, dims.z == 1 ? 1 : samples * subdivisions);
 
 		*planforw = d_FFTR2CGetPlan(DimensionCount(dims), dimsold);
-		*planback = d_IFFTC2CGetPlan(DimensionCount(dims), dimsnew);
+		*planback = d_IFFTC2RGetPlan(DimensionCount(dims), dimsnew);
 	}
 	else if (mode == T_PEAK_SUBCOARSE)
 	{
@@ -195,7 +195,7 @@ void d_PeakMakePlans(int3 dims, T_PEAK_MODE mode, cufftHandle* planforw, cufftHa
 		int3 dimsnew = toInt3(samples * subdivisions, 1, 1);
 
 		*planforw = d_FFTR2CGetPlan(DimensionCount(dims), dimsold);
-		*planback = d_IFFTC2CGetPlan(DimensionCount(dims), dimsnew);
+		*planback = d_IFFTC2RGetPlan(DimensionCount(dims), dimsnew);
 	}
 }
 

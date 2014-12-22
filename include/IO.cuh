@@ -18,6 +18,8 @@ enum MRC_DATATYPE
 	MRC_RGB = 16
 };
 
+const size_t MRC_DATATYPE_SIZE[17] = { 1, 2, 4, 4, 8, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3 };
+
 struct HeaderMRC
 {
 	int3 dimensions;
@@ -61,6 +63,33 @@ struct HeaderMRC
 
 	int numlabels;
 	uchar labels[10][80];
+
+	HeaderMRC():
+		dimensions(toInt3(1, 1, 1)),
+		mode(MRC_DATATYPE::MRC_FLOAT),
+		startsubimage(toInt3(0, 0, 0)),
+		griddimensions(toInt3(1, 1, 1)),
+		pixelsize(make_float3(1.0f, 1.0f, 1.0f)),
+		angles(make_float3(0, 0, 0)),
+		maporder(toInt3(1, 2, 3)),
+		minvalue(0),
+		maxvalue(0),
+		meanvalue(0),
+		extendedbytes(0),
+		creatid(0),
+		nint(0),
+		nreal(0),
+		idtype(0),
+		lens(0),
+		nd1(0),
+		nd2(0),
+		vd1(0),
+		vd2(0),
+		tiltoriginal(make_float3(0, 0, 0)),
+		tiltcurrent(make_float3(0, 0, 0)),
+		origin(make_float3(0, 0, 0)),
+		stddevvalue(0),
+		numlabels(0) {}
 };
 
 typedef enum EM_DATATYPE: unsigned char
@@ -74,6 +103,8 @@ typedef enum EM_DATATYPE: unsigned char
 	EM_DOUBLE = 9,
 	EM_DOUBLECOMPLEX = 10
 };
+
+const size_t EM_DATATYPE_SIZE[11] = { 1, 1, 2, 4, 4, 4, 8, 8, 16 };
 
 struct HeaderEM
 {
@@ -128,12 +159,14 @@ struct HeaderEM
 };
 
  //mrc.cu:
-void ReadMRC(string path, void** data, EM_DATATYPE &datatype, int nframe = 0, bool flipx = false);
-void ReadMRCDims(string path, int3 &dims);
+void ReadMRC(string path, void** data, MRC_DATATYPE datatype, int nframe = -1);
+HeaderMRC ReadMRCHeader(string path);
+HeaderMRC ReadMRCHeader(std::ifstream &inputfile);
 
 //em.cu:
-void ReadEM(string path, void** data, EM_DATATYPE &datatype, int nframe = 0);
-void ReadEMDims(string path, int3 &dims);
+void ReadEM(string path, void** data, EM_DATATYPE datatype, int nframe = -1);
+HeaderEM ReadEMHeader(string path);
+HeaderEM ReadEMHeader(std::ifstream &inputfile);
 
 //raw.cu:
-void ReadRAW(string path, void** data, EM_DATATYPE datatype, int3 dims, int nframe = 0, size_t headerbytes = 0);
+void ReadRAW(string path, void** data, EM_DATATYPE datatype, int3 dims, size_t headerbytes, int nframe = -1);

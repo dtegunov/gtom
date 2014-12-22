@@ -222,6 +222,15 @@ void* MallocPinnedFromDeviceArray(void* d_array, size_t size);
  */
 tfloat* MixedToHostTfloat(void* h_input, EM_DATATYPE datatype, size_t elements);
 
+/**
+* \brief Converts a host array in a specified data format to tfloat.
+* \param[in] h_input	Array in host memory to be converted
+* \param[in] datatype		Data type for the host array
+* \param[in] elements		Number of elements
+* \returns Array pointer in host memory
+*/
+tfloat* MixedToHostTfloat(void* h_input, MRC_DATATYPE datatype, size_t elements);
+
 void WriteToBinaryFile(string path, void* data, size_t bytes);
 
 /**
@@ -354,7 +363,6 @@ template <class T, int fieldcount> T* d_JoinInterleaved(T** d_fields, size_t ele
  */
 template <class T, int fieldcount> void d_JoinInterleaved(T** d_fields, T* d_output, size_t elements);
 
-
 /**
  * \brief Converts a host array in a specified data format to tfloat in device memory.
  * \param[in] h_input	Array in host memory to be converted
@@ -365,13 +373,31 @@ template <class T, int fieldcount> void d_JoinInterleaved(T** d_fields, T* d_out
 void MixedToDeviceTfloat(void* h_input, tfloat* d_output, EM_DATATYPE datatype, size_t elements);
 
 /**
- * \brief Converts a host array in a specified data format to tfloat in device memory.
- * \param[in] h_input	Array in host memory to be converted
- * \param[in] datatype		Data type for the host array
- * \param[in] elements		Number of elements
- * \returns Array pointer in device\memory
- */
+* \brief Converts a host array in a specified data format to tfloat in device memory.
+* \param[in] h_input	Array in host memory to be converted
+* \param[in] d_output	Array in device memory that will contain the converted data
+* \param[in] datatype		Data type for the host array
+* \param[in] elements		Number of elements
+*/
+void MixedToDeviceTfloat(void* h_input, tfloat* d_output, MRC_DATATYPE datatype, size_t elements);
+
+/**
+* \brief Converts a host array in a specified data format to tfloat in device memory.
+* \param[in] h_input	Array in host memory to be converted
+* \param[in] datatype		Data type for the host array
+* \param[in] elements		Number of elements
+* \returns Array pointer in device\memory
+*/
 tfloat* MixedToDeviceTfloat(void* h_input, EM_DATATYPE datatype, size_t elements);
+
+/**
+* \brief Converts a host array in a specified data format to tfloat in device memory.
+* \param[in] h_input	Array in host memory to be converted
+* \param[in] datatype		Data type for the host array
+* \param[in] elements		Number of elements
+* \returns Array pointer in device\memory
+*/
+tfloat* MixedToDeviceTfloat(void* h_input, MRC_DATATYPE datatype, size_t elements);
 
 int GetFileSize(string path);
 void* MallocFromBinaryFile(string path);

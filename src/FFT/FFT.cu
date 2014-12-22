@@ -60,7 +60,7 @@ void d_FFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndime
 				  NULL, 1, 0,
 				  direction, batch);
 
-	CudaSafeCall((cudaError)cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE));
+	cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE);
 	#ifdef TOM_DOUBLE
 		cufftExecZ2Z(plan, d_input, d_output);
 	#else
