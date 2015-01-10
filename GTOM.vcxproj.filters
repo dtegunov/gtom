@@ -259,9 +259,6 @@
     <CudaCompile Include="src\Generics\Padding.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\Generics\LocalStdDev.cu">
-      <Filter>Generics</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\Masking\Windows.cu">
       <Filter>Masking</Filter>
     </CudaCompile>

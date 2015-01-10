@@ -155,21 +155,16 @@ template<bool ampsquared> __device__ double d_GetCTF(double k, double angle, CTF
 void d_CTFCorrect(tcomplex* d_input, int3 dimsinput, CTFParams params, tcomplex* d_output);
 
 //Decay.cu:
-
 void d_CTFDecay(tfloat* d_input, tfloat* d_output, int2 dims, int degree, int stripwidth);
 
 //Fit.cu:
-
 void d_CTFFit(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CTFFitParams p, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev);
 
 //Periodogram.cu:
-
 void d_Periodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, int2 dimsregion, tfloat* d_output);
 
 //Simulate.cu:
-
-void d_CTFSimulate(CTFParams params, float2* d_addresses, tfloat* d_output, uint n, bool amplitudesquared = false);
+void d_CTFSimulate(CTFParams* h_params, float2* d_addresses, tfloat* d_output, uint n, bool amplitudesquared = false, int batch = 1);
 
 //Wiener.cu:
-
 void d_WienerPerFreq(tcomplex* d_input, int3 dimsinput, tfloat* d_fsc, CTFParams params, tcomplex* d_output, tfloat* d_outputweights);

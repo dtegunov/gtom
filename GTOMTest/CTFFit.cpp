@@ -11,9 +11,9 @@ TEST(CTF, CTFFit)
 
 		CTFFitParams fp;
 		fp.pixelsize = tfloat3(1.35e-10f);
-		fp.defocus = tfloat3(-3.0e-6f, 0.0f, 0.1e-6f);
-		fp.defocusdelta = tfloat3(0.0f, 0.6e-6f, 0.05e-6f);
-		fp.astigmatismangle = tfloat3(0.0f, PI, ToRad(5.0f));
+		fp.defocus = tfloat3(-4.0e-6f, 0.0f, 0.1e-6f);
+		fp.defocusdelta = tfloat3(0.0f, 1.0e-6f, 0.1e-6f);
+		fp.astigmatismangle = tfloat3(0.0f, PI, ToRad(10.0f));
 		fp.dimsperiodogram = dimsregion;
 		CTFParams fit;
 

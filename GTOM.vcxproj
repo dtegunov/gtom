@@ -71,7 +71,6 @@
     <CudaCompile Include="src\Generics\Extraction.cu" />
     <CudaCompile Include="src\Generics\Histogram.cu" />
     <CudaCompile Include="src\Generics\IndexOf.cu" />
-    <CudaCompile Include="src\Generics\LocalStdDev.cu" />
     <CudaCompile Include="src\Generics\MakeAtlas.cu" />
     <CudaCompile Include="src\Generics\MinMax.cu" />
     <CudaCompile Include="src\Generics\MinMaxMonolithic.cu" />

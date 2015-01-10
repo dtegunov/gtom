@@ -16,7 +16,7 @@ TEST(Reconstruction, Fourier)
 		tfloat* d_volume;
 		cudaMalloc((void**)&d_volume, Elements(dimsvolume) * sizeof(tfloat));
 		
-		d_ReconstructFourier(d_inputproj, dimsimage, d_volume, dimsvolume, h_inputangles);
+		d_ReconstructFourier(d_inputproj, NULL, NULL, dimsimage, d_volume, dimsvolume, h_inputangles);
 
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_volume, Elements(dimsvolume) * sizeof(tfloat));
 		tfloat outputmax = (tfloat)-999999;
