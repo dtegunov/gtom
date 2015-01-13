@@ -19,9 +19,11 @@ void d_Periodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigin
 
 	if (norigins == 0)
 	{
-		regions = toInt2(ceil((tfloat)dimsimage.x / (tfloat)dimsregion.x) * 2, ceil((tfloat)dimsimage.y / (tfloat)dimsregion.y) * 2);
+		regions = toInt2(ceil((tfloat)dimsimage.x / (tfloat)dimsregion.x) * 1, ceil((tfloat)dimsimage.y / (tfloat)dimsregion.y) * 1);
 
-		tfloat2 shift = tfloat2((tfloat)(dimsimage.x - dimsregion.x) / (tfloat)(regions.x - 1), (tfloat)(dimsimage.y - dimsregion.x) / (tfloat)(regions.y - 1));
+		tfloat2 shift;
+		shift.x = regions.x > 1 ? (tfloat)(dimsimage.x - dimsregion.x) / (tfloat)(regions.x - 1) : (dimsimage.x - dimsregion.x) / 2;
+		shift.y = regions.y > 1 ? (tfloat)(dimsimage.y - dimsregion.x) / (tfloat)(regions.y - 1) : (dimsimage.y - dimsregion.y) / 2;
 		int3* h_origins = (int3*)malloc(Elements2(regions) * sizeof(int3));
 
 		for (int y = 0; y < regions.y; y++)
@@ -35,27 +37,36 @@ void d_Periodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigin
 		regions = toInt2(norigins, 1);
 	}
 
-	tfloat* d_extracted;
-	cudaMalloc((void**)&d_extracted, Elements2(regions) * Elements2(dimsregion) * sizeof(tfloat));
-	tcomplex* d_extractedft;
-	cudaMalloc((void**)&d_extractedft, Elements2(regions) * ElementsFFT2(dimsregion) * sizeof(tcomplex));
+	size_t memlimit = 96 << 20;
+	int batchsize = min((size_t)Elements2(regions), memlimit / ((size_t)Elements2(dimsregion) * sizeof(tfloat)));
 
-	d_Extract(d_image, d_extracted, toInt3(dimsimage), toInt3(dimsregion), d_origins, Elements2(regions));
+	tfloat* d_extracted;
+	cudaMalloc((void**)&d_extracted, batchsize * Elements2(dimsregion) * sizeof(tfloat));
+	tcomplex* d_extractedft;
+	cudaMalloc((void**)&d_extractedft, batchsize * ElementsFFT2(dimsregion) * sizeof(tcomplex));
+	tfloat* d_intermediate;
+	cudaMalloc((void**)&d_intermediate, batchsize * ElementsFFT2(dimsregion) * sizeof(tfloat));
+
+	for (int b = 0; b < Elements2(regions); b += batchsize)
+	{
+		int curbatch = min(batchsize, Elements2(regions) - b);
+
+		d_Extract(d_image, d_extracted, toInt3(dimsimage), toInt3(dimsregion), d_origins + b, Elements2(regions));
+
+		d_NormMonolithic(d_extracted, d_extracted, Elements2(dimsregion), T_NORM_MEAN01STD, curbatch);
+		d_HammingMask(d_extracted, d_extracted, toInt3(dimsregion), NULL, NULL, curbatch);
+		d_FFTR2C(d_extracted, d_extractedft, 2, toInt3(dimsregion), curbatch);
+		d_Abs(d_extractedft, d_extracted, curbatch * ElementsFFT2(dimsregion));
+		d_MultiplyByVector(d_extracted, d_extracted, d_extracted, curbatch * ElementsFFT2(dimsregion));
+
+		d_ReduceAdd(d_extracted, d_intermediate, ElementsFFT2(dimsregion), curbatch);
+		d_AddVector(d_output, d_intermediate, d_output, curbatch * ElementsFFT2(dimsregion));
+	}
+	d_RemapHalfFFT2Half(d_output, d_output, toInt3(dimsregion));
 
 	if (norigins == 0)
 		cudaFree(d_origins);
-
-	d_NormMonolithic(d_extracted, d_extracted, Elements2(dimsregion), T_NORM_MEAN01STD, Elements2(regions));
-	d_HammingMask(d_extracted, d_extracted, toInt3(dimsregion), NULL, NULL, Elements2(regions));
-	d_FFTR2C(d_extracted, d_extractedft, 2, toInt3(dimsregion), Elements2(regions));
-	d_Abs(d_extractedft, d_extracted, Elements2(regions) * ElementsFFT2(dimsregion));
-	d_MultiplyByVector(d_extracted, d_extracted, d_extracted, Elements2(regions) * Elements2(dimsregion));
-
-	d_ReduceAdd(d_extracted, d_output, ElementsFFT2(dimsregion), Elements2(regions));
-	d_RemapHalfFFT2Half(d_output, d_output, toInt3(dimsregion));
-
-	//CudaWriteToBinaryFile("d_output.bin", d_output, ElementsFFT2(dimsregion) * sizeof(tfloat));
-
+	cudaFree(d_intermediate);
 	cudaFree(d_extractedft);
 	cudaFree(d_extracted);
 }

@@ -58,6 +58,9 @@
     <Filter Include="CTF">
       <UniqueIdentifier>{18b7d81d-31a5-459f-8cef-f0316ea83217}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PCA">
+      <UniqueIdentifier>{12706eb5-abad-4971-930f-7c0546d0007f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Alignment.cuh">
@@ -112,6 +115,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="include\CTF.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\PCA.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
@@ -360,6 +366,15 @@
     </CudaCompile>
     <CudaCompile Include="src\CTF\Wiener.cu">
       <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\TiltFit.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\PCA\GS.cu">
+      <Filter>PCA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\PCA\NIPALS.cu">
+      <Filter>PCA</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

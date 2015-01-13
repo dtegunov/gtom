@@ -3,9 +3,8 @@
 
 void ReadMRC(string path, void** data, MRC_DATATYPE datatype, int nframe)
 {
-
-	ifstream inputfile(path, ios::in|ios::binary);
-	inputfile.seekg(0, ios::beg);
+	FILE* inputfile = fopen(path.c_str(), "rb");
+	_fseeki64(inputfile, 0L, SEEK_SET);
 
 	HeaderMRC header = ReadMRCHeader(inputfile);
 	
@@ -18,31 +17,31 @@ void ReadMRC(string path, void** data, MRC_DATATYPE datatype, int nframe)
 	cudaMallocHost(data, datasize);
 
 	if (nframe >= 0)
-		inputfile.seekg(datasize * nframe, ios::cur);
+		_fseeki64(inputfile, datasize * (size_t)nframe, SEEK_CUR);
 
-	inputfile.read((char*)*data, datasize);
+	fread(*data, sizeof(char), datasize, inputfile);
 
-	inputfile.close();
+	fclose(inputfile);
 }
 
 HeaderMRC ReadMRCHeader(string path)
 {
-	ifstream inputfile(path, ios::in|ios::binary);
-	inputfile.seekg(0, ios::beg);
+	FILE* inputfile = fopen(path.c_str(), "rb");
+	_fseeki64(inputfile, 0L, SEEK_SET);
 
 	HeaderMRC header = ReadMRCHeader(inputfile);
-	inputfile.close();
+	fclose(inputfile);
 
 	return header;
 }
 
-HeaderMRC ReadMRCHeader(std::ifstream &inputfile)
+HeaderMRC ReadMRCHeader(FILE* inputfile)
 {
 	HeaderMRC header;
 	char* headerp = (char*)&header;
 
-	inputfile.read(headerp, sizeof(HeaderMRC));
-	inputfile.seekg(header.extendedbytes, ios::cur);
+	fread(headerp, sizeof(char), sizeof(HeaderMRC), inputfile);
+	_fseeki64(inputfile, (long)header.extendedbytes, SEEK_CUR);
 
 	return header;
 }

@@ -46,6 +46,8 @@ struct tfloat2
 	tfloat x;
 	tfloat y;
 
+	__host__ __device__ tfloat2() : x((tfloat)0), y((tfloat)0) {}
+	__host__ __device__ tfloat2(tfloat val) : x(val), y(val) {}
 	__host__ __device__ tfloat2(tfloat x, tfloat y) : x(x), y(y) {}
 };
 
@@ -55,6 +57,7 @@ struct tfloat3
 	tfloat y;
 	tfloat z;
 
+	__host__ __device__ tfloat3() : x((tfloat)0), y((tfloat)0), z((tfloat)0) {}
 	__host__ __device__ tfloat3(tfloat x, tfloat y, tfloat z) : x(x), y(y), z(z) {}
 	__host__ __device__ tfloat3(int x, int y, int z) : x((tfloat)x), y((tfloat)y), z((tfloat)z) {}
 	__host__ __device__ tfloat3(tfloat val) : x(val), y(val), z(val) {}
@@ -67,6 +70,8 @@ struct tfloat4
 	tfloat z;
 	tfloat w;
 
+	__host__ __device__ tfloat4() : x((tfloat)0), y((tfloat)0), z((tfloat)0), w((tfloat)0) {}
+	__host__ __device__ tfloat4(tfloat val) : x(val), y(val), z(val), w(val) {}
 	__host__ __device__ tfloat4(tfloat x, tfloat y, tfloat z, tfloat w) : x(x), y(y), z(z), w(w) {}
 };
 
@@ -78,6 +83,8 @@ struct tfloat5
 	tfloat w;
 	tfloat v;
 
+	__host__ __device__ tfloat5() : x((tfloat)0), y((tfloat)0), z((tfloat)0), w((tfloat)0), v((tfloat)0) {}
+	__host__ __device__ tfloat5(tfloat val) : x(val), y(val), z(val), w(val), v(val) {}
 	__host__ __device__ tfloat5(tfloat x, tfloat y, tfloat z, tfloat w, tfloat v) : x(x), y(y), z(z), w(w), v(v) {}
 };
 

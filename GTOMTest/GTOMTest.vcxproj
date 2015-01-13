@@ -147,7 +147,10 @@
     <ClCompile Include="AnisotropicFSC.cpp" />
     <ClCompile Include="CTFCorrect.cpp" />
     <ClCompile Include="CTFFit.cpp" />
+    <ClCompile Include="CTFTiltFit.cpp" />
     <ClCompile Include="Decay.cpp" />
+    <ClCompile Include="GS.cpp" />
+    <ClCompile Include="NIPALS.cpp" />
     <ClCompile Include="Periodogram.cpp" />
     <ClCompile Include="PolynomialFit.cpp" />
     <ClCompile Include="RecCompare.cpp" />

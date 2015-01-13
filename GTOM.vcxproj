@@ -34,6 +34,7 @@
     <ClInclude Include="include\IO.cuh" />
     <ClInclude Include="include\Masking.cuh" />
     <ClInclude Include="include\Optimization.cuh" />
+    <ClInclude Include="include\PCA.cuh" />
     <ClInclude Include="include\Projection.cuh" />
     <ClInclude Include="include\Reconstruction.cuh" />
     <ClInclude Include="include\Resolution.cuh" />
@@ -53,6 +54,7 @@
     <CudaCompile Include="src\CTF\Fit.cu" />
     <CudaCompile Include="src\CTF\Periodogram.cu" />
     <CudaCompile Include="src\CTF\Simulate.cu" />
+    <CudaCompile Include="src\CTF\TiltFit.cu" />
     <CudaCompile Include="src\CTF\Wiener.cu" />
     <CudaCompile Include="src\CubicSplines\cubicPrefilter2D.cu" />
     <CudaCompile Include="src\CubicSplines\cubicPrefilter3D.cu" />
@@ -96,6 +98,8 @@
     <CudaCompile Include="src\Masking\IrregularSphereMask.cu" />
     <CudaCompile Include="src\Masking\Windows.cu" />
     <CudaCompile Include="src\Optimization\PolynomialFit.cu" />
+    <CudaCompile Include="src\PCA\GS.cu" />
+    <CudaCompile Include="src\PCA\NIPALS.cu" />
     <CudaCompile Include="src\Projection\Backward.cu" />
     <CudaCompile Include="src\Projection\Forward.cu" />
     <CudaCompile Include="src\Projection\Weighting.cu" />

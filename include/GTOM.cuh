@@ -13,6 +13,7 @@
 #include "IO.cuh"
 #include "Masking.cuh"
 #include "Optimization.cuh"
+#include "PCA.cuh"
 #include "Prerequisites.cuh"
 #include "Projection.cuh"
 #include "Reconstruction.cuh"

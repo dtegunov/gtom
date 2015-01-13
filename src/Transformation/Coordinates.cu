@@ -116,7 +116,7 @@ uint GetCart2PolarFFTNonredundantSize(int2 dims, int maskinner, int maskouter)
 {
 	uint samples = 0;
 	for (int r = maskinner; r < maskouter; r++)
-		samples += max(1, ceil(PI * (tfloat)r));
+		samples += r * 2;
 
 	return samples;
 }

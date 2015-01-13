@@ -4,8 +4,8 @@
 
 void ReadRAW(string path, void** data, EM_DATATYPE datatype, int3 dims, size_t headerbytes, int nframe)
 {
-	ifstream inputfile(path, ios::in|ios::binary|ios::ate);
-	inputfile.seekg(0, ios::beg);
+	FILE* inputfile = fopen(path.c_str(), "rb");
+	_fseeki64(inputfile, 0L, SEEK_SET);
 
 	size_t bytesperfield = EM_DATATYPE_SIZE[(int)datatype];
 
@@ -13,9 +13,9 @@ void ReadRAW(string path, void** data, EM_DATATYPE datatype, int3 dims, size_t h
 	cudaMallocHost(data, datasize);
 
 	if (nframe >= 0)
-		inputfile.seekg(headerbytes + datasize * nframe, ios::cur);
+		_fseeki64(inputfile, headerbytes + datasize * (size_t)nframe, SEEK_CUR);
 
-	inputfile.read((char*)*data, datasize);
+	fread(*data, sizeof(char), datasize, inputfile);
 
-	inputfile.close();
+	fclose(inputfile);
 }

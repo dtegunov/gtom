@@ -181,8 +181,8 @@ void h_PolynomialFit(tfloat* h_x, tfloat* h_y, int npoints, tfloat* h_factors, i
 		p(f) = 0.0;
 
 	find_min_trust_region(objective_delta_stop_strategy(1e-4),
-		h_poly_model(h_x, h_y, npoints, degree),
-		p);
+						  h_poly_model(h_x, h_y, npoints, degree),
+						  p);
 
 	for (int f = 0; f < degree; f++)
 		h_factors[f] = p(f);

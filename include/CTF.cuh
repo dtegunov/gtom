@@ -113,6 +113,62 @@ struct CTFParamsLean
 		q0(p.decayCohIll / (pow((double)p.Cs * pow((double)lambda, 3.0), 0.25))){}
 };
 
+class CTFTiltParams
+{
+public:
+	tfloat3 angles;
+	CTFParams centerparams;
+
+	CTFTiltParams(tfloat3 _angles, CTFParams _centerparams)
+	{
+		angles = _angles;
+		centerparams = _centerparams;
+	}
+
+	tfloat* GetZGrid2D(int2 dims, tfloat2 spacingangstrom, tfloat3 offsetangstrom)
+	{
+		tfloat* grid = (tfloat*)malloc(Elements2(dims) * sizeof(tfloat));
+		spacingangstrom = tfloat2(spacingangstrom.x * 10e-10f, spacingangstrom.y * 10e-10f);
+		offsetangstrom = tfloat3(offsetangstrom.x * 10e-10f, offsetangstrom.y * 10e-10f, offsetangstrom.z * 10e-10f);
+		tfloat tantheta = tan(angles.y);
+		tfloat cosphi = cos(angles.x);
+		tfloat sinphi = sin(angles.x);
+
+		#pragma omp for
+		for (int y = 0; y < dims.y; y++)
+		{
+			for (int x = 0; x < dims.x; x++)
+			{
+				int2 gridcoords = toInt2(x - dims.x / 2, y - dims.y / 2);
+				tfloat2 flatcoords = tfloat2((tfloat)gridcoords.x * spacingangstrom.x + offsetangstrom.x,
+											 (tfloat)gridcoords.y * spacingangstrom.y + offsetangstrom.y);
+				tfloat z = flatcoords.x * tantheta * cosphi + flatcoords.y * tantheta * sinphi + offsetangstrom.z;
+				grid[y * dims.x + x] = centerparams.defocus + z;
+			}
+		}
+
+		return grid;
+	}
+
+	CTFParams* GetParamsGrid2D(int2 dims, tfloat2 spacingangstrom, tfloat3 offsetangstrom)
+	{
+		CTFParams* grid = (CTFParams*)malloc(Elements2(dims) * sizeof(CTFParams));
+		tfloat* zgrid = this->GetZGrid2D(dims, spacingangstrom, offsetangstrom);
+
+		#pragma omp for schedule(dynamic, 1024)
+		for (int i = 0; i < Elements2(dims); i++)
+		{
+			CTFParams pointparams = centerparams;
+			pointparams.defocus = zgrid[i];
+			grid[i] = pointparams;
+		}
+
+		free(zgrid);
+
+		return grid;
+	}
+};
+
 template<bool ampsquared> __device__ double d_GetCTF(double k, double angle, CTFParamsLean p)
 {
 	double k2 = k * k;
@@ -158,6 +214,7 @@ void d_CTFCorrect(tcomplex* d_input, int3 dimsinput, CTFParams params, tcomplex*
 void d_CTFDecay(tfloat* d_input, tfloat* d_output, int2 dims, int degree, int stripwidth);
 
 //Fit.cu:
+void d_CTFFitCreateTarget(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CTFFitParams p, tfloat* d_densetarget, float2* d_densecoords);
 void d_CTFFit(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CTFFitParams p, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev);
 
 //Periodogram.cu:
@@ -165,6 +222,9 @@ void d_Periodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigin
 
 //Simulate.cu:
 void d_CTFSimulate(CTFParams* h_params, float2* d_addresses, tfloat* d_output, uint n, bool amplitudesquared = false, int batch = 1);
+
+//TiltFit.cu:
+void d_CTFTiltFit(tfloat* d_image, int2 dimsimage, CTFFitParams p, int refinements, int tilespacing, CTFTiltParams &fit, tfloat &score, tfloat &scorestddev);
 
 //Wiener.cu:
 void d_WienerPerFreq(tcomplex* d_input, int3 dimsinput, tfloat* d_fsc, CTFParams params, tcomplex* d_output, tfloat* d_outputweights);

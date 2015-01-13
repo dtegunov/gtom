@@ -161,12 +161,12 @@ struct HeaderEM
  //mrc.cu:
 void ReadMRC(string path, void** data, MRC_DATATYPE datatype, int nframe = -1);
 HeaderMRC ReadMRCHeader(string path);
-HeaderMRC ReadMRCHeader(std::ifstream &inputfile);
+HeaderMRC ReadMRCHeader(FILE* inputfile);
 
 //em.cu:
 void ReadEM(string path, void** data, EM_DATATYPE datatype, int nframe = -1);
 HeaderEM ReadEMHeader(string path);
-HeaderEM ReadEMHeader(std::ifstream &inputfile);
+HeaderEM ReadEMHeader(FILE* inputfile);
 
 //raw.cu:
 void ReadRAW(string path, void** data, EM_DATATYPE datatype, int3 dims, size_t headerbytes, int nframe = -1);
