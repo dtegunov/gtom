@@ -9,6 +9,12 @@ glm::mat4 Matrix4Euler(tfloat3 angles);
 glm::mat4 Matrix4EulerLegacy(tfloat2 angles);
 glm::mat3 Matrix3Euler(tfloat3 angles);
 
+tfloat3 EulerFromMatrix(glm::mat4 m);
+tfloat3 EulerFromMatrix(glm::mat3 m);
+
+tfloat3 EulerInverse(tfloat3 angles);
+tfloat EulerCompare(tfloat3 angles1, tfloat3 angles2);
+
 glm::mat4 Matrix4Translation(tfloat3 translation);
 glm::mat4 Matrix4Scale(tfloat3 scale);
 glm::mat4 Matrix4RotationX(tfloat angle);

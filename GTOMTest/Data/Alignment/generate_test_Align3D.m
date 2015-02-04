@@ -1,20 +1,33 @@
 rng(123);
-dim = 128;
+dim = 32;
 
-indata1 = single(rand(dim/8,dim/8,dim/8));
-indata1 = tom_rescale(indata1, [dim dim dim]);
-indata2 = single(rand(dim/4,dim/4,dim/4));
-indata2 = tom_rescale(indata2, [dim dim dim]);
-indata3 = single(rand(dim/16,dim/16,dim/16));
-indata3 = tom_rescale(indata3, [dim dim dim]);
-indata = tom_spheremask(indata1+indata2+indata3, dim/2-3, 1);
+indata = zeros(32, 32, 32);
+indata(17,17,:) = 1;
+indata(:,17,17) = 1;
+indata(17,:,17) = 1;
+indata = tom_emread('mediator.em');
+indata = indata.Value;
 
-target = tom_rotate(indata, [90, 45, 30]);
+psf = ones(16, 16, 8);
+psf = padarray(psf, [8 8 12], 0);
+psf = psf(1:17,:,:);
+psf = ones(32,32,32);
+
+target = indata;
+indata = tom_rescale(indata,[128, 128, 128]);
 
 fid = fopen('Input_Align3DData_1.bin', 'W');
-fwrite(fid, indata, 'single');
+fid2 = fopen('Input_Align3DDataPSF_1.bin', 'W');
+for i=0:50
+    fwrite(fid, tom_rescale(tom_rotate(indata, [-i i*2 i]), [32 32 32]), 'single');
+    fwrite(fid2, psf, 'single');
+end;
 fclose(fid);
+fclose(fid2);
 
 fid = fopen('Input_Align3DTarget_1.bin', 'W');
+fid2 = fopen('Input_Align3DTargetPSF_1.bin', 'W');
 fwrite(fid, target, 'single');
+fwrite(fid2, psf, 'single');
 fclose(fid);
+fclose(fid2);

@@ -55,6 +55,9 @@
     <Filter Include="Source Files\PCA">
       <UniqueIdentifier>{2879e57e-9700-4131-8e4a-0b7fa0d61b7a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Helpers">
+      <UniqueIdentifier>{95fcf15b-125f-4629-91dc-fb2bbc1ccf6a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -197,6 +200,15 @@
     </ClCompile>
     <ClCompile Include="GS.cpp">
       <Filter>Source Files\PCA</Filter>
+    </ClCompile>
+    <ClCompile Include="SimilarityMatrix.cpp">
+      <Filter>Source Files\Correlation</Filter>
+    </ClCompile>
+    <ClCompile Include="FFTLines.cpp">
+      <Filter>Source Files\Transformation</Filter>
+    </ClCompile>
+    <ClCompile Include="Euler.cpp">
+      <Filter>Source Files\Helpers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

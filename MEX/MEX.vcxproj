@@ -16,6 +16,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Alignment\cgtom_align3d.cu" />
+    <None Include="Correlation\cgtom_line_similarity_matrix.cu" />
+    <None Include="Correlation\cgtom_similarity_matrix_2d.cu" />
+    <None Include="Correlation\cgtom_similarity_matrix_3d.cu" />
     <None Include="CTF\cgtom_ctf_fit_correct.cu" />
     <None Include="CTF\cgtom_wiener_correct.cu" />
     <None Include="FFT\cgtom_fftc2c.cu" />

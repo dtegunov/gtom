@@ -85,8 +85,8 @@ void d_LocalAnisotropicFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume
 		}
 		cudaMemcpy(d_extractcenters, h_extractcenters, batchsize * sizeof(int3), cudaMemcpyHostToDevice);
 
-		d_Extract(d_paddedvolume1, d_extracts1, dimspaddedvolume, dimswindow, d_extractcenters, batchsize);
-		d_Extract(d_paddedvolume2, d_extracts2, dimspaddedvolume, dimswindow, d_extractcenters, batchsize);
+		d_ExtractMany(d_paddedvolume1, d_extracts1, dimspaddedvolume, dimswindow, d_extractcenters, batchsize);
+		d_ExtractMany(d_paddedvolume2, d_extracts2, dimspaddedvolume, dimswindow, d_extractcenters, batchsize);
 
 		d_MultiplyByVector(d_extracts1, d_mask, d_extracts1, elementswindow, batchsize);
 		d_MultiplyByVector(d_extracts2, d_mask, d_extracts2, elementswindow, batchsize);

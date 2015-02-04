@@ -25,7 +25,7 @@ void d_CTFDecay(tfloat* d_input, tfloat* d_output, int2 dims, int degree, int st
 		h_positions[y] = toInt3(0, y, 0);
 	int3* d_positions = (int3*)CudaMallocFromHostArray(h_positions, dims.y * sizeof(int3));
 	free(h_positions);
-	d_Extract(d_inputpadded, d_strips, toInt3(dimspadded), toInt3(dimsstrip), d_positions, dims.y);
+	d_ExtractMany(d_inputpadded, d_strips, toInt3(dimspadded), toInt3(dimsstrip), d_positions, dims.y);
 	cudaFree(d_positions);
 	cudaFree(d_inputpadded);
 

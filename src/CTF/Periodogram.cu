@@ -19,7 +19,7 @@ void d_Periodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigin
 
 	if (norigins == 0)
 	{
-		regions = toInt2(ceil((tfloat)dimsimage.x / (tfloat)dimsregion.x) * 1, ceil((tfloat)dimsimage.y / (tfloat)dimsregion.y) * 1);
+		regions = toInt2(NextMultipleOf(dimsimage.x, dimsregion.x) / dimsregion.x, NextMultipleOf(dimsimage.y, dimsregion.y) / dimsregion.y);
 
 		tfloat2 shift;
 		shift.x = regions.x > 1 ? (tfloat)(dimsimage.x - dimsregion.x) / (tfloat)(regions.x - 1) : (dimsimage.x - dimsregion.x) / 2;
@@ -37,7 +37,7 @@ void d_Periodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigin
 		regions = toInt2(norigins, 1);
 	}
 
-	size_t memlimit = 96 << 20;
+	size_t memlimit = 64 << 20;
 	int batchsize = min((size_t)Elements2(regions), memlimit / ((size_t)Elements2(dimsregion) * sizeof(tfloat)));
 
 	tfloat* d_extracted;
@@ -45,13 +45,14 @@ void d_Periodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigin
 	tcomplex* d_extractedft;
 	cudaMalloc((void**)&d_extractedft, batchsize * ElementsFFT2(dimsregion) * sizeof(tcomplex));
 	tfloat* d_intermediate;
-	cudaMalloc((void**)&d_intermediate, batchsize * ElementsFFT2(dimsregion) * sizeof(tfloat));
+	cudaMalloc((void**)&d_intermediate, ElementsFFT2(dimsregion) * sizeof(tfloat));
+	d_ValueFill(d_output, ElementsFFT2(dimsregion), (tfloat)0);
 
 	for (int b = 0; b < Elements2(regions); b += batchsize)
 	{
 		int curbatch = min(batchsize, Elements2(regions) - b);
 
-		d_Extract(d_image, d_extracted, toInt3(dimsimage), toInt3(dimsregion), d_origins + b, Elements2(regions));
+		d_ExtractMany(d_image, d_extracted, toInt3(dimsimage), toInt3(dimsregion), d_origins + b, curbatch);
 
 		d_NormMonolithic(d_extracted, d_extracted, Elements2(dimsregion), T_NORM_MEAN01STD, curbatch);
 		d_HammingMask(d_extracted, d_extracted, toInt3(dimsregion), NULL, NULL, curbatch);
@@ -60,7 +61,7 @@ void d_Periodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigin
 		d_MultiplyByVector(d_extracted, d_extracted, d_extracted, curbatch * ElementsFFT2(dimsregion));
 
 		d_ReduceAdd(d_extracted, d_intermediate, ElementsFFT2(dimsregion), curbatch);
-		d_AddVector(d_output, d_intermediate, d_output, curbatch * ElementsFFT2(dimsregion));
+		d_AddVector(d_output, d_intermediate, d_output, ElementsFFT2(dimsregion));
 	}
 	d_RemapHalfFFT2Half(d_output, d_output, toInt3(dimsregion));
 

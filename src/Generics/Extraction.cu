@@ -10,7 +10,8 @@
 ////////////////////////////
 
 template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3 regionorigin);
-template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3* d_regionorigins);
+template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3* d_regionorigins);
+template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, size_t regionelements, int3* d_regionorigins);
 template <bool cubicinterp> __global__ void Extract2DTransformedKernel(cudaTextureObject_t t_input, tfloat* d_output, int2 sourcedims, int2 regiondims, glm::mat3* d_transforms);
 
 
@@ -28,7 +29,6 @@ template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3
 	size_t TpB = min(256, NextMultipleOf(regiondims.x, 32));
 	dim3 grid = dim3(regiondims.y, regiondims.z, batch);
 	ExtractKernel <<<grid, (int)TpB>>> (d_input, d_output, sourcedims, Elements(sourcedims), regiondims, Elements(regiondims), regionorigin);
-	cudaStreamQuery(0);
 }
 template void d_Extract<tfloat>(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
 template void d_Extract<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
@@ -38,16 +38,27 @@ template void d_Extract<char>(char* d_input, char* d_output, int3 sourcedims, in
 
 template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch)
 {
-	size_t TpB = 256;
-	dim3 grid = dim3((regiondims.x * regiondims.y + 255) / 256, regiondims.z, batch);
-	ExtractManyKernel <<<grid, (int)TpB>>> (d_input, d_output, sourcedims, Elements(sourcedims), regiondims, Elements(regiondims), d_regionorigins);
-	cudaStreamQuery(0);
+	size_t TpB = min(256, NextMultipleOf(regiondims.x, 32));
+	dim3 grid = dim3(regiondims.y, regiondims.z, batch);
+	ExtractKernel <<<grid, (int)TpB>>> (d_input, d_output, sourcedims, Elements(sourcedims), regiondims, Elements(regiondims), d_regionorigins);
 }
 template void d_Extract<tfloat>(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 template void d_Extract<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 template void d_Extract<double>(double* d_input, double* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 template void d_Extract<int>(int* d_input, int* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 template void d_Extract<char>(char* d_input, char* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+
+template <class T> void d_ExtractMany(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch)
+{
+	size_t TpB = min(256, NextMultipleOf(regiondims.x, 32));
+	dim3 grid = dim3(regiondims.y, regiondims.z, batch);
+	ExtractManyKernel << <grid, (int)TpB >> > (d_input, d_output, sourcedims, regiondims, Elements(regiondims), d_regionorigins);
+}
+template void d_ExtractMany<tfloat>(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+template void d_ExtractMany<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+template void d_ExtractMany<double>(double* d_input, double* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+template void d_ExtractMany<int>(int* d_input, int* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+template void d_ExtractMany<char>(char* d_input, char* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -104,26 +115,40 @@ template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 s
 	T* offsetoutput = d_output + blockIdx.z * regionelements + (blockIdx.y * regiondims.y + blockIdx.x) * regiondims.x;
 	T* offsetinput = d_input + blockIdx.z * sourceelements + (oz * sourcedims.y + oy) * sourcedims.x;
 
-	for (int x = threadIdx.x; x < regiondims.x; x += blockDim.x)
-		offsetoutput[x] = offsetinput[(x + regionorigin.x) % sourcedims.x];
+	for (int idx = threadIdx.x; idx < regiondims.x; idx += blockDim.x)
+		offsetoutput[idx] = offsetinput[(idx + regionorigin.x) % sourcedims.x];
 }
 
-template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3* d_regionorigins)
+template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3* d_regionorigins)
 {
 	int3 regionorigin = d_regionorigins[blockIdx.z];
-	uint id = blockIdx.x * blockDim.x + threadIdx.x;
-	if(id >= regiondims.x * regiondims.y)
-		return;
+	int idy = blockIdx.x;
+	int idz = blockIdx.y;
+
+	int oy = (idy + regionorigin.y + sourcedims.y * 999) % sourcedims.y;
+	int oz = (idz + regionorigin.z + sourcedims.z * 999) % sourcedims.z;
+
+	d_output += blockIdx.z * regionelements + (idz * regiondims.y + idy) * regiondims.x;
+	d_input += blockIdx.z * sourceelements + (oz * sourcedims.y + oy) * sourcedims.x;
+
+	for (int idx = threadIdx.x; idx < regiondims.x; idx += blockDim.x)
+		d_output[idx] = d_input[(idx + regionorigin.x + sourcedims.x * 999) % sourcedims.x];
+}
+
+template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, size_t regionelements, int3* d_regionorigins)
+{
+	int3 regionorigin = d_regionorigins[blockIdx.z];
+	int idy = blockIdx.x;
+	int idz = blockIdx.y;
 	
-	uint y = id / regiondims.x;
-	uint x = id - y * regiondims.x;
-	int oy = (y + regionorigin.y);
-	int oz = (blockIdx.y + regionorigin.z);
+	int oy = (idy + regionorigin.y + sourcedims.y * 999) % sourcedims.y;
+	int oz = (idz + regionorigin.z + sourcedims.z * 999) % sourcedims.z;
 
-	d_output += blockIdx.z * regionelements + (blockIdx.y * regiondims.y + y) * regiondims.x;
-	d_input += (oz * sourcedims.y + oy) * sourcedims.x + regionorigin.x;
+	d_output += blockIdx.z * regionelements + (idz * regiondims.y + idy) * regiondims.x;
+	d_input += (oz * sourcedims.y + oy) * sourcedims.x;
 
-	d_output[x] = d_input[x];
+	for (int idx = threadIdx.x; idx < regiondims.x; idx += blockDim.x)
+		d_output[idx] = d_input[(idx + regionorigin.x + sourcedims.x * 999) % sourcedims.x];
 }
 
 template <bool cubicinterp> __global__ void Extract2DTransformedKernel(cudaTextureObject_t t_input, tfloat* d_output, int2 sourcedims, int2 regiondims, glm::mat3* d_transforms)

@@ -619,6 +619,17 @@ template <class Tmask> void d_Dev(tfloat* d_input, imgstats5* d_output, size_t e
 template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch = 1);
 
 /**
+* \brief Extracts a rectangular portion from one or multiple images/volumes at variable locations
+* \param[in] d_input	Array with input data
+* \param[in] d_output	Array that will contain the extracted images/volumes; d_output == d_input is not valid
+* \param[in] sourcedims	Dimensions of original image/volume
+* \param[in] regiondims	Dimensions of extracted portion
+* \param[in] d_regionorigins	Coordinates of the left upper corner of the extracted portion
+* \param[in] batch	Number of images to be processed
+*/
+template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch = 1);
+
+/**
  * \brief Extracts rectangular portions from the same image/volume at different positions
  * \param[in] d_input	Array with input data
  * \param[in] d_output	Array that will contain the extracted images/volumes; d_output == d_input is not valid
@@ -627,7 +638,7 @@ template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3
  * \param[in] d_regionorigins	Coordinates of the upper left corner of the extracted portion
  * \param[in] batch	Number of images to be extracted
  */
-template <class T> void d_Extract(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch = 1);
+template <class T> void d_ExtractMany(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch = 1);
 
 /**
  * \brief Extracts rectangular portions from the same image/volume at different positions, sampling it in a transformed reference frame

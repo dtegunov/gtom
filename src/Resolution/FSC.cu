@@ -9,7 +9,7 @@
 //CUDA kernel declaration//
 ///////////////////////////
 
-__global__ void FSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, int3 dimsvolume, int maxradius, tfloat* d_nums, tfloat* d_denoms1, tfloat* d_denoms2);
+__global__ void FSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, uint sidelength, uint sidelengthft, int maxradius, tfloat* d_nums, tfloat* d_denoms1, tfloat* d_denoms2);
 
 
 /////////////////////////////
@@ -50,7 +50,7 @@ void d_FSC(tcomplex* d_volumeft1, tcomplex* d_volumeft2, int3 dimsvolume, tfloat
 	cudaMalloc((void**)&d_denoms1, maxradius * grid.x * batch * sizeof(tfloat));
 	cudaMalloc((void**)&d_denoms2, maxradius * grid.x * batch * sizeof(tfloat));
 
-	FSCKernel <<<grid, TpB>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, d_nums, d_denoms1, d_denoms2);
+	FSCKernel <<<grid, TpB>>> (d_volumeft1, d_volumeft2, dimsvolume.x, dimsvolume.x / 2 + 1, maxradius, d_nums, d_denoms1, d_denoms2);
 
 	tfloat *d_rednums, *d_reddenoms1, *d_reddenoms2;
 	cudaMalloc((void**)&d_rednums, maxradius * batch * sizeof(tfloat));
@@ -79,14 +79,17 @@ void d_FSC(tcomplex* d_volumeft1, tcomplex* d_volumeft2, int3 dimsvolume, tfloat
 //CUDA kernels//
 ////////////////
 
-__global__ void FSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, int3 dimsvolume, int maxradius, tfloat* d_nums, tfloat* d_denoms1, tfloat* d_denoms2)
+__global__ void FSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, uint sidelength, uint sidelengthft, int maxradius, tfloat* d_nums, tfloat* d_denoms1, tfloat* d_denoms2)
 {
 	__shared__ tfloat nums[512];
 	__shared__ tfloat denoms1[512];
 	__shared__ tfloat denoms2[512];
 
-	d_volume1 += ElementsFFT(dimsvolume) * blockIdx.y;
-	d_volume2 += ElementsFFT(dimsvolume) * blockIdx.y;
+	uint elementsslice = sidelengthft * sidelength;
+	uint elementscube = elementsslice * sidelength;
+
+	d_volume1 += elementscube * blockIdx.y;
+	d_volume2 += elementscube * blockIdx.y;
 
 	for (int i = threadIdx.x; i < maxradius; i += blockDim.x)
 	{
@@ -96,21 +99,18 @@ __global__ void FSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, int3 dimsvol
 	}
 	__syncthreads();
 
-	uint elementsrow = (dimsvolume.x / 2 + 1);
-	uint elementsslice = elementsrow * dimsvolume.y;
-	uint elementscube = elementsslice * dimsvolume.z;
-
 	int maxradius2 = maxradius * maxradius;
+	uint halfminusone = sidelength / 2 - 1;
 
 	for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < elementscube; id += gridDim.x * blockDim.x)
 	{
-		int idz = id / elementsslice;
-		int idy = (id - idz * elementsslice) / elementsrow;
-		int idx = id % elementsrow;
+		uint idz = id / elementsslice;
+		uint idy = (id - idz * elementsslice) / sidelengthft;
+		uint idx = id % sidelengthft;
 
 		int rx = idx;
-		int ry = dimsvolume.y / 2 - 1 - ((idy + dimsvolume.y / 2 - 1) % dimsvolume.y);
-		int rz = dimsvolume.z / 2 - 1 - ((idz + dimsvolume.z / 2 - 1) % dimsvolume.z);
+		int ry = (int)halfminusone - (int)((idy + halfminusone) % sidelength);
+		int rz = (int)halfminusone - (int)((idz + halfminusone) % sidelength);
 		int radius2 = rx * rx + ry * ry + rz * rz;
 		if (radius2 >= maxradius2)
 			continue;

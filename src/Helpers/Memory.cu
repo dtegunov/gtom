@@ -141,6 +141,8 @@ template void CudaMemcpyMulti<int>(int* dst, int* src, size_t elements, int copi
 template void CudaMemcpyMulti<long>(long* dst, long* src, size_t elements, int copies);
 template void CudaMemcpyMulti<float>(float* dst, float* src, size_t elements, int copies);
 template void CudaMemcpyMulti<double>(double* dst, double* src, size_t elements, int copies);
+template void CudaMemcpyMulti<float2>(float2* dst, float2* src, size_t elements, int copies);
+template void CudaMemcpyMulti<double2>(double2* dst, double2* src, size_t elements, int copies);
 
 template<class T> void CudaMemcpyStrided(T* dst, T* src, size_t elements, int stridedst, int stridesrc)
 {
@@ -154,6 +156,8 @@ template void CudaMemcpyStrided<int>(int* dst, int* src, size_t elements, int st
 template void CudaMemcpyStrided<long>(long* dst, long* src, size_t elements, int stridedst, int stridesrc);
 template void CudaMemcpyStrided<float>(float* dst, float* src, size_t elements, int stridedst, int stridesrc);
 template void CudaMemcpyStrided<double>(double* dst, double* src, size_t elements, int stridedst, int stridesrc);
+template void CudaMemcpyStrided<float2>(float2* dst, float2* src, size_t elements, int stridedst, int stridesrc);
+template void CudaMemcpyStrided<double2>(double2* dst, double2* src, size_t elements, int stridedst, int stridesrc);
 
 void* CudaMallocAligned2D(size_t widthbytes, size_t height, int* pitch, int alignment)
 {       

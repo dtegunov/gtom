@@ -28,16 +28,22 @@ uint GetCart2PolarFFTNonredundantSize(int2 dims, int maskinner, int maskouter);
 float2* GetPolarFFTNonredundantCoords(int2 dims);
 float2* GetPolarFFTNonredundantCoords(int2 dims, int maskinner, int maskouter);
 
+//FFTLines.cu:
+void d_FFTLines(tcomplex* d_input, tcomplex* d_output, int2 dims, T_INTERP_MODE mode, int anglesteps, int linewidth, int batch);
+
 //Rotation.cu:
 void d_Rotate2D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* angles, int batch = 1);
-void d_Rotate3D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* h_angles, T_INTERP_MODE mode, int batch = 1);
+void d_Rotate3D(tfloat* d_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered);
 void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat* angles, tfloat maxfreq, T_INTERP_MODE mode, bool isoutputzerocentered, int batch = 1);
 void d_Rotate2DFT(cudaTextureObject_t t_inputRe, cudaTextureObject_t t_inputIm, tcomplex* d_output, int3 dims, tfloat angle, tfloat maxfreq, T_INTERP_MODE mode, bool isoutputzerocentered);
-void d_Rotate3DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* h_angles, T_INTERP_MODE mode, int batch = 1);
+void d_Rotate3DFT(tcomplex* d_volume, tcomplex* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered);
+void d_Rotate3DFT(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered);
+void d_Rotate3DFT(tfloat* d_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered);
+void d_Rotate3DFT(cudaTextureObject_t t_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered);
 
 //Shift.cu:
-void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* delta, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, tcomplex* d_sharedintermediate = NULL, int batch = 1);
-void d_Shift(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* delta, bool iszerocentered = false, int batch = 1);
+void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* h_delta, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, tcomplex* d_sharedintermediate = NULL, int batch = 1);
+void d_Shift(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* h_delta, bool iszerocentered = false, int batch = 1);
 
 //Scale.cu:
 void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, int batch = 1);

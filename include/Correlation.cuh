@@ -61,14 +61,6 @@ enum T_PEAK_MODE
 */
 void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, T_PEAK_MODE mode, cufftHandle* planforw = (cufftHandle*)NULL, cufftHandle* planback = (cufftHandle*)NULL, int batch = 1);
 
-/**
-* \brief Creates pre-cooked FFT plans for d_Peak(); parameters must be identical
-* \param[in] dims	Array dimensions
-* \param[in] mode	Desired positional precision
-* \param[in] planforw	Will contain forward FFT plan
-* \param[in] planback	Will contain reverse FFT plan
-*/
-void d_PeakMakePlans(int3 dims, T_PEAK_MODE mode, cufftHandle* planforw, cufftHandle* planback);
 
 /**
 * \brief Detects multiple local peaks in a map
@@ -80,3 +72,9 @@ void d_PeakMakePlans(int3 dims, T_PEAK_MODE mode, cufftHandle* planforw, cufftHa
 * \param[in] batch	Number of maps
 */
 void d_LocalPeaks(tfloat* d_input, int3** h_peaks, int* h_peaksnum, int3 dims, int localextent, tfloat threshold, int batch = 1);
+
+//SimilarityMatrix.cu:
+
+void d_RotationSeries(tfloat* d_image, tfloat* d_series, int2 dimsimage, int anglesteps);
+void d_SimilarityMatrixRow(tfloat* d_images, tcomplex* d_imagesft, int2 dimsimage, int nimages, int anglesteps, int target, tfloat* d_similarity);
+void d_LineSimilarityMatrixRow(tcomplex* d_linesft, int2 dimsimage, int nimages, int linewidth, int anglesteps, int target, tfloat* d_similarity);

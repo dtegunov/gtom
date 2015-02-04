@@ -2,10 +2,10 @@
 dimx=8;
 dimy=8;
 delta=[1 2];
-image1 = single(rand(dimx,dimy));
+image1 = tom_norm(rand(dimx,dimy), 'mean0+1std');
 image2 = tom_shift(image1, delta);
 indata = tom_corr(image1, image2);
-outdata = delta + [floor(dimx/2)+1 floor(dimy/2)+1] - [1 1];
+outdata = delta + [floor(dimx/2) floor(dimy/2)];
 if(size(outdata,2)==2)
     outdata = [outdata 0];
 end;
@@ -19,11 +19,11 @@ fclose(fid);
 %Case 2:
 dimx=20;
 dimy=20;
-delta=[1.87 2.13];
-image1 = single(rand(dimx,dimy));
+delta=[1.5 2.5];
+image1 = tom_norm(rand(dimx,dimy), 'mean0+1std');
 image2 = tom_shift(image1, delta);
 indata = tom_corr(image1, image2);
-outdata = delta + [floor(dimx/2)+1 floor(dimy/2)+1] - [1 1];
+outdata = delta + [floor(dimx/2) floor(dimy/2)];
 if(size(outdata,2)==2)
     outdata = [outdata 0];
 end;

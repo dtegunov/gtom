@@ -376,6 +376,12 @@
     <CudaCompile Include="src\PCA\NIPALS.cu">
       <Filter>PCA</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\Correlation\SimilarityMatrix.cu">
+      <Filter>Correlation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Transformation\FFTLines.cu">
+      <Filter>Transformation</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\IO\em.cpp">

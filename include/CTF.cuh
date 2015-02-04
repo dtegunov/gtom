@@ -128,8 +128,9 @@ public:
 	tfloat* GetZGrid2D(int2 dims, tfloat2 spacingangstrom, tfloat3 offsetangstrom)
 	{
 		tfloat* grid = (tfloat*)malloc(Elements2(dims) * sizeof(tfloat));
-		spacingangstrom = tfloat2(spacingangstrom.x * 10e-10f, spacingangstrom.y * 10e-10f);
-		offsetangstrom = tfloat3(offsetangstrom.x * 10e-10f, offsetangstrom.y * 10e-10f, offsetangstrom.z * 10e-10f);
+		spacingangstrom = tfloat2(spacingangstrom.x * 1e-10f, spacingangstrom.y * 1e-10f);
+		offsetangstrom = tfloat3(offsetangstrom.x * 1e-10f, offsetangstrom.y * 1e-10f, offsetangstrom.z * 1e-10f);
+		tfloat2 dimsangstrom = tfloat2((tfloat)(dims.x - 1) * spacingangstrom.x, (tfloat)(dims.y - 1) * spacingangstrom.y);
 		tfloat tantheta = tan(angles.y);
 		tfloat cosphi = cos(angles.x);
 		tfloat sinphi = sin(angles.x);
@@ -139,9 +140,8 @@ public:
 		{
 			for (int x = 0; x < dims.x; x++)
 			{
-				int2 gridcoords = toInt2(x - dims.x / 2, y - dims.y / 2);
-				tfloat2 flatcoords = tfloat2((tfloat)gridcoords.x * spacingangstrom.x + offsetangstrom.x,
-											 (tfloat)gridcoords.y * spacingangstrom.y + offsetangstrom.y);
+				tfloat2 flatcoords = tfloat2((tfloat)x * spacingangstrom.x - dimsangstrom.x / 2.0 + offsetangstrom.x,
+											 (tfloat)y * spacingangstrom.y - dimsangstrom.y / 2.0 + offsetangstrom.y);
 				tfloat z = flatcoords.x * tantheta * cosphi + flatcoords.y * tantheta * sinphi + offsetangstrom.z;
 				grid[y * dims.x + x] = centerparams.defocus + z;
 			}
@@ -214,8 +214,10 @@ void d_CTFCorrect(tcomplex* d_input, int3 dimsinput, CTFParams params, tcomplex*
 void d_CTFDecay(tfloat* d_input, tfloat* d_output, int2 dims, int degree, int stripwidth);
 
 //Fit.cu:
-void d_CTFFitCreateTarget(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CTFFitParams p, tfloat* d_densetarget, float2* d_densecoords);
+void d_CTFFitCreateTarget(tfloat* d_image, int2 dimsimage, tfloat* d_decay, int3* d_origins, int norigins, CTFFitParams p, tfloat* d_densetarget, float2* d_densecoords);
+void d_CTFFit(tfloat* d_dense, float2* d_densepoints, uint denselength, CTFFitParams p, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev);
 void d_CTFFit(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CTFFitParams p, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev);
+void AddCTFParamsRange(vector<pair<tfloat, CTFParams>> &v_params, CTFFitParams p);
 
 //Periodogram.cu:
 void d_Periodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, int2 dimsregion, tfloat* d_output);

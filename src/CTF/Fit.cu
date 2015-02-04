@@ -8,13 +8,11 @@
 #include "Optimization.cuh"
 #include "Transformation.cuh"
 
-void AddParamsRange(vector<pair<tfloat, CTFParams>> &v_params, CTFFitParams p);
-
 /////////////////////////////////////
 //Fit specified parameters of a CTF//
 /////////////////////////////////////
 
-void d_CTFFitCreateTarget(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CTFFitParams p, tfloat* d_densetarget, float2* d_densecoords)
+void d_CTFFitCreateTarget(tfloat* d_image, int2 dimsimage, tfloat* d_decay, int3* d_origins, int norigins, CTFFitParams p, tfloat* d_densetarget, float2* d_densecoords)
 {
 	tfloat* d_ps;
 	cudaMalloc((void**)&d_ps, ElementsFFT2(p.dimsperiodogram) * sizeof(tfloat));
@@ -32,10 +30,20 @@ void d_CTFFitCreateTarget(tfloat* d_image, int2 dimsimage, int3* d_origins, int 
 	cudaFree(d_pspolar);
 
 	tfloat* d_background;
-	cudaMalloc((void**)&d_background, Elements2(dimsps) * sizeof(tfloat));
-	d_CTFDecay(d_ps, d_background, dimsps, 4, 8);
+	if (d_decay == NULL)
+	{
+		cudaMalloc((void**)&d_background, Elements2(dimsps) * sizeof(tfloat));
+		d_CTFDecay(d_ps, d_background, dimsps, 4, 16);
+	}
+	else
+	{
+		d_background = d_decay;
+	}
+
 	d_SubtractVector(d_ps, d_background, d_ps, Elements2(dimsps));
-	cudaFree(d_background);
+
+	if (d_decay == NULL)
+		cudaFree(d_background);
 
 	uint denselength = GetCart2PolarFFTNonredundantSize(p.dimsperiodogram, p.maskinnerradius, p.maskouterradius);
 	float2* h_polar2dense = (float2*)malloc(denselength * sizeof(float2));
@@ -73,24 +81,17 @@ void d_CTFFitCreateTarget(tfloat* d_image, int2 dimsimage, int3* d_origins, int 
 	free(h_ctfpoints);
 }
 
-void d_CTFFit(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CTFFitParams p, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev)
+void d_CTFFit(tfloat* d_dense, float2* d_densepoints, uint denselength, CTFFitParams p, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev)
 {
-	uint denselength = GetCart2PolarFFTNonredundantSize(p.dimsperiodogram, p.maskinnerradius, p.maskouterradius);
-	tfloat* d_ps;
-	cudaMalloc((void**)&d_ps, denselength * sizeof(tfloat));
-	float2* d_ctfpoints;
-	cudaMalloc((void**)&d_ctfpoints, denselength * sizeof(float2));
 	tfloat* d_simulated;
 	cudaMalloc((void**)&d_simulated, denselength * sizeof(tfloat));
-
-	d_CTFFitCreateTarget(d_image, dimsimage, d_origins, norigins, p, d_ps, d_ctfpoints);
 
 	CTFParams bestfit;
 	tfloat bestscore = 0.0f;
 	vector<tfloat> scores;
 	vector<pair<tfloat, CTFParams>> v_params;
 
-	AddParamsRange(v_params, p);
+	AddCTFParamsRange(v_params, p);
 
 	for (int i = 0; i < refinements + 1; i++)
 	{
@@ -109,9 +110,9 @@ void d_CTFFit(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CT
 		{
 			int curbatch = min((int)v_params.size() - b, batchsize);
 
-			d_CTFSimulate(h_params + b, d_ctfpoints, d_batchsim, denselength, true, curbatch);
+			d_CTFSimulate(h_params + b, d_densepoints, d_batchsim, denselength, true, curbatch);
 			d_NormMonolithic(d_batchsim, d_batchsim, denselength, (tfloat*)NULL, T_NORM_MEAN01STD, curbatch);
-			d_MultiplyByVector(d_batchsim, d_ps, d_batchsim, denselength, curbatch);
+			d_MultiplyByVector(d_batchsim, d_dense, d_batchsim, denselength, curbatch);
 			d_SumMonolithic(d_batchsim, d_batchscores + b, denselength, curbatch);
 		}
 		free(h_params);
@@ -152,15 +153,13 @@ void d_CTFFit(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CT
 			for (int j = 0; j < 11; j++)
 				if (h_p[j].x != h_p[j].y)
 					h_p[j] = tfloat3(h_f[j] - h_p[j].z * 3.0, h_f[j] + h_p[j].z * 3.0, h_p[j].z);
-			AddParamsRange(v_paramsNew, pNew);
+			AddCTFParamsRange(v_paramsNew, pNew);
 		}
 
 		v_params = v_paramsNew;
 	}
 
 	cudaFree(d_simulated);
-	cudaFree(d_ctfpoints);
-	cudaFree(d_ps);
 
 	if (scores.size() > 1)
 	{
@@ -177,7 +176,20 @@ void d_CTFFit(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CT
 	score = bestscore;
 }
 
-void AddParamsRange(vector<pair<tfloat, CTFParams>> &v_params, CTFFitParams p)
+void d_CTFFit(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CTFFitParams p, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev)
+{
+	uint denselength = GetCart2PolarFFTNonredundantSize(p.dimsperiodogram, p.maskinnerradius, p.maskouterradius);
+	tfloat* d_ps;
+	cudaMalloc((void**)&d_ps, denselength * sizeof(tfloat));
+	float2* d_ctfpoints;
+	cudaMalloc((void**)&d_ctfpoints, denselength * sizeof(float2));
+
+	d_CTFFitCreateTarget(d_image, dimsimage, NULL, d_origins, norigins, p, d_ps, d_ctfpoints);
+
+	d_CTFFit(d_ps, d_ctfpoints, denselength, p, refinements, fit, score, mean, stddev);
+}
+
+void AddCTFParamsRange(vector<pair<tfloat, CTFParams>> &v_params, CTFFitParams p)
 {
 	for (tfloat pixelsize = p.pixelsize.x; pixelsize <= p.pixelsize.y; pixelsize += p.pixelsize.z)
 	{

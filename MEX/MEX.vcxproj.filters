@@ -43,6 +43,9 @@
     <Filter Include="Source Files\CTF">
       <UniqueIdentifier>{ff4ec6b2-bc38-4275-a28f-4c50170febfe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Correlation">
+      <UniqueIdentifier>{1cf2d7db-33b2-441a-9e32-4cda6a00d5e7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Helper.cu">
@@ -107,6 +110,15 @@
     </None>
     <None Include="Reconstruction\cgtom_rec_fourier_finalize.cu">
       <Filter>Source Files\Reconstruction</Filter>
+    </None>
+    <None Include="Correlation\cgtom_line_similarity_matrix.cu">
+      <Filter>Source Files\Correlation</Filter>
+    </None>
+    <None Include="Correlation\cgtom_similarity_matrix_2d.cu">
+      <Filter>Source Files\Correlation</Filter>
+    </None>
+    <None Include="Correlation\cgtom_similarity_matrix_3d.cu">
+      <Filter>Source Files\Correlation</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

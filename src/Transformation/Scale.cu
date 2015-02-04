@@ -102,23 +102,20 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 
 		tfloat normfactor = (tfloat)1 / (tfloat)Elements(olddims);
 
-		//for (int b = 0; b < batch; b++)
-		{
-			if(planforw == NULL)
-				d_FFTR2C(d_input, d_inputFFT, ndims, olddims, batch);
-			else
-				d_FFTR2C(d_input, d_inputFFT, planforw);
+		if(planforw == NULL)
+			d_FFTR2C(d_input, d_inputFFT, ndims, olddims, batch);
+		else
+			d_FFTR2C(d_input, d_inputFFT, planforw);
 			
-			if(newdims.x > olddims.x)
-				d_FFTPad(d_inputFFT, d_outputFFT, olddims, newdims, batch);
-			else
-				d_FFTCrop(d_inputFFT, d_outputFFT, olddims, newdims, batch);
+		if(newdims.x > olddims.x)
+			d_FFTPad(d_inputFFT, d_outputFFT, olddims, newdims, batch);
+		else
+			d_FFTCrop(d_inputFFT, d_outputFFT, olddims, newdims, batch);
 
-			if(planback == NULL)
-				d_IFFTC2R(d_outputFFT, d_output, ndims, newdims, batch, false);
-			else
-				d_IFFTC2R(d_outputFFT, d_output, planback);
-		}
+		if(planback == NULL)
+			d_IFFTC2R(d_outputFFT, d_output, ndims, newdims, batch, false);
+		else
+			d_IFFTC2R(d_outputFFT, d_output, planback);
 
 		d_MultiplyByScalar(d_output, d_output, Elements(newdims) * batch, normfactor);
 		

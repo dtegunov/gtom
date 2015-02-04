@@ -12,34 +12,35 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-template<bool cubicinterp> __global__ void Rotate3DKernel(cudaTextureObject_t t_input, tfloat* d_output, int3 dims, glm::mat4 transform);
-template<int mode, bool outputzerocentered> __global__ void Rotate2DFTKernel(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int3 dims, glm::mat2 transform, tfloat maxfreq);
-template<int mode> __global__ void Rotate3DFTKernel(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int3 dims, glm::mat4 transform);
+template<bool cubicinterp, bool zerocentered> __global__ void Rotate3DKernel(cudaTextureObject_t t_input, tfloat* d_output, int3 dims, glm::mat4 transform);
+template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate2DFTKernel(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int3 dims, glm::mat2 transform, tfloat maxfreq);
+template<bool cubicinterp, bool zerocentered> __global__ void Rotate3DFTKernel(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int3 dims, glm::mat4 transform, float maxfreq2);
+template<bool cubicinterp, bool zerocentered> __global__ void Rotate3DFTKernel(cudaTextureObject_t t_Re, tfloat* d_output, int3 dims, glm::mat4 transform, float maxfreq2);
 
 
 ////////////////////
 //Rotate 3D volume//
 ////////////////////
 
-void d_Rotate3D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* h_angles, T_INTERP_MODE mode, int batch)
+void d_Rotate3D(tfloat* d_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered)
 {
 	tfloat* d_temp;
 	if (mode == T_INTERP_CUBIC)
 		cudaMalloc((void**)&d_temp, Elements(dims) * sizeof(tfloat));
 
-	for (int b = 0; b < batch; b++)
+	cudaArray* a_input;
+	cudaTextureObject_t t_input;
+	if (mode == T_INTERP_LINEAR)
+		d_BindTextureTo3DArray(d_volume, a_input, t_input, dims, cudaFilterModeLinear, false);
+	else
 	{
-		cudaArray* a_input;
-		cudaTextureObject_t t_input;
-		if (mode == T_INTERP_LINEAR)
-			d_BindTextureTo3DArray(d_input + Elements(dims) * b, a_input, t_input, dims, cudaFilterModeLinear, false);
-		else
-		{
-			cudaMemcpy(d_temp, d_input + Elements(dims) * b, Elements(dims) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-			d_CubicBSplinePrefilter3D(d_temp, dims.x * sizeof(tfloat), dims);
-			d_BindTextureTo3DArray(d_temp, a_input, t_input, dims, cudaFilterModeLinear, false);
-		}
+		cudaMemcpy(d_temp, d_volume, Elements(dims) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+		d_CubicBSplinePrefilter3D(d_temp, dims.x * sizeof(tfloat), dims);
+		d_BindTextureTo3DArray(d_temp, a_input, t_input, dims, cudaFilterModeLinear, false);
+	}
 
+	for (int b = 0; b < nangles; b++)
+	{
 		glm::mat4 transform = Matrix4Translation(tfloat3(dims.x / 2 + 0.5f, dims.y / 2 + 0.5f, dims.z / 2 + 0.5f)) *
 							  glm::transpose(Matrix4Euler(h_angles[b])) *
 							  Matrix4Translation(tfloat3(-dims.x / 2, -dims.y / 2, -dims.z / 2));
@@ -47,14 +48,24 @@ void d_Rotate3D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* h_angles,
 		dim3 TpB = dim3(16, 16);
 		dim3 grid = dim3((dims.x + 15) / 16, (dims.y + 15) / 16, dims.z);
 
-		if (mode == T_INTERP_LINEAR)
-			Rotate3DKernel<false> << <grid, TpB >> > (t_input, d_output, dims, transform);
-		else if (mode == T_INTERP_CUBIC)
-			Rotate3DKernel<true> << <grid, TpB >> > (t_input, d_output, dims, transform);
-
-		cudaDestroyTextureObject(t_input);
-		cudaFreeArray(a_input);
+		if (iszerocentered)
+		{
+			if (mode == T_INTERP_LINEAR)
+				Rotate3DKernel<false, true> << <grid, TpB >> > (t_input, d_output, dims, transform);
+			else if (mode == T_INTERP_CUBIC)
+				Rotate3DKernel<true, true> << <grid, TpB >> > (t_input, d_output, dims, transform);
+		}
+		else
+		{
+			if (mode == T_INTERP_LINEAR)
+				Rotate3DKernel<false, false> << <grid, TpB >> > (t_input, d_output, dims, transform);
+			else if (mode == T_INTERP_CUBIC)
+				Rotate3DKernel<true, false> << <grid, TpB >> > (t_input, d_output, dims, transform);
+		}
 	}
+
+	cudaDestroyTextureObject(t_input);
+	cudaFreeArray(a_input);
 
 	if (mode == T_INTERP_CUBIC)
 		cudaFree(d_temp);
@@ -110,16 +121,16 @@ void d_Rotate2DFT(cudaTextureObject_t t_inputRe, cudaTextureObject_t t_inputIm, 
 		if (isoutputzerocentered)
 		{
 			if (mode == T_INTERP_MODE::T_INTERP_LINEAR)
-				Rotate2DFTKernel<0, true> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
+				Rotate2DFTKernel<false, true> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
 			else if (mode == T_INTERP_MODE::T_INTERP_CUBIC)
-				Rotate2DFTKernel<1, true> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
+				Rotate2DFTKernel<true, true> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
 		}
 		else
 		{
 			if (mode == T_INTERP_MODE::T_INTERP_LINEAR)
-				Rotate2DFTKernel<0, false> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
+				Rotate2DFTKernel<false, false> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
 			else if (mode == T_INTERP_MODE::T_INTERP_CUBIC)
-				Rotate2DFTKernel<1, false> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
+				Rotate2DFTKernel<true, false> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
 		}
 }
 
@@ -149,7 +160,7 @@ void d_Rotate2D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* angles, in
 //Rotate 3D in Fourier space//
 //////////////////////////////
 
-void d_Rotate3DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* h_angles, T_INTERP_MODE mode, int batch)
+void d_Rotate3DFT(tcomplex* d_volume, tcomplex* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered)
 {
 	int3 dimsfft = toInt3(dims.x / 2 + 1, dims.y, dims.z);
 	tfloat* d_tempRe;
@@ -157,39 +168,101 @@ void d_Rotate3DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* h_a
 	tfloat* d_tempIm;
 	cudaMalloc((void**)&d_tempIm, ElementsFFT(dims) * sizeof(tfloat));
 
-	for (int b = 0; b < batch; b++)
+	cudaArray* a_Re, *a_Im;
+	cudaTextureObject_t t_Re, t_Im;
+
+	d_ConvertTComplexToSplitComplex(d_volume, d_tempRe, d_tempIm, ElementsFFT(dims));
+	if (mode == T_INTERP_CUBIC)
 	{
-		cudaArray* a_Re, *a_Im;
-		cudaTextureObject_t t_Re, t_Im;
+		d_CubicBSplinePrefilter3D(d_tempRe, dimsfft.x * sizeof(tfloat), dimsfft);
+		d_CubicBSplinePrefilter3D(d_tempIm, dimsfft.x * sizeof(tfloat), dimsfft);
+	}
+	d_BindTextureTo3DArray(d_tempRe, a_Re, t_Re, dimsfft, cudaFilterModeLinear, false);
+	d_BindTextureTo3DArray(d_tempIm, a_Im, t_Im, dimsfft, cudaFilterModeLinear, false);
+	cudaFree(d_tempRe);
+	cudaFree(d_tempIm);
 
-		d_ConvertTComplexToSplitComplex(d_input + ElementsFFT(dims) * b, d_tempRe, d_tempIm, ElementsFFT(dims));
-		if (mode == T_INTERP_CUBIC)
-		{
-			d_CubicBSplinePrefilter3D(d_tempRe, dimsfft.x * sizeof(tfloat), dimsfft);
-			d_CubicBSplinePrefilter3D(d_tempIm, dimsfft.x * sizeof(tfloat), dimsfft);
-		}
-		d_BindTextureTo3DArray(d_tempRe, a_Re, t_Re, dimsfft, cudaFilterModeLinear, false);
-		d_BindTextureTo3DArray(d_tempIm, a_Im, t_Im, dimsfft, cudaFilterModeLinear, false);
+	d_Rotate3DFT(t_Re, t_Im, d_output, dims, h_angles, nangles, mode, iszerocentered);
 
-		glm::mat4 transform = Matrix4Translation(tfloat3(dims.x / 2 + 0.5f, dims.y / 2 + 0.5f, dims.z / 2 + 0.5f)) *
-							  glm::transpose(Matrix4Euler(h_angles[b])) *
+	cudaDestroyTextureObject(t_Re);
+	cudaDestroyTextureObject(t_Im);
+	cudaFreeArray(a_Re);
+	cudaFreeArray(a_Im);
+}
+
+void d_Rotate3DFT(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered)
+{
+	for (int b = 0; b < nangles; b++)
+	{
+		glm::mat4 transform = glm::transpose(Matrix4Euler(h_angles[b])) *
 							  Matrix4Translation(tfloat3(-dims.x / 2, -dims.y / 2, -dims.z / 2));
+		float maxfreq2 = (float)(dims.x * dims.x / 4);
 
 		dim3 TpB = dim3(16, 16);
 		dim3 grid = dim3((dims.x / 2 + 1 + 15) / 16, (dims.y + 15) / 16, dims.z);
-		if (mode == T_INTERP_LINEAR)
-			Rotate3DFTKernel<false> << <grid, TpB >> > (t_Re, t_Im, d_output + ElementsFFT(dims) * b, dims, transform);
-		if (mode == T_INTERP_CUBIC)
-			Rotate3DFTKernel<true> << <grid, TpB >> > (t_Re, t_Im, d_output + ElementsFFT(dims) * b, dims, transform);
-
-		cudaDestroyTextureObject(t_Re);
-		cudaDestroyTextureObject(t_Im);
-		cudaFreeArray(a_Re);
-		cudaFreeArray(a_Im);
+		if (iszerocentered)
+		{
+			if (mode == T_INTERP_LINEAR)
+				Rotate3DFTKernel<false, true> << <grid, TpB >> > (t_Re, t_Im, d_output + ElementsFFT(dims) * b, dims, transform, maxfreq2);
+			if (mode == T_INTERP_CUBIC)
+				Rotate3DFTKernel<true, true> << <grid, TpB >> > (t_Re, t_Im, d_output + ElementsFFT(dims) * b, dims, transform, maxfreq2);
+		}
+		else
+		{
+			if (mode == T_INTERP_LINEAR)
+				Rotate3DFTKernel<false, false> << <grid, TpB >> > (t_Re, t_Im, d_output + ElementsFFT(dims) * b, dims, transform, maxfreq2);
+			if (mode == T_INTERP_CUBIC)
+				Rotate3DFTKernel<true, false> << <grid, TpB >> > (t_Re, t_Im, d_output + ElementsFFT(dims) * b, dims, transform, maxfreq2);
+		}
 	}
+}
 
+void d_Rotate3DFT(tfloat* d_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered)
+{
+	int3 dimsfft = toInt3(dims.x / 2 + 1, dims.y, dims.z);
+	tfloat* d_tempRe;
+	cudaMalloc((void**)&d_tempRe, ElementsFFT(dims) * sizeof(tfloat));
+
+	cudaArray* a_Re;
+	cudaTextureObject_t t_Re;
+
+	cudaMemcpy(d_tempRe, d_volume, ElementsFFT(dims) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+	if (mode == T_INTERP_CUBIC)
+		d_CubicBSplinePrefilter3D(d_tempRe, dimsfft.x * sizeof(tfloat), dimsfft);
+	d_BindTextureTo3DArray(d_tempRe, a_Re, t_Re, dimsfft, cudaFilterModeLinear, false);
 	cudaFree(d_tempRe);
-	cudaFree(d_tempIm);
+
+	d_Rotate3DFT(t_Re, d_output, dims, h_angles, nangles, mode, iszerocentered);
+
+	cudaDestroyTextureObject(t_Re);
+	cudaFreeArray(a_Re);
+}
+
+void d_Rotate3DFT(cudaTextureObject_t t_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered)
+{
+	for (int b = 0; b < nangles; b++)
+	{
+		glm::mat4 transform = glm::transpose(Matrix4Euler(h_angles[b])) *
+			Matrix4Translation(tfloat3(-dims.x / 2, -dims.y / 2, -dims.z / 2));
+		float maxfreq2 = (float)(dims.x * dims.x / 4);
+
+		dim3 TpB = dim3(16, 16);
+		dim3 grid = dim3((dims.x / 2 + 1 + 15) / 16, (dims.y + 15) / 16, dims.z);
+		if (iszerocentered)
+		{
+			if (mode == T_INTERP_LINEAR)
+				Rotate3DFTKernel<false, true> << <grid, TpB >> > (t_volume, d_output + ElementsFFT(dims) * b, dims, transform, maxfreq2);
+			if (mode == T_INTERP_CUBIC)
+				Rotate3DFTKernel<true, true> << <grid, TpB >> > (t_volume, d_output + ElementsFFT(dims) * b, dims, transform, maxfreq2);
+		}
+		else
+		{
+			if (mode == T_INTERP_LINEAR)
+				Rotate3DFTKernel<false, false> << <grid, TpB >> > (t_volume, d_output + ElementsFFT(dims) * b, dims, transform, maxfreq2);
+			if (mode == T_INTERP_CUBIC)
+				Rotate3DFTKernel<true, false> << <grid, TpB >> > (t_volume, d_output + ElementsFFT(dims) * b, dims, transform, maxfreq2);
+		}
+	}
 }
 
 
@@ -197,15 +270,29 @@ void d_Rotate3DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* h_a
 //CUDA kernels//
 ////////////////
 
-template<bool cubicinterp> __global__ void Rotate3DKernel(cudaTextureObject_t t_input, tfloat* d_output, int3 dims, glm::mat4 transform)
+template<bool cubicinterp, bool zerocentered> __global__ void Rotate3DKernel(cudaTextureObject_t t_input, tfloat* d_output, int3 dims, glm::mat4 transform)
 {
-	int x = blockIdx.x * blockDim.x + threadIdx.x;
-	if (x >= dims.x)
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx >= dims.x)
 		return;
-	int y = blockIdx.y * blockDim.y + threadIdx.y;
-	if (y >= dims.y)
+	int idy = blockIdx.y * blockDim.y + threadIdx.y;
+	if (idy >= dims.y)
 		return;
-	int z = blockIdx.z;
+	int idz = blockIdx.z;
+
+	int x, y, z;
+	if (zerocentered)
+	{
+		x = idx;
+		y = idy;
+		z = idz;
+	}
+	else
+	{
+		x = dims.x / 2 - idx;
+		y = dims.y - 1 - ((idy + dims.y / 2 - 1) % dims.y);
+		z = dims.z - 1 - ((idz + dims.z / 2 - 1) % dims.z);
+	}
 
 	glm::vec4 pos = transform * glm::vec4(x, y, z, 1);
 	tfloat value;
@@ -219,10 +306,10 @@ template<bool cubicinterp> __global__ void Rotate3DKernel(cudaTextureObject_t t_
 	else
 		value = (tfloat)0;
 
-	d_output[(z * dims.y + y) * dims.x + x] = value;
+	d_output[(idz * dims.y + idy) * dims.x + idx] = value;
 }
 
-template<int mode, bool outputzerocentered> __global__ void Rotate2DFTKernel(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int3 dims, glm::mat2 transform, tfloat maxfreq)
+template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate2DFTKernel(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int3 dims, glm::mat2 transform, tfloat maxfreq)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if(idx > dims.x / 2)
@@ -261,7 +348,7 @@ template<int mode, bool outputzerocentered> __global__ void Rotate2DFTKernel(cud
 	pos += glm::vec2((float)(dims.x / 2) + 0.5f, (float)(dims.y / 2) + 0.5f);
 	
 	tfloat valre, valim;
-	if(mode == 0)
+	if (!cubicinterp)
 	{
 		valre = tex2D<tfloat>(t_Re, pos.x, pos.y);
 		valim = tex2D<tfloat>(t_Im, pos.x, pos.y);
@@ -278,7 +365,7 @@ template<int mode, bool outputzerocentered> __global__ void Rotate2DFTKernel(cud
 	d_output[y * (dims.x / 2 + 1) + x] = make_cuComplex(valre, valim);
 }
 
-template<int mode> __global__ void Rotate3DFTKernel(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int3 dims, glm::mat4 transform)
+template<bool cubicinterp, bool zerocentered> __global__ void Rotate3DFTKernel(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int3 dims, glm::mat4 transform, float maxfreq2)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx > dims.x / 2)
@@ -288,10 +375,24 @@ template<int mode> __global__ void Rotate3DFTKernel(cudaTextureObject_t t_Re, cu
 		return;
 	int idz = blockIdx.z;
 
-	glm::vec4 pos = transform * glm::vec4(idx, idy, idz, 1);
+	int x, y, z;
+	if (zerocentered)
+	{
+		x = idx;
+		y = idy;
+		z = idz;
+	}
+	else
+	{
+		x = dims.x / 2 - idx;
+		y = dims.y - 1 - ((idy + dims.y / 2 - 1) % dims.y);
+		z = dims.z - 1 - ((idz + dims.z / 2 - 1) % dims.z);
+	}
+
+	glm::vec4 pos = transform * glm::vec4(x, y, z, 1);
 
 	float radiussq = pos.x * pos.x + pos.y * pos.y + pos.z * pos.z;
-	if (radiussq > (float)((dims.x / 2 - 1) * (dims.x / 2 - 1)))
+	if (radiussq >= maxfreq2)
 	{
 		d_output[(idz * dims.y + idy) * (dims.x / 2 + 1) + idx] = make_cuComplex(0, 0);
 		return;
@@ -304,8 +405,10 @@ template<int mode> __global__ void Rotate3DFTKernel(cudaTextureObject_t t_Re, cu
 		isnegative = true;
 	}
 
+	pos += (float)(dims.x / 2) + 0.5f;
+
 	tfloat valre, valim;
-	if (mode == 1)
+	if (!cubicinterp)
 	{
 		valre = tex3D<tfloat>(t_Re, pos.x, pos.y, pos.z);
 		valim = tex3D<tfloat>(t_Im, pos.x, pos.y, pos.z);
@@ -320,4 +423,51 @@ template<int mode> __global__ void Rotate3DFTKernel(cudaTextureObject_t t_Re, cu
 		valim = -valim;
 
 	d_output[(idz * dims.y + idy) * (dims.x / 2 + 1) + idx] = make_cuComplex(valre, valim);
+}
+
+template<bool cubicinterp, bool zerocentered> __global__ void Rotate3DFTKernel(cudaTextureObject_t t_Re, tfloat* d_output, int3 dims, glm::mat4 transform, float maxfreq2)
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx > dims.x / 2)
+		return;
+	int idy = blockIdx.y * blockDim.y + threadIdx.y;
+	if (idy >= dims.y)
+		return;
+	int idz = blockIdx.z;
+
+	int x, y, z;
+	if (zerocentered)
+	{
+		x = idx;
+		y = idy;
+		z = idz;
+	}
+	else
+	{
+		x = dims.x / 2 - idx;
+		y = dims.y - 1 - ((idy + dims.y / 2 - 1) % dims.y);
+		z = dims.z - 1 - ((idz + dims.z / 2 - 1) % dims.z);
+	}
+
+	glm::vec4 pos = transform * glm::vec4(x, y, z, 1);
+
+	float radiussq = pos.x * pos.x + pos.y * pos.y + pos.z * pos.z;
+	if (radiussq >= maxfreq2)
+	{
+		d_output[(idz * dims.y + idy) * (dims.x / 2 + 1) + idx] = 0;
+		return;
+	}
+
+	if (pos.x > 0.0000001f)
+		pos = -pos;
+
+	pos += (float)(dims.x / 2) + 0.5f;
+
+	tfloat valre;
+	if (!cubicinterp)
+		valre = tex3D<tfloat>(t_Re, pos.x, pos.y, pos.z);
+	else
+		valre = cubicTex3D(t_Re, pos.x, pos.y, pos.z);
+
+	d_output[(idz * dims.y + idy) * (dims.x / 2 + 1) + idx] = valre;
 }

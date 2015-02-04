@@ -15,7 +15,7 @@ template<int mode, int ndims> __global__ void WindowMaskBorderDistanceKernel(tfl
 
 void d_HannMask(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* radius, tfloat3* center, int batch)
 {
-	tfloat _radius = radius != NULL ? *radius : min(dims.z > 1 ? min(dims.x, dims.z) : dims.x, dims.y) / 2;
+	tfloat _radius = radius != NULL ? *radius : min(dims.z > 1 ? min(dims.x, dims.z) : dims.x, dims.y) / 2 - 1;
 	tfloat3 _center = center != NULL ? *center : tfloat3(dims.x / 2, dims.y / 2, dims.z / 2);
 
 	int TpB = min(NextMultipleOf(dims.x, 32), 256);
@@ -30,7 +30,7 @@ void d_HannMask(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* radius, tf
 
 void d_HammingMask(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* radius, tfloat3* center, int batch)
 {
-	tfloat _radius = radius != NULL ? *radius : min(dims.z > 1 ? min(dims.x, dims.z) : dims.x, dims.y) / 2;
+	tfloat _radius = radius != NULL ? *radius : min(dims.z > 1 ? min(dims.x, dims.z) : dims.x, dims.y) / 2 - 1;
 	tfloat3 _center = center != NULL ? *center : tfloat3(dims.x / 2, dims.y / 2, dims.z / 2);
 
 	int TpB = min(NextMultipleOf(dims.x, 32), 256);
@@ -116,10 +116,10 @@ template<int mode, int ndims> __global__ void WindowMaskKernel(tfloat* d_input, 
 		tfloat val = 0;
 		//Hann
 		if (mode == 0)
-			val = pow(cos(min(length / radius, (tfloat)1) * PIHALF), (tfloat)2);
+			val = (tfloat)0.5 * ((tfloat)1 + cos(min(length / radius, (tfloat)1) * PI));
 		//Hamming
 		else if (mode == 1)
-			val = ((tfloat)0.54 + (tfloat)0.46 * cos(min(length / radius, (tfloat)1) * PI));
+			val = (tfloat)0.54 - (tfloat)0.46 * cos(((tfloat)1 - min(length / radius, (tfloat)1)) * PI);
 		//Gaussian
 		else if (mode == 2)
 			val = exp(-(pow(length, (tfloat)2) / radius));

@@ -6,7 +6,7 @@ tfloat3* GetEqualAngularSpacing(tfloat2 phirange, tfloat2 thetarange, tfloat2 ps
 	int count = 0;
 	int rot_nstep = 0;
 
-	for(float tilt = thetarange.x; tilt <= thetarange.y - increment; tilt += increment)
+	for(float tilt = thetarange.x; tilt <= thetarange.y + 1e-5f; tilt += increment)
 	{
 		if(tilt > 0)
 			rot_nstep = (int)ceil(PI2 * sin(tilt) / increment);
@@ -15,8 +15,8 @@ tfloat3* GetEqualAngularSpacing(tfloat2 phirange, tfloat2 thetarange, tfloat2 ps
 
 		float rot_sam = PI2 / (float)rot_nstep;
 
-		for(float rot = phirange.x; rot <= phirange.y - rot_sam; rot += rot_sam)
-			for(float psi = psirange.x; psi <= psirange.y - increment; psi += increment)
+		for (float rot = phirange.x; rot <= phirange.y - rot_sam + 1e-5f; rot += rot_sam)
+			for (float psi = psirange.x; psi <= psirange.y - increment + 1e-5f; psi += increment)
 				count++;
 	}
 
@@ -24,7 +24,7 @@ tfloat3* GetEqualAngularSpacing(tfloat2 phirange, tfloat2 thetarange, tfloat2 ps
 	numangles = count;
 	count = 0;
 
-	for(float tilt = thetarange.x; tilt <= thetarange.y - increment; tilt += increment)
+	for (float tilt = thetarange.x; tilt <= thetarange.y + 1e-5f; tilt += increment)
 	{
 		if(tilt > 0)
 			rot_nstep = (int)ceil(PI2 * sin(tilt) / increment);
@@ -33,8 +33,8 @@ tfloat3* GetEqualAngularSpacing(tfloat2 phirange, tfloat2 thetarange, tfloat2 ps
 
 		float rot_sam = PI2 / (float)rot_nstep;
 
-		for(float rot = phirange.x; rot <= phirange.y - rot_sam; rot += rot_sam)
-			for(float psi = psirange.x; psi <= psirange.y - increment; psi += increment)
+		for (float rot = phirange.x; rot <= phirange.y - rot_sam + 1e-5f; rot += rot_sam)
+			for (float psi = psirange.x; psi <= psirange.y - increment + 1e-5f; psi += increment)
 				h_angles[count++] = tfloat3(rot, tilt, psi);
 	}
 

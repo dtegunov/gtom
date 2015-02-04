@@ -109,7 +109,7 @@ float2* GetPolarNonredundantCoords(int2 dims, int maskinner, int maskouter)
 
 uint GetCart2PolarFFTNonredundantSize(int2 dims)
 {
-	return GetCart2PolarFFTNonredundantSize(dims, 0, dims.x / 2);
+	return GetCart2PolarFFTNonredundantSize(dims, 0, max(dims.x, dims.y) / 2);
 }
 
 uint GetCart2PolarFFTNonredundantSize(int2 dims, int maskinner, int maskouter)

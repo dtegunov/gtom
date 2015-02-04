@@ -149,6 +149,8 @@
     <ClCompile Include="CTFFit.cpp" />
     <ClCompile Include="CTFTiltFit.cpp" />
     <ClCompile Include="Decay.cpp" />
+    <ClCompile Include="Euler.cpp" />
+    <ClCompile Include="FFTLines.cpp" />
     <ClCompile Include="GS.cpp" />
     <ClCompile Include="NIPALS.cpp" />
     <ClCompile Include="Periodogram.cpp" />
@@ -185,6 +187,7 @@
     <ClCompile Include="RectangleMask.cpp" />
     <ClCompile Include="Remap.cpp" />
     <ClCompile Include="Shift.cpp" />
+    <ClCompile Include="SimilarityMatrix.cpp" />
     <ClCompile Include="SphereMask.cpp" />
     <ClCompile Include="Sum.cpp" />
     <ClCompile Include="Wiener.cpp" />

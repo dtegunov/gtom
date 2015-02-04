@@ -47,6 +47,7 @@
     <CudaCompile Include="src\BinaryManipulation\Binarize.cu" />
     <CudaCompile Include="src\BinaryManipulation\Dilate.cu" />
     <CudaCompile Include="src\Correlation\CCF.cu" />
+    <CudaCompile Include="src\Correlation\SimilarityMatrix.cu" />
     <CudaCompile Include="src\Correlation\LocalPeaks.cu" />
     <CudaCompile Include="src\Correlation\Peak.cu" />
     <CudaCompile Include="src\CTF\Correct.cu" />
@@ -116,6 +117,7 @@
     <CudaCompile Include="src\Transformation\Bin.cu" />
     <CudaCompile Include="src\Transformation\Combined.cu" />
     <CudaCompile Include="src\Transformation\Coordinates.cu" />
+    <CudaCompile Include="src\Transformation\FFTLines.cu" />
     <CudaCompile Include="src\Transformation\Scale.cu" />
     <CudaCompile Include="src\Transformation\Shift.cu" />
     <CudaCompile Include="src\Masking\Remap.cu" />

@@ -17,6 +17,7 @@ TEST(Correlation, Peak)
 		d_Peak(d_input, d_positions, d_values, dims, T_PEAK_MODE::T_PEAK_INTEGER);
 
 		tfloat3* h_positions = (tfloat3*)MallocFromDeviceArray(d_positions, sizeof(tfloat3));
+		tfloat* h_values = (tfloat*)MallocFromDeviceArray(d_values, sizeof(tfloat));
 	
 		double MeanRelative = GetMeanRelativeError((tfloat*)desired_output, (tfloat*)h_positions, 3);
 		ASSERT_LE(MeanRelative, 1e-5);
@@ -26,6 +27,7 @@ TEST(Correlation, Peak)
 		cudaFree(d_values);
 		free(desired_output);
 		free(h_positions);
+		free(h_values);
 	}
 
 	//Case 2:
@@ -41,6 +43,7 @@ TEST(Correlation, Peak)
 		d_Peak(d_input, d_positions, d_values, dims, T_PEAK_MODE::T_PEAK_SUBCOARSE);
 
 		tfloat3* h_positions = (tfloat3*)MallocFromDeviceArray(d_positions, sizeof(tfloat3));
+		tfloat* h_values = (tfloat*)MallocFromDeviceArray(d_values, sizeof(tfloat));
 	
 		double MeanRelative = GetMeanAbsoluteError((tfloat*)desired_output, (tfloat*)h_positions, DimensionCount(dims));
 		ASSERT_LE(MeanRelative, 0.05);
@@ -50,6 +53,7 @@ TEST(Correlation, Peak)
 		cudaFree(d_values);
 		free(desired_output);
 		free(h_positions);
+		free(h_values);
 	}
 
 	//Case 3:
@@ -65,6 +69,7 @@ TEST(Correlation, Peak)
 		d_Peak(d_input, d_positions, d_values, dims, T_PEAK_MODE::T_PEAK_SUBFINE);
 
 		tfloat3* h_positions = (tfloat3*)MallocFromDeviceArray(d_positions, sizeof(tfloat3));
+		tfloat* h_values = (tfloat*)MallocFromDeviceArray(d_values, sizeof(tfloat));
 	
 		double MeanRelative = GetMeanAbsoluteError((tfloat*)desired_output, (tfloat*)h_positions, DimensionCount(dims));
 		ASSERT_LE(MeanRelative, 0.02);
@@ -74,6 +79,7 @@ TEST(Correlation, Peak)
 		cudaFree(d_values);
 		free(desired_output);
 		free(h_positions);
+		free(h_values);
 	}
 
 	cudaDeviceReset();

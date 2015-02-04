@@ -270,7 +270,7 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 	}
 
 	#pragma endregion
-
+	
 	#pragma region Cleanup
 
 	free(h_translation);
