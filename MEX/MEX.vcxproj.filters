@@ -46,15 +46,15 @@
     <Filter Include="Source Files\Correlation">
       <UniqueIdentifier>{1cf2d7db-33b2-441a-9e32-4cda6a00d5e7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Optimization">
+      <UniqueIdentifier>{31af14e2-5388-435c-af59-be05cd920497}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Helper.cu">
       <Filter>Source Files</Filter>
     </None>
     <None Include="Projection\cgtom_proj_backward.cu">
-      <Filter>Source Files\Projection</Filter>
-    </None>
-    <None Include="Projection\cgtom_proj_forward.cu">
       <Filter>Source Files\Projection</Filter>
     </None>
     <None Include="Projection\cgtom_proj_forward_raytrace.cu">
@@ -119,6 +119,24 @@
     </None>
     <None Include="Correlation\cgtom_similarity_matrix_3d.cu">
       <Filter>Source Files\Correlation</Filter>
+    </None>
+    <None Include="Projection\cgtom_proj_forward_fourier.cu">
+      <Filter>Source Files\Projection</Filter>
+    </None>
+    <None Include="Optimization\cgtom_opt_spa_params.cu">
+      <Filter>Optimization</Filter>
+    </None>
+    <None Include="Reconstruction\cgtom_rec_wbp.cu">
+      <Filter>Source Files\Reconstruction</Filter>
+    </None>
+    <None Include="CTF\cgtom_ctf_tiltfit.cu">
+      <Filter>Source Files\CTF</Filter>
+    </None>
+    <None Include="CTF\cgtom_ctf_tiltcorrect.cu">
+      <Filter>Source Files\CTF</Filter>
+    </None>
+    <None Include="Transformation\cgtom_warp2d.cu">
+      <Filter>Source Files\Transformation</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

@@ -3,7 +3,7 @@
 
 inline __device__ float sinc(float x)
 {
-	if (x == 0.0f)
+	if (abs(x) <= 1e-8f)
 		return 1.0f;
 	else
 		return sin(x * PI) / (x * PI);
@@ -11,7 +11,7 @@ inline __device__ float sinc(float x)
 
 inline __device__ double sinc(double x)
 {
-	if (x == 0.0)
+	if (abs(x) <= 1e-8)
 		return 1.0;
 	else
 		return sin(x * 3.1415926535897932384626433832795) / (x * 3.1415926535897932384626433832795);

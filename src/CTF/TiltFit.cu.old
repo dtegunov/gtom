@@ -1,0 +1,331 @@
+#include "Prerequisites.cuh"
+#include "Angles.cuh"
+#include "CTF.cuh"
+#include "FFT.cuh"
+#include "Generics.cuh"
+#include "Helper.cuh"
+#include "ImageManipulation.cuh"
+#include "Masking.cuh"
+#include "Optimization.cuh"
+#include "Transformation.cuh"
+
+
+////////////////////////////
+//CUDA kernel declarations//
+////////////////////////////
+
+__global__ void AccumulateSpectraKernel(tfloat* d_ps1d, tfloat* d_defoci, uint nspectra, uint length, tfloat* d_accumulated, tfloat* d_accumulateddefoci, uint lowfreq, uint relevantlength, double cs, double lambda, double pxfactor);
+
+
+/////////////////////////////////
+//Auxiliary methods and kernels//
+/////////////////////////////////
+
+void PopulateAngles(vector<tfloat3> &v_angles, tfloat3 phibracket, tfloat3 thetabracket, tfloat3 psibracket)
+{
+	for (tfloat phi = phibracket.x; phi <= phibracket.y + 1e-5f; phi += phibracket.z)
+	{
+		for (tfloat theta = thetabracket.x; theta <= thetabracket.y + 1e-5f; theta += thetabracket.z)
+		{
+			for (tfloat psi = psibracket.x; psi <= psibracket.y + 1e-5f; psi += psibracket.z)
+			{
+				v_angles.push_back(tfloat3(phi, theta, psi));
+				if (psibracket.z == 0)
+					break;
+			}
+			if (thetabracket.z == 0)
+				break;
+		}
+		if (phibracket.z == 0)
+			break;
+	}
+}
+
+void d_AccumulateSpectra(tfloat* d_ps1d, tfloat* d_defoci, uint nspectra, tfloat* d_accumulated, tfloat* d_accumulateddefoci, CTFParams p, CTFFitParams fp, uint batch)
+{
+	uint length = fp.dimsperiodogram.x / 2;
+	uint relevantlength = fp.maskouterradius - fp.maskinnerradius;
+	CTFParamsLean lean = CTFParamsLean(p);
+	double pxfactor = lean.ny / (double)length;
+
+	dim3 TpB = dim3(min(128, NextMultipleOf(relevantlength, 32)));
+	dim3 grid = dim3((relevantlength + TpB.x - 1) / TpB.x, batch);
+
+	AccumulateSpectraKernel <<<grid, TpB>>> (d_ps1d, d_defoci, nspectra, length, d_accumulated, d_accumulateddefoci, fp.maskinnerradius, relevantlength, lean.Cs, lean.lambda, pxfactor);
+}
+
+__global__ void AccumulateSpectraKernel(tfloat* d_ps1d, tfloat* d_defoci, uint nspectra, uint length, tfloat* d_accumulated, tfloat* d_accumulateddefoci, uint lowfreq, uint relevantlength, double cs, double lambda, double pxfactor)
+{
+	uint id = blockIdx.x * blockDim.x + threadIdx.x;
+	if (id >= relevantlength)
+		return;
+	
+	tfloat sum = 0;
+	uint samples = 0;
+	double K = (double)(id + lowfreq) * pxfactor;
+	double K2 = K * K;
+	double K4 = K2 * K2;
+	double D = d_accumulateddefoci[blockIdx.y];
+	double lambda2 = lambda * lambda;
+	double lambda4 = lambda2 * lambda2;
+	double cs2 = cs * cs;
+
+	for (uint n = 0; n < nspectra; n++, d_ps1d += length)
+	{
+		double d = d_defoci[n];
+		if (d < 0 != D < 0)		// Combining defoci with different signs won't work
+			continue;
+		double k = sqrt((d - sqrt(cs2 * K4 * lambda4 - 2.0 * cs * D * K2 * lambda2 + d * d)) / (cs * lambda2));
+		k /= pxfactor;
+		if (ceil(k) >= length)	// Out of range
+			continue;
+
+		// Cubic interpolation
+		int p1 = k;
+		tfloat sample0 = d_ps1d[max(0, p1 - 1)];
+		tfloat sample1 = d_ps1d[p1];
+		tfloat sample2 = d_ps1d[min((int)length - 1, p1 + 1)];
+		tfloat sample3 = d_ps1d[min((int)length - 1, p1 + 2)];
+
+		tfloat factor0 = -0.5f * sample0 + 1.5f * sample1 - 1.5f * sample2 + 0.5f * sample3;
+		tfloat factor1 = sample0 - 2.5f * sample1 + 2.0f * sample2 - 0.5f * sample3;
+		tfloat factor2 = -0.5f * sample0 + 0.5f * sample2;
+		tfloat factor3 = sample1;
+
+		tfloat interp = k - (tfloat)p1;
+
+		sum += ((factor0 * interp + factor1) * interp + factor2) * interp + factor3;
+		samples++;
+	}
+
+	d_accumulated[relevantlength * blockIdx.y + id] = sum / (tfloat)max(1U, samples);
+}
+
+////////////////////////////////////////////////////////
+//Fit specified parameters of a CTF in tilted specimen//
+////////////////////////////////////////////////////////
+
+void d_CTFTiltFit(tfloat* d_image, int2 dimsimage, uint nimages, float overlapfraction, CTFTiltParams* h_startparams, CTFFitParams fp, int refinements, vector<CTFTiltParams> &fit, tfloat &score, tfloat &mean, tfloat &stddev)
+{
+	int2 dimspolar = GetCart2PolarFFTSize(fp.dimsperiodogram);
+	dimspolar.x = fp.maskouterradius - fp.maskinnerradius;
+
+	tfloat* d_ps1dmin;
+	cudaMalloc((void**)&d_ps1dmin, dimspolar.x * nimages * sizeof(tfloat));
+
+	for (uint i = 0; i < nimages; i++)
+	{
+		int2 dimsgrid;
+		int3* h_origins = GetEqualGridSpacing(dimsimage, fp.dimsperiodogram, overlapfraction, dimsgrid);
+		uint norigins = Elements2(dimsgrid);
+		int3* d_origins = (int3*)CudaMallocFromHostArray(h_origins, norigins * sizeof(int3));
+
+		CTFParams* h_params = (CTFParams*)malloc(norigins * sizeof(CTFParams));
+		for (uint n = 0; n < norigins; n++)
+			h_params[n] = h_startparams[i].centerparams;
+		
+		tfloat* d_ps2dpolar;
+		cudaMalloc((void**)&d_ps2dpolar, Elements2(dimspolar) * sizeof(tfloat));
+		float2* d_ps2dcoords;
+		cudaMalloc((void**)&d_ps2dcoords, Elements2(dimspolar) * sizeof(float2));
+
+		d_CTFFitCreateTarget2D(d_image + Elements2(dimsimage) * i, dimsimage, d_origins, h_params, norigins, fp, d_ps2dpolar, d_ps2dcoords, true, d_ps1dmin + dimspolar.x * i);
+
+		cudaFree(d_ps2dcoords);
+		cudaFree(d_ps2dpolar);
+		cudaFree(d_origins);
+		free(h_params);
+		free(h_origins);
+	}
+	CudaWriteToBinaryFile("d_ps1dmin.bin", d_ps1dmin, dimspolar.x * nimages * sizeof(tfloat));
+
+	// Create core grid that will be rotated, allocate memory for spectra
+	int2 dimsimagecore = toInt2((float)min(dimsimage.x, dimsimage.y) / 1.5f, (float)min(dimsimage.x, dimsimage.y) / 1.5f);
+	int2 dimsgridcore;
+	int3* h_origins = GetEqualGridSpacing(dimsimagecore, fp.dimsperiodogram, overlapfraction, dimsgridcore);
+	uint norigins = Elements2(dimsgridcore);
+	int3* h_originstransformed = (int3*)malloc(norigins * sizeof(int3));
+	int3* d_originstransformed;
+	cudaMalloc((void**)&d_originstransformed, norigins * sizeof(int3));
+
+	CTFParams* h_params = (CTFParams*)malloc(norigins * nimages * sizeof(CTFParams));
+	for (uint i = 0; i < nimages; i++)
+		for (uint n = 0; n < norigins; n++)
+			h_params[i * norigins + n] = h_startparams[i].centerparams;
+
+	// Create polar background image
+	tfloat* d_ps2dmin;
+	cudaMalloc((void**)&d_ps2dmin, Elements2(dimspolar) * dimsgridcore.y * nimages * sizeof(tfloat));
+	CudaMemcpyMulti(d_ps2dmin, d_ps1dmin, dimspolar.x, dimspolar.y, nimages);
+	d_WriteMRC(d_ps2dmin, toInt3(dimspolar.x, dimspolar.y, 1), "d_ps2dmin.mrc");
+	cudaFree(d_ps1dmin);
+
+	// Allocate memory for spectra and point coords
+	tfloat* d_ps2d;
+	cudaMalloc((void**)&d_ps2d, ElementsFFT2(fp.dimsperiodogram) * norigins * sizeof(tfloat));
+	tfloat* d_ps2dgrouped;
+	cudaMalloc((void**)&d_ps2dgrouped, ElementsFFT2(fp.dimsperiodogram) * dimsgridcore.y * sizeof(tfloat));
+	tfloat* d_ps2dpolar;
+	cudaMalloc((void**)&d_ps2dpolar, Elements2(dimspolar) * dimsgridcore.y * sizeof(tfloat));
+	float2* d_ps2dcoords;
+	cudaMalloc((void**)&d_ps2dcoords, Elements2(dimspolar) * sizeof(float2));
+	tfloat* d_ps1d;
+	cudaMalloc((void**)&d_ps1d, dimspolar.x * dimsgridcore.y * sizeof(tfloat));
+	float2* d_ps1dcoords;
+	cudaMalloc((void**)&d_ps1dcoords, dimspolar.x * dimsgridcore.y * sizeof(float2));
+
+	{
+		// Store radius & angle for each target point
+		float2* h_ps2dcoords = (float2*)malloc(Elements2(dimspolar) * sizeof(float2));
+		float invhalfsize = 2.0f / (float)fp.dimsperiodogram.x;
+		float anglestep = PI / (float)(dimspolar.y - 1);
+		for (int a = 0; a < dimspolar.y; a++)
+		{
+			float angle = (float)a * anglestep + PIHALF;
+			for (int r = 0; r < dimspolar.x; r++)
+				h_ps2dcoords[a * dimspolar.x + r] = make_float2((r + fp.maskinnerradius) * invhalfsize, angle);
+		}
+		cudaMemcpy(d_ps2dcoords, h_ps2dcoords, Elements2(dimspolar) * sizeof(float2), cudaMemcpyHostToDevice);
+		free(h_ps2dcoords);
+	}
+
+	vector<pair<tfloat, vector<CTFTiltParams>>> anglefits;
+	vector<tfloat3> angles;
+	tfloat phistep = ToRad(3);
+	tfloat thetastep = ToRad(2);
+	PopulateAngles(angles, tfloat3(0.0f, ToRad(180), phistep), tfloat3(ToRad(0), ToRad(25), thetastep), tfloat3(0));
+
+	for (uint r = 0; r <= refinements; r++)
+	{
+		for (int a = 0; a < angles.size(); a++)
+		{
+			vector<CTFTiltParams> currangle;
+			tfloat scoresum = 0;
+
+			for (uint i = 0; i < nimages; i++)
+			{
+				glm::mat3 transformplane = Matrix3Euler(h_startparams[i].angles) * Matrix3Euler(angles[a]);
+				glm::vec3 planenormal = transformplane * glm::vec3(0, 0, 1);
+				glm::vec3 isoline;	// Line in plane along which Z is constant
+				if (planenormal.z < 0.99999f && angles[a].y != 0)
+					isoline = glm::normalize(glm::cross(glm::vec3(0, 0, 1), planenormal));
+				else
+					isoline = glm::vec3(cos(angles[a].x + h_startparams[i].angles.z + PIHALF), sin(angles[a].x - h_startparams[i].angles.z + PIHALF), 0);
+				glm::vec3 slope = glm::normalize(glm::cross(planenormal, isoline));		// Line in plane with highest slope
+				float slopeangle = 0;
+				if (planenormal.z < 0.99999f)
+					slopeangle = acos(glm::dot(slope, glm::normalize(glm::vec3(slope.x, slope.y, 0))));
+				float isolineangle = atan2(isoline.y, isoline.x);
+
+				/*float sumphi = 0;
+				if (abs(planenormal.x) > 1e-4f || abs(planenormal.y) > 1e-4f)
+				{
+				glm::vec2 flattened = glm::normalize(glm::vec2(planenormal.x, planenormal.y));
+				sumphi = atan2(flattened.y, flattened.x);
+				}
+				float sumtheta = acos(planenormal.z);*/
+
+				// Transform origin grid
+				{
+					glm::mat3 transform = Matrix3Translation(tfloat2(dimsimage.x / 2 - fp.dimsperiodogram.x / 2, dimsimage.y / 2 - fp.dimsperiodogram.y / 2)) *
+						Matrix3RotationZ(isolineangle) *
+						Matrix3Translation(tfloat2(fp.dimsperiodogram.x / 2 - dimsimagecore.x / 2, fp.dimsperiodogram.y / 2 - dimsimagecore.y / 2));
+					for (uint n = 0; n < norigins; n++)
+					{
+						glm::vec3 pos = transform * glm::vec3(h_origins[n].x, h_origins[n].y, 1.0f);
+						h_originstransformed[n] = toInt3(pos.x, pos.y, 0);
+					}
+					cudaMemcpy(d_originstransformed, h_originstransformed, norigins * sizeof(int3), cudaMemcpyHostToDevice);
+					CudaWriteToBinaryFile("d_originstransformed.bin", d_originstransformed, norigins * sizeof(int3));
+
+					// Set defocus gradient according to current slope
+					float thetatan = tan(slopeangle);
+					for (uint y = 0; y < dimsgridcore.y; y++)
+					{
+						float distfromaxis = (h_origins[y * dimsgridcore.x].y + 128 - dimsimagecore.y / 2) * h_startparams[i].centerparams.pixelsize;
+						h_params[i * norigins + y].defocus = h_startparams[i].centerparams.defocus + distfromaxis * thetatan;
+					}
+				}
+
+				// Extract, average, convert to polar
+				d_CTFPeriodogram(d_image + Elements2(dimsimage) * i, dimsimage, d_originstransformed, norigins, fp.dimsperiodogram, d_ps2d);
+				d_ReduceMean(d_ps2d, d_ps2dgrouped, ElementsFFT2(fp.dimsperiodogram), dimsgridcore.x, dimsgridcore.y);
+				d_Cart2PolarFFT(d_ps2dgrouped, d_ps2dpolar, fp.dimsperiodogram, T_INTERP_CUBIC, fp.maskinnerradius, fp.maskouterradius, dimsgridcore.y);
+				d_SubtractVector(d_ps2dpolar, d_ps2dmin, d_ps2dpolar, Elements2(dimspolar), dimsgridcore.y);
+				d_NormMonolithic(d_ps2dpolar, d_ps2dpolar, Elements2(dimspolar), T_NORM_MEAN01STD, dimsgridcore.y);
+				//d_WriteMRC(d_ps2dpolar, toInt3(dimspolar.x, dimspolar.y, dimsgridcore.y), "d_ps2dpolar.mrc");
+				d_CTFFitCreateTarget1D(d_ps2dpolar, d_ps2dcoords, dimspolar, h_params, dimsgridcore.y, fp, d_ps1d, d_ps1dcoords);
+				d_NormMonolithic(d_ps1d, d_ps1d, dimspolar.x, T_NORM_MEAN01STD, dimsgridcore.y);
+				d_WriteMRC(d_ps1d, toInt3(dimspolar.x, dimsgridcore.y, 1), "d_ps1d.mrc");
+
+				vector<pair<tfloat, CTFParams>> fits;
+				//d_CTFFit(d_ps2dpolar, d_ps2dcoords, dimspolar, h_params + i * norigins, dimsgridcore.y, fp, refinements, fits, score, mean, stddev);
+				d_CTFFit(d_ps1d, d_ps1dcoords, toInt2(dimspolar.x, 1), h_params + i * norigins, dimsgridcore.y, fp, refinements, fits, score, mean, stddev);
+
+				CTFTiltParams currenttilt(angles[a], fits[0].second);
+				currangle.push_back(currenttilt);
+				scoresum += fits[0].first;
+			}
+
+			anglefits.push_back(pair<tfloat, vector<CTFTiltParams>>(scoresum / (tfloat)nimages, currangle));
+		}
+
+		tfloat* h_scores = (tfloat*)malloc(anglefits.size() * sizeof(tfloat));
+		for (uint f = 0; f < anglefits.size(); f++)
+			h_scores[f] = anglefits[f].first;
+		if (r == 0)
+		{
+			time_t timer;
+			time(&timer);
+			WriteToBinaryFile("d_scorescorrected_" + to_string(timer) + ".bin", h_scores, anglefits.size() * sizeof(tfloat));
+		}
+		free(h_scores);
+
+		// Sort everyone in descending order
+		sort(anglefits.begin(), anglefits.end(),
+			[](const pair<tfloat, vector<CTFTiltParams>> &a, const pair<tfloat, vector<CTFTiltParams>> &b) -> bool
+		{
+			return a.first > b.first;
+		});
+
+		phistep /= 4.0;
+		thetastep /= 4.0;
+		angles.clear();
+		for (uint a = 0; a < min((int)anglefits.size(), 5); a++)
+		{
+			tfloat3 center = anglefits[a].second[0].angles;
+			PopulateAngles(angles, tfloat3(center.x - phistep * 3.0, center.x + phistep * 3.0, phistep),
+								   tfloat3(center.y - thetastep * 3.0, center.y + thetastep * 3.0, thetastep),
+								   tfloat3(0));
+
+		}
+	}
+
+	cout << anglefits[0].first;
+
+	glm::mat3 transformplane = Matrix3Euler(anglefits[0].second[0].angles);
+	glm::vec3 planenormal = transformplane * glm::vec3(0, 0, 1);
+
+	cout << planenormal.x << "\t" << planenormal.y << "\t" << planenormal.z;
+	{
+		time_t timer;
+		time(&timer);
+		WriteToBinaryFile("d_normalcorrected_" + to_string(timer) + ".bin", &planenormal, sizeof(glm::vec3));
+	}
+
+	fit = anglefits[0].second;
+	score = anglefits[0].first;
+
+	cudaFree(d_originstransformed);
+	cudaFree(d_ps2dmin);
+	cudaFree(d_ps2d);
+	cudaFree(d_ps2dgrouped);
+	cudaFree(d_ps2dpolar);
+	cudaFree(d_ps2dcoords);
+	cudaFree(d_ps1d);
+	cudaFree(d_ps1dcoords);
+
+	free(h_params);
+	free(h_origins);
+	free(h_originstransformed);
+}

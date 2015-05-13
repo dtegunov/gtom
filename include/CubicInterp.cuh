@@ -14,7 +14,7 @@
 * \param[in] pitch	Length of one line in bytes (mind 4 byte alignment for CUDA textures)
 * \param[in] dims	Image dimensions
 */
-template<class T> void d_CubicBSplinePrefilter2D(T* d_image, int pitch, int2 dims);
+template<class T> void d_CubicBSplinePrefilter2D(T* d_image, int2 dims, int batch = 1);
 
 /**
 * \brief Prefilters a 3D volume to accelerate cubic interpolation over it; the operation is performed in-place, i. e. original data will be overwritten
@@ -22,7 +22,7 @@ template<class T> void d_CubicBSplinePrefilter2D(T* d_image, int pitch, int2 dim
 * \param[in] pitch	Length of one line in bytes (mind 4 byte alignment for CUDA textures)
 * \param[in] dims	Volume dimensions
 */
-template<class T> void d_CubicBSplinePrefilter3D(T* d_volume, int pitch, int3 dims);
+template<class T> void d_CubicBSplinePrefilter3D(T* d_volume, int3 dims, int batch = 1);
 
 
 /*--------------------------------------------------------------------------*\
@@ -134,7 +134,7 @@ inline __host__ __device__ float bspline(float t)
 //! @param tex  1D texture
 //! @param x  unnormalized x texture coordinate
 //! @param y  unnormalized y texture coordinate
-inline __device__ tfloat cubicTex1D(cudaTextureObject_t tex, float x)
+inline __device__ tfloat cubicTex1D(cudaTex tex, float x)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
 	const float coord_grid = x - 0.5f;
@@ -162,7 +162,7 @@ inline __device__ tfloat cubicTex1D(cudaTextureObject_t tex, float x)
 //! @param tex  2D texture object
 //! @param x  unnormalized x texture coordinate
 //! @param y  unnormalized y texture coordinate
-inline __device__ float cubicTex2D(cudaTextureObject_t tex, float x, float y)
+inline __device__ float cubicTex2D(cudaTex tex, float x, float y)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
 	const float2 coord_grid = make_float2(x - 0.5f, y - 0.5f);
@@ -194,7 +194,7 @@ inline __device__ float cubicTex2D(cudaTextureObject_t tex, float x, float y)
 //! Fast implementation, using 8 trilinear lookups.
 //! @param tex  3D texture
 //! @param coord  unnormalized 3D texture coordinate
-inline __device__ float cubicTex3D(cudaTextureObject_t tex, float x, float y, float z)
+inline __device__ float cubicTex3D(cudaTex tex, float x, float y, float z)
 {
 	// shift the coordinate from [0,extent] to [-0.5, extent-0.5]
 	const float3 coord_grid = make_float3(x, y, z) - 0.5f;
@@ -232,7 +232,7 @@ inline __device__ float cubicTex3D(cudaTextureObject_t tex, float x, float y, fl
 //! Straight forward implementation, using 4 nearest neighbour lookups.
 //! @param tex  1D texture
 //! @param x  unnormalized x texture coordinate
-template <class T> __device__ tfloat cubicTex1DSimple(cudaTextureObject_t tex, tfloat x)
+template <class T> __device__ tfloat cubicTex1DSimple(cudaTex tex, tfloat x)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
 	const tfloat coord_grid = x - (tfloat)0.5;
@@ -255,7 +255,7 @@ template <class T> __device__ tfloat cubicTex1DSimple(cudaTextureObject_t tex, t
 //! @param tex  2D texture
 //! @param x  unnormalized x texture coordinate
 //! @param y  unnormalized y texture coordinate
-template <class T> __device__ float cubicTex2DSimple(cudaTextureObject_t tex, float x, float y)
+template <class T> __device__ float cubicTex2DSimple(cudaTex tex, float x, float y)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
 	const float2 coord_grid = make_float2(x - 0.5f, y - 0.5f);
@@ -283,7 +283,7 @@ template <class T> __device__ float cubicTex2DSimple(cudaTextureObject_t tex, fl
 //! Straight forward implementation, using 64 nearest neighbour lookups.
 //! @param tex  3D texture
 //! @param coord  unnormalized 3D texture coordinate
-template <class T> __device__ float cubicTex3DSimple(cudaTextureObject_t tex, float x, float y, float z)
+template <class T> __device__ float cubicTex3DSimple(cudaTex tex, float x, float y, float z)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
 	const float3 coord_grid = make_float3(x - 0.5f, y - 0.5f, z - 0.5f);

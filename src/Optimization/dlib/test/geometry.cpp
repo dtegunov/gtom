@@ -646,8 +646,20 @@ namespace
             DLIB_TEST(length(t(from[i])-to[i]) < 1e-14);
             DLIB_TEST(length(tinv(t(from[i]))-from[i]) < 1e-14);
             DLIB_TEST(length(t(tinv(from[i]))-from[i]) < 1e-14);
+
+            point_transform_affine temp = t*inv(t);
+            DLIB_TEST(length(temp.get_b()) < 1e-14);
+            DLIB_TEST(max(abs(temp.get_m() - identity_matrix<double>(2))) < 1e-14);
         }
 
+        ostringstream sout;
+        serialize(t, sout);
+        istringstream sin(sout.str());
+        point_transform_affine t2;
+        DLIB_TEST(length(t2(point(2,3)) - point(2,3)) < 1e-14);
+        deserialize(t2, sin);
+        DLIB_TEST(max(abs(t2.get_m()-t.get_m())) < 1e-14);
+        DLIB_TEST(max(abs(t2.get_b()-t.get_b())) < 1e-14);
     }
 
 // ----------------------------------------------------------------------------------------
@@ -684,6 +696,11 @@ namespace
                 to_points.push_back(tran(p) + (randm(2,1,rnd)-0.5)*error_rate);
                 DLIB_TEST(length(traninv(tran(p))-p) <= 1e-5);
                 DLIB_TEST(length(tran(traninv(p))-p) <= 1e-5);
+
+                point_transform_projective temp = tran*traninv;
+                DLIB_TEST_MSG(max(abs(temp.get_m() - identity_matrix<double>(3))) < 1e-10, temp.get_m());
+                temp = traninv*tran;
+                DLIB_TEST_MSG(max(abs(temp.get_m() - identity_matrix<double>(3))) < 1e-10, temp.get_m());
             }
 
 
@@ -706,10 +723,86 @@ namespace
                 dlog << LINFO << " errors: mean/max: " << rs.mean() << "  " << rs.max();
                 pass_rate.add(0);
             }
+
+            ostringstream sout;
+            serialize(tran, sout);
+            istringstream sin(sout.str());
+            point_transform_projective tran3;
+            DLIB_TEST(length(tran3(point(2,3)) - point(2,3)) < 1e-14);
+            deserialize(tran3, sin);
+            DLIB_TEST(max(abs(tran3.get_m()-tran.get_m())) < 1e-14);
         }
 
         dlog << LINFO << " pass_rate.mean(): "<< pass_rate.mean();
         return pass_rate.mean();
+    }
+
+// ----------------------------------------------------------------------------------------
+
+    template <typename T>
+    void test_find_similarity_transform()
+    {
+        print_spinner();
+        std::vector<dlib::vector<T,2> > from_points, to_points;
+
+        from_points.push_back(dlib::vector<T,2>(0,0));
+        from_points.push_back(dlib::vector<T,2>(0,1));
+        from_points.push_back(dlib::vector<T,2>(1,0));
+
+        to_points.push_back(dlib::vector<T,2>(8,0));
+        to_points.push_back(dlib::vector<T,2>(6,0));
+        to_points.push_back(dlib::vector<T,2>(8,2));
+
+        point_transform_affine tform = find_similarity_transform(from_points, to_points);
+
+        for (unsigned long i = 0; i < from_points.size(); ++i)
+        {
+            DLIB_TEST(length(tform(from_points[i]) - to_points[i]) < 1e-14);
+        }
+    }
+
+    template <typename T>
+    void test_find_similarity_transform2()
+    {
+        print_spinner();
+        std::vector<dlib::vector<T,2> > from_points, to_points;
+
+        from_points.push_back(dlib::vector<T,2>(0,0));
+        from_points.push_back(dlib::vector<T,2>(0,1));
+
+        to_points.push_back(dlib::vector<T,2>(8,0));
+        to_points.push_back(dlib::vector<T,2>(6,0));
+
+        point_transform_affine tform = find_similarity_transform(from_points, to_points);
+
+        for (unsigned long i = 0; i < from_points.size(); ++i)
+        {
+            DLIB_TEST(length(tform(from_points[i]) - to_points[i]) < 1e-14);
+        }
+    }
+
+
+// ----------------------------------------------------------------------------------------
+
+    void test_rect_to_drect()
+    {
+        print_spinner();
+        dlib::rand rnd;
+        for (int i = 0; i < 5000; ++i)
+        {
+            rectangle rect = centered_rect(rnd.get_random_32bit_number()%100,
+                rnd.get_random_32bit_number()%100,
+                rnd.get_random_32bit_number()%100,
+                rnd.get_random_32bit_number()%100);
+
+            drectangle drect = rect;
+            rectangle rect2 = drect;
+            DLIB_TEST(rect2 == rect);
+            DLIB_TEST(rect.width() == drect.width());
+            DLIB_TEST(rect.height() == drect.height());
+            DLIB_TEST(dcenter(rect) == dcenter(drect));
+            DLIB_TEST(rect.is_empty() == drect.is_empty());
+        }
     }
 
 // ----------------------------------------------------------------------------------------
@@ -726,11 +819,17 @@ namespace
         void perform_test (
         )
         {
+            test_rect_to_drect();
             geometry_test();
             test_border_enumerator();
             test_find_affine_transform();
             DLIB_TEST(projective_transform_pass_rate(0.1) > 0.99);
             DLIB_TEST(projective_transform_pass_rate(0.0) == 1);
+
+            test_find_similarity_transform<double>(); 
+            test_find_similarity_transform2<double>(); 
+            test_find_similarity_transform<float>(); 
+            test_find_similarity_transform2<float>(); 
         }
     } a;
 

@@ -1,7 +1,7 @@
 // Copyright (C) 2003  Davis E. King (davis@dlib.net)
 // License: Boost Software License   See LICENSE.txt for the full license.
-#undef DLIB_POINT_TrANSFORMS_ABSTRACT_H__
-#ifdef DLIB_POINT_TrANSFORMS_ABSTRACT_H__
+#undef DLIB_POINT_TrANSFORMS_ABSTRACT_Hh_
+#ifdef DLIB_POINT_TrANSFORMS_ABSTRACT_Hh_
 
 #include "../matrix/matrix_abstract.h"
 #include "vector_abstract.h"
@@ -20,6 +20,15 @@ namespace dlib
                 applies an affine transformation to them.
         !*/
     public:
+
+        point_transform_affine (
+        );
+        /*!
+            ensures
+                - This object will perform the identity transform.  That is, given a point
+                  as input it will return the same point as output.
+        !*/
+
         point_transform_affine (
             const matrix<double,2,2>& m,
             const dlib::vector<double,2>& b
@@ -57,7 +66,25 @@ namespace dlib
 
     };
 
+    void serialize   (const point_transform_affine& item, std::ostream& out);
+    void deserialize (point_transform_affine& item, std::istream& in);
+    /*!
+        provides serialization support
+    !*/
+
 // ----------------------------------------------------------------------------------------
+
+    point_transform_affine operator* (
+        const point_transform_affine& lhs,
+        const point_transform_affine& rhs
+    );
+    /*!
+        ensures
+            - returns a transformation TFORM(x) that is equivalent to lhs(rhs(x)).  That
+              is, for all valid x: TFORM(x) == lhs(rhs(x)).
+    !*/
+
+    // ----------------------------------------------------------------------------------------
 
     point_transform_affine inv (
         const point_transform_affine& trans
@@ -94,6 +121,29 @@ namespace dlib
 
 // ----------------------------------------------------------------------------------------
 
+    template <typename T>
+    point_transform_affine find_similarity_transform (
+        const std::vector<dlib::vector<T,2> >& from_points,
+        const std::vector<dlib::vector<T,2> >& to_points
+    );
+    /*!
+        requires
+            - from_points.size() == to_points.size()
+            - from_points.size() >= 2
+        ensures
+            - This function is just like find_affine_transform() except it finds the best
+              similarity transform instead of a full affine transform.  This means that it
+              optimizes over only the space of rotations, scale changes, and translations.
+              So for example, if you mapped the 3 vertices of a triangle through a
+              similarity transform then the output would still be the same triangle.
+              However, the triangle itself may be larger or smaller, rotated, or at a
+              different location in the coordinate system.  This is not the case for a
+              general affine transform which can stretch points in ways that cause, for
+              example, an equilateral triangle to turn into an isosceles triangle.
+    !*/
+
+// ----------------------------------------------------------------------------------------
+
     class point_transform_projective
     {
         /*!
@@ -103,6 +153,14 @@ namespace dlib
         !*/
 
     public:
+
+        point_transform_projective (
+        );
+        /*!
+            ensures
+                - This object will perform the identity transform.  That is, given a point
+                  as input it will return the same point as output.
+        !*/
 
         point_transform_projective (
             const matrix<double,3,3>& m
@@ -145,6 +203,24 @@ namespace dlib
 
     };
 
+    void serialize   (const point_transform_projective& item, std::ostream& out);
+    void deserialize (point_transform_projective& item, std::istream& in);
+    /*!
+        provides serialization support
+    !*/
+
+// ----------------------------------------------------------------------------------------
+
+    point_transform_projective operator* (
+        const point_transform_projective& lhs,
+        const point_transform_projective& rhs
+    );
+    /*!
+        ensures
+            - returns a transformation TFORM(x) that is equivalent to lhs(rhs(x)).  That
+              is, for all valid x: TFORM(x) == lhs(rhs(x)).
+    !*/
+
 // ----------------------------------------------------------------------------------------
 
     point_transform_projective inv (
@@ -186,6 +262,15 @@ namespace dlib
                 translates them.
         !*/
     public:
+
+        point_transform (
+        );
+        /*!
+            ensures
+                - This object will perform the identity transform.  That is, given a point
+                  as input it will return the same point as output.
+        !*/
+
         point_transform (
             const double& angle,
             const dlib::vector<double,2>& translate
@@ -226,6 +311,12 @@ namespace dlib
 
     };
 
+    void serialize   (const point_transform& item, std::ostream& out);
+    void deserialize (point_transform& item, std::istream& in);
+    /*!
+        provides serialization support
+    !*/
+
 // ----------------------------------------------------------------------------------------
 
     class point_rotator
@@ -236,6 +327,15 @@ namespace dlib
                 rotates them around the origin by a given angle.
         !*/
     public:
+
+        point_rotator (
+        );
+        /*!
+            ensures
+                - This object will perform the identity transform.  That is, given a point
+                  as input it will return the same point as output.
+        !*/
+
         point_rotator (
             const double& angle
         );
@@ -266,6 +366,12 @@ namespace dlib
                 - returns the transformation matrix used by this object.
         !*/
     };
+
+    void serialize   (const point_rotator& item, std::ostream& out);
+    void deserialize (point_rotator& item, std::istream& in);
+    /*!
+        provides serialization support
+    !*/
 
 // ----------------------------------------------------------------------------------------
 
@@ -306,6 +412,6 @@ namespace dlib
 
 }
 
-#endif // DLIB_POINT_TrANSFORMS_ABSTRACT_H__
+#endif // DLIB_POINT_TrANSFORMS_ABSTRACT_Hh_
 
 

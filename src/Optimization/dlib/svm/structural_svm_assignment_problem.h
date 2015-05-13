@@ -1,7 +1,7 @@
 // Copyright (C) 2011  Davis E. King (davis@dlib.net)
 // License: Boost Software License   See LICENSE.txt for the full license.
-#ifndef DLIB_STRUCTURAL_SVM_ASSiGNMENT_PROBLEM_H__
-#define DLIB_STRUCTURAL_SVM_ASSiGNMENT_PROBLEM_H__
+#ifndef DLIB_STRUCTURAL_SVM_ASSiGNMENT_PROBLEM_Hh_
+#define DLIB_STRUCTURAL_SVM_ASSiGNMENT_PROBLEM_Hh_
 
 
 #include "structural_svm_assignment_problem_abstract.h"
@@ -63,16 +63,27 @@ namespace dlib
             const std::vector<label_type>& labels_,
             const feature_extractor& fe_,
             bool force_assignment_,
-            unsigned long num_threads = 2
+            unsigned long num_threads,
+            const double loss_per_false_association_,
+            const double loss_per_missed_association_
         ) :
             structural_svm_problem_threaded<matrix_type,feature_vector_type>(num_threads),
             samples(samples_),
             labels(labels_),
             fe(fe_),
-            force_assignment(force_assignment_)
+            force_assignment(force_assignment_),
+            loss_per_false_association(loss_per_false_association_),
+            loss_per_missed_association(loss_per_missed_association_)
         {
             // make sure requires clause is not broken
 #ifdef ENABLE_ASSERTS
+            DLIB_ASSERT(loss_per_false_association > 0 && loss_per_missed_association > 0,
+                "\t structural_svm_assignment_problem::structural_svm_assignment_problem()"
+                << "\n\t invalid inputs were given to this function"
+                << "\n\t loss_per_false_association:  " << loss_per_false_association
+                << "\n\t loss_per_missed_association: " << loss_per_missed_association
+                << "\n\t this: " << this
+            );
             if (force_assignment)
             {
                 DLIB_ASSERT(is_forced_assignment_problem(samples, labels),
@@ -211,7 +222,7 @@ namespace dlib
                             // add in the loss since this corresponds to an incorrect prediction.
                             if (c != labels[idx][r])
                             {
-                                cost(r,c) += 1;
+                                cost(r,c) += loss_per_false_association;
                             }
                         }
                         else
@@ -219,7 +230,7 @@ namespace dlib
                             if (labels[idx][r] == -1)
                                 cost(r,c) = 0;
                             else
-                                cost(r,c) = 1; // 1 for the loss
+                                cost(r,c) = loss_per_missed_association; 
                         }
 
                     }
@@ -250,7 +261,12 @@ namespace dlib
                     assignment[i] = -1;
 
                 if (assignment[i] != labels[idx][i])
-                    loss += 1;
+                {
+                    if (assignment[i] == -1)
+                        loss += loss_per_missed_association;
+                    else
+                        loss += loss_per_false_association;
+                }
             }
 
             get_joint_feature_vector(samples[idx], assignment, psi);
@@ -260,11 +276,13 @@ namespace dlib
         const std::vector<label_type>& labels;
         const feature_extractor& fe;
         bool force_assignment;
+        const double loss_per_false_association;
+        const double loss_per_missed_association;
     };
 
 // ----------------------------------------------------------------------------------------
 
 }
 
-#endif // DLIB_STRUCTURAL_SVM_ASSiGNMENT_PROBLEM_H__
+#endif // DLIB_STRUCTURAL_SVM_ASSiGNMENT_PROBLEM_Hh_
 

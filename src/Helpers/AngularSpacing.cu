@@ -40,3 +40,27 @@ tfloat3* GetEqualAngularSpacing(tfloat2 phirange, tfloat2 thetarange, tfloat2 ps
 
 	return h_angles;
 }
+
+vector<float3> GetEqualAngularSpacing(float2 phirange, float2 thetarange, float2 psirange, float increment)
+{
+	int count = 0;
+	int rot_nstep = 0;
+
+	vector<float3> angles;
+
+	for (float tilt = thetarange.x; tilt <= thetarange.y + 1e-5f; tilt += increment)
+	{
+		if (tilt > 0)
+			rot_nstep = (int)ceil(PI2 * sin(tilt) / increment);
+		else
+			rot_nstep = 1;
+
+		float rot_sam = PI2 / (float)rot_nstep;
+
+		for (float rot = phirange.x; rot <= phirange.y - rot_sam + 1e-5f; rot += rot_sam)
+			for (float psi = psirange.x; psi <= psirange.y - increment + 1e-5f; psi += increment)
+				angles.push_back(make_float3(rot, tilt, psi));
+	}
+
+	return angles;
+}

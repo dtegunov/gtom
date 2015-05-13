@@ -99,12 +99,38 @@ tcomplex* mxArrayAdapter::GetAsManagedDeviceTComplex()
 
 tfloat* mxArrayAdapter::GetAsUnmanagedTFloat()
 {
-	if(mxGetClassID(underlyingarray) == mxDOUBLE_CLASS && !IS_TFLOAT_DOUBLE)
-		return ConvertToTFloat<double>((double*)mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray));
-	else if(mxGetClassID(underlyingarray) == mxSINGLE_CLASS && IS_TFLOAT_DOUBLE)
-		return ConvertToTFloat<float>((float*)mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray));
+	if (mxGetClassID(underlyingarray) == mxDOUBLE_CLASS)
+	{
+		if (!IS_TFLOAT_DOUBLE)
+			return ConvertToTFloat<double>((double*)mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray));
+		else
+		{
+			tfloat* h_copy = (tfloat*)malloc(mxGetNumberOfElements(underlyingarray) * sizeof(tfloat));
+			memcpy(h_copy, (tfloat*)mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray) * sizeof(tfloat));
+			return h_copy;
+		}
+	}
+	else if (mxGetClassID(underlyingarray) == mxSINGLE_CLASS)
+	{
+		if (IS_TFLOAT_DOUBLE)
+			return ConvertToTFloat<float>((float*)mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray));
+		else
+		{
+			tfloat* h_copy = (tfloat*)malloc(mxGetNumberOfElements(underlyingarray) * sizeof(tfloat));
+			memcpy(h_copy, (tfloat*)mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray) * sizeof(tfloat));
+			return h_copy;
+		}
+	}
+	else if (mxGetClassID(underlyingarray) == mxINT32_CLASS)
+		return ConvertToTFloat<int>((int*)mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray));
+	else if (mxGetClassID(underlyingarray) == mxINT16_CLASS)
+		return ConvertToTFloat<short>((short*)mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray));
+	else if (mxGetClassID(underlyingarray) == mxUINT32_CLASS)
+		return ConvertToTFloat<uint>((uint*)mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray));
+	else if (mxGetClassID(underlyingarray) == mxUINT16_CLASS)
+		return ConvertToTFloat<ushort>((ushort*)mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray));
 	else
-		return (tfloat*)mxGetPr(underlyingarray);
+		throw;
 }
 
 tfloat* mxArrayAdapter::GetAsUnmanagedDeviceTFloat()
@@ -123,10 +149,10 @@ tfloat* mxArrayAdapter::GetAsUnmanagedDeviceTFloat()
 		else
 			d_copy = (tfloat*)d_original;
 	}
-	else
+	else if (mxGetClassID(underlyingarray) == mxSINGLE_CLASS)
 	{
 		float* d_original = (float*)CudaMallocFromHostArray(mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray) * sizeof(float));
-		if(IS_TFLOAT_DOUBLE)
+		if (IS_TFLOAT_DOUBLE)
 		{
 			cudaMalloc((void**)&d_copy, mxGetNumberOfElements(underlyingarray) * sizeof(tfloat));
 			d_ConvertToTFloat<float>(d_original, d_copy, mxGetNumberOfElements(underlyingarray));
@@ -135,8 +161,37 @@ tfloat* mxArrayAdapter::GetAsUnmanagedDeviceTFloat()
 		else
 			d_copy = (tfloat*)d_original;
 	}
+	else if (mxGetClassID(underlyingarray) == mxINT32_CLASS)
+	{
+		int* d_original = (int*)CudaMallocFromHostArray(mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray) * sizeof(int));
+		cudaMalloc((void**)&d_copy, mxGetNumberOfElements(underlyingarray) * sizeof(tfloat));
+		d_ConvertToTFloat<int>(d_original, d_copy, mxGetNumberOfElements(underlyingarray));
+		cudaFree(d_original);
+	}
+	else if (mxGetClassID(underlyingarray) == mxUINT32_CLASS)
+	{
+		uint* d_original = (uint*)CudaMallocFromHostArray(mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray) * sizeof(uint));
+		cudaMalloc((void**)&d_copy, mxGetNumberOfElements(underlyingarray) * sizeof(tfloat));
+		d_ConvertToTFloat<uint>(d_original, d_copy, mxGetNumberOfElements(underlyingarray));
+		cudaFree(d_original);
+	}
+	else if (mxGetClassID(underlyingarray) == mxINT16_CLASS)
+	{
+		short* d_original = (short*)CudaMallocFromHostArray(mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray) * sizeof(short));
+		cudaMalloc((void**)&d_copy, mxGetNumberOfElements(underlyingarray) * sizeof(tfloat));
+		d_ConvertToTFloat<short>(d_original, d_copy, mxGetNumberOfElements(underlyingarray));
+		cudaFree(d_original);
+	}
+	else if (mxGetClassID(underlyingarray) == mxINT16_CLASS)
+	{
+		ushort* d_original = (ushort*)CudaMallocFromHostArray(mxGetPr(underlyingarray), mxGetNumberOfElements(underlyingarray) * sizeof(ushort));
+		cudaMalloc((void**)&d_copy, mxGetNumberOfElements(underlyingarray) * sizeof(tfloat));
+		d_ConvertToTFloat<ushort>(d_original, d_copy, mxGetNumberOfElements(underlyingarray));
+		cudaFree(d_original);
+	}
+	else
+		throw;
 	
-	cudaDeviceSynchronize();
 	return d_copy;
 }
 

@@ -1,6 +1,6 @@
 #include "Prerequisites.h"
 
-TEST(CTF, CTFCorrect)
+TEST(CTF, Correct)
 {
 	cudaDeviceReset();
 
@@ -22,7 +22,7 @@ TEST(CTF, CTFCorrect)
 
 		tfloat score = 0, mean = 0, stddev = 0;
 
-		d_CTFFit(d_input, dimsimage, NULL, 0, fp, 2, fit, score, mean, stddev);
+		//d_CTFFit(d_input, dimsimage, NULL, 0, fp, 2, fit, score, mean, stddev);
 
 		tcomplex* d_inputft;
 		cudaMalloc((void**)&d_inputft, ElementsFFT2(dimsimage) * sizeof(tcomplex));

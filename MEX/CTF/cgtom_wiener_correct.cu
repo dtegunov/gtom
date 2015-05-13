@@ -36,8 +36,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
 	d_FFTR2C(d_image, d_imageft, 2, dimsimage, nimages);
 
-	for (int n = 0; n < nimages; n++)
-		d_WienerPerFreq(d_imageft + ElementsFFT(dimsimage) * n, dimsimage, d_fsc + (dimsimage.x / 2) * n, h_params[n], d_imageft + ElementsFFT(dimsimage) * n, d_weights + ElementsFFT(dimsimage) * n);
+	d_CTFWiener(d_imageft + ElementsFFT(dimsimage), dimsimage, d_fsc + (dimsimage.x / 2), h_params, d_imageft + ElementsFFT(dimsimage), d_weights + ElementsFFT(dimsimage), nimages);
 
 	d_IFFTC2R(d_imageft, d_image, 2, dimsimage, nimages);
 

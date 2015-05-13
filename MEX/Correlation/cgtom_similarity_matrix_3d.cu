@@ -8,8 +8,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
 	mxInitGPU();
 
-	if (nrhs != 3)
-		mexErrMsgIdAndTxt(errId, "Wrong parameter count (3 expected).");
+	if (nrhs != 4)
+		mexErrMsgIdAndTxt(errId, "Wrong parameter count (4 expected).");
 
 	mxArrayAdapter volumes(prhs[0]);
 	int3 dimsvolumes = MWDimsToInt3(mxGetNumberOfDimensions(volumes.underlyingarray), mxGetDimensions(volumes.underlyingarray));
@@ -26,6 +26,9 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
 	mxArrayAdapter a_angularspacing(prhs[2]);
 	tfloat* h_angularspacing = a_angularspacing.GetAsManagedTFloat();
+
+	mxArrayAdapter a_maxtheta(prhs[3]);
+	tfloat* h_maxtheta = a_maxtheta.GetAsManagedTFloat();
 
 	tfloat* h_simmatrix = MallocValueFilled(nvolumes * nvolumes, (tfloat)0);
 	tfloat* h_rotmatrix = MallocValueFilled(nvolumes * nvolumes * 3, (tfloat)0);
@@ -44,7 +47,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 			dimsvolumes,
 			rowelements,
 			h_angularspacing[0],
-			tfloat2(0, PI2), tfloat2(0, PIHALF), tfloat2(0, PI2),
+			tfloat2(0, PI2), tfloat2(-h_maxtheta[0], h_maxtheta[0]), tfloat2(0, PI2),
 			true,
 			h_results + elementsoffset);
 

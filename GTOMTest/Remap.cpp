@@ -48,7 +48,7 @@ TEST(Masking, Remap)
 	printf("%d elements mapped\n", mapped);
 
 	int* h_maskedimage = (int*)malloc(mapped * sizeof(int));
-	Remap(h_image, map_forward, h_maskedimage, mapped, size * size, 0, 1);
+	h_Remap(h_image, map_forward, h_maskedimage, mapped, size * size, 0, 1);
 
 	ASSERT_ARRAY_EQ(h_maskedimage, masked_desired, mapped);
 

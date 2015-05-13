@@ -13,7 +13,7 @@
 void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, tfloat* d_mask, cufftHandle* planforw, cufftHandle* planback, int batch)
 {
 	tcomplex* d_inputft;
-	cudaMalloc((void**)&d_inputft, ElementsFFT(dims) * sizeof(tcomplex));
+	cudaMalloc((void**)&d_inputft, ElementsFFT(dims) * batch * sizeof(tcomplex));
 
 	if (planforw == NULL)
 		d_FFTR2C(d_input, d_inputft, DimensionCount(dims), dims, batch);

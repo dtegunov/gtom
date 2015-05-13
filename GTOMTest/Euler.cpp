@@ -6,20 +6,13 @@ TEST(Helpers, Euler)
 
 	//Case 1:
 	{
-		tfloat3 anglesori = tfloat3(0.1f, 0.5f, 2.0f);
-		glm::mat4 mori = Matrix4Euler(anglesori);
-		tfloat3 anglesrec = EulerFromMatrix(mori);
-		glm::mat4 mrec = Matrix4Euler(anglesrec);
-		tfloat3 anglesrev = EulerFromMatrix(glm::inverse(mori));
+		tfloat3 angeuler = tfloat3(ToRad(0.0f), ToRad(50.0f), ToRad(20.0f));
+		tfloat3 angpolar = tfloat3(0.0f, ToRad(20.0f), ToRad(30.0f));
 
-		glm::vec4 transori = mori * glm::vec4(1, 2, 3, 1);
-		glm::vec4 transrec = mrec * glm::vec4(1, 2, 3, 1);
-
-		tfloat3 angles = tfloat3(0.0f, 0.1f, PIHALF);
-		glm::mat4 m = Matrix4Euler(angles);
-		glm::vec4 v = m * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-
-		cout << anglesori.x;
+		glm::mat3 mateuler = Matrix3Euler(angeuler);
+		glm::mat3 matpolar = Matrix3PolarViewVector(angpolar, ToRad(0.0f));
+		
+		cout << mateuler[0][0];
 	}
 
 	cudaDeviceReset();

@@ -7,7 +7,7 @@ TEST(Projection, Backward)
 	//Case 1:
 	{
 		int3 dimsvolume = {8, 8, 8};
-		int3 dimsimage = {8, 8, 1};
+		int2 dimsimage = {8, 8};
 		tfloat3 angles = tfloat3(0.0f, 0.0f, 0.0f);
 		tfloat2 shift = tfloat2(0, 0);
 		tfloat2 scale = tfloat2(1, 1);

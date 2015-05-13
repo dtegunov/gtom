@@ -12,7 +12,7 @@
 template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3 regionorigin);
 template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3* d_regionorigins);
 template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, size_t regionelements, int3* d_regionorigins);
-template <bool cubicinterp> __global__ void Extract2DTransformedKernel(cudaTextureObject_t t_input, tfloat* d_output, int2 sourcedims, int2 regiondims, glm::mat3* d_transforms);
+template <bool cubicinterp> __global__ void Extract2DTransformedKernel(cudaTex t_input, tfloat* d_output, int2 sourcedims, int2 regiondims, glm::mat3* d_transforms);
 
 
 /////////////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ template void d_ExtractMany<char>(char* d_input, char* d_output, int3 sourcedims
 void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int2 dimsinput, int2 dimsregion, tfloat2* h_scale, tfloat* h_rotation, tfloat2* h_translation, T_INTERP_MODE mode, int batch)
 {
 	cudaArray* a_input;
-	cudaTextureObject_t t_input;
+	cudaTex t_input;
 	if (mode == T_INTERP_LINEAR)
 		d_BindTextureToArray(d_input, a_input, t_input, dimsinput, cudaFilterModeLinear, false);
 	else
@@ -76,7 +76,7 @@ void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int2 dimsinput, i
 		tfloat* d_temp;
 		cudaMalloc((void**)&d_temp, Elements2(dimsinput) * sizeof(tfloat));
 		cudaMemcpy(d_temp, d_input, Elements2(dimsinput) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-		d_CubicBSplinePrefilter2D(d_temp, dimsinput.x * sizeof(tfloat), dimsinput);
+		d_CubicBSplinePrefilter2D(d_temp, dimsinput);
 		d_BindTextureToArray(d_temp, a_input, t_input, dimsinput, cudaFilterModeLinear, false);
 		cudaFree(d_temp);
 	}
@@ -151,7 +151,7 @@ template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, in
 		d_output[idx] = d_input[(idx + regionorigin.x + sourcedims.x * 999) % sourcedims.x];
 }
 
-template <bool cubicinterp> __global__ void Extract2DTransformedKernel(cudaTextureObject_t t_input, tfloat* d_output, int2 sourcedims, int2 regiondims, glm::mat3* d_transforms)
+template <bool cubicinterp> __global__ void Extract2DTransformedKernel(cudaTex t_input, tfloat* d_output, int2 sourcedims, int2 regiondims, glm::mat3* d_transforms)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if(idx >= regiondims.x)

@@ -16,6 +16,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	mxArrayAdapter v2(prhs[1]);
 	int ndims = mxGetNumberOfDimensions(v1.underlyingarray);
 	int3 dimsvolume = MWDimsToInt3(ndims, mxGetDimensions(v1.underlyingarray));
+	uint nvolumes = dimsvolume.z / dimsvolume.x;
+	dimsvolume.z = dimsvolume.x;
 
 	tfloat* d_volume1 = v1.GetAsManagedDeviceTFloat();
 	tfloat* d_volume2 = v2.GetAsManagedDeviceTFloat();
@@ -23,7 +25,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
 	d_LocalFSC(d_volume1, 
 			   d_volume2, 
-			   dimsvolume, 
+			   dimsvolume,
+			   nvolumes,
 			   d_resmap, 
 			   ((double*)mxGetData(prhs[2]))[0], 
 			   ((double*)mxGetData(prhs[3]))[0],

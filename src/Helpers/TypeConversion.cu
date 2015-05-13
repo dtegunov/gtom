@@ -29,6 +29,10 @@ template <class T> tfloat* ConvertToTFloat(T const* const original, size_t const
 }
 template tfloat* ConvertToTFloat<double>(double const* const original, size_t const n);
 template tfloat* ConvertToTFloat<float>(float const* const original, size_t const n);
+template tfloat* ConvertToTFloat<int>(int const* const original, size_t const n);
+template tfloat* ConvertToTFloat<uint>(uint const* const original, size_t const n);
+template tfloat* ConvertToTFloat<short>(short const* const original, size_t const n);
+template tfloat* ConvertToTFloat<ushort>(ushort const* const original, size_t const n);
 
 template <class T> void ConvertToTFloat(T const* const original, tfloat* const copy, size_t const n)
 {
@@ -38,6 +42,10 @@ template <class T> void ConvertToTFloat(T const* const original, tfloat* const c
 }
 template void ConvertToTFloat<double>(double const* const original, tfloat* const copy, size_t const n);
 template void ConvertToTFloat<float>(float const* const original, tfloat* const copy, size_t const n);
+template void ConvertToTFloat<int>(int const* const original, tfloat* const copy, size_t const n);
+template void ConvertToTFloat<uint>(uint const* const original, tfloat* const copy, size_t const n);
+template void ConvertToTFloat<short>(short const* const original, tfloat* const copy, size_t const n);
+template void ConvertToTFloat<ushort>(ushort const* const original, tfloat* const copy, size_t const n);
 
 template <class T> T* ConvertTFloatTo(tfloat const* const original, size_t const n)
 {
@@ -116,6 +124,10 @@ template <class T> void d_ConvertToTFloat(T const* const d_original, tfloat* con
 }
 template void d_ConvertToTFloat<double>(double const* const d_original, tfloat* const d_copy, size_t const n);
 template void d_ConvertToTFloat<float>(float const* const d_original, tfloat* const d_copy, size_t const n);
+template void d_ConvertToTFloat<int>(int const* const d_original, tfloat* const d_copy, size_t const n);
+template void d_ConvertToTFloat<uint>(uint const* const d_original, tfloat* const d_copy, size_t const n);
+template void d_ConvertToTFloat<short>(short const* const d_original, tfloat* const d_copy, size_t const n);
+template void d_ConvertToTFloat<ushort>(ushort const* const d_original, tfloat* const d_copy, size_t const n);
 
 template <class T> void d_ConvertTFloatTo(tfloat const* const d_original, T* const d_copy, size_t const n)
 {

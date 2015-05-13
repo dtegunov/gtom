@@ -1,9 +1,11 @@
 #include "Prerequisites.cuh"
 #include "Angles.cuh"
 #include "CTF.cuh"
+#include "DeviceFunctions.cuh"
 #include "FFT.cuh"
 #include "Generics.cuh"
 #include "Helper.cuh"
+#include "Masking.cuh"
 #include "Reconstruction.cuh"
 
 
@@ -11,125 +13,225 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-//__global__ void ReconstructFourierKernel(tcomplex* d_projft, tcomplex* d_volumeft, tfloat* d_samples, int3 dimsvolume, int3 dimsproj, glm::vec3* d_vecX, glm::vec3* d_vecY);
+__global__ void PrecomputeBlobKernel(tfloat* d_precompblob, uint dim, tfloat* d_funcvals, tfloat funcsampling, int funcelements, tfloat normftblob);
+__global__ void SoftMaskKernel(tfloat* d_input, uint dim, uint dimft, uint n);
+__global__ void UpdateWeightKernel(tcomplex* d_conv, tfloat* d_weight, tfloat* d_newweight, uint n);
+__global__ void CorrectGriddingKernel(tfloat* d_volume, uint dim);
+
 
 //////////////////////////////////////////////////////
 //Performs 3D reconstruction using Fourier inversion//
 //////////////////////////////////////////////////////
 
-void d_ReconstructFourier(tfloat* d_projections, tfloat* d_weights, CTFParams* h_ctf, int3 dimsproj, tfloat* d_volume, int3 dimsvolume, tfloat3* h_angles)
+void d_ReconstructFourier(tcomplex* d_imagesft, tfloat* d_imagespsf, tcomplex* d_volumeft, tfloat* d_volumepsf, int3 dims, tfloat3* h_angles, tfloat2* h_shifts, int nimages, bool performgridding, bool everythingcentered)
 {
-	tcomplex* d_volumeft = (tcomplex*)CudaMallocValueFilled(ElementsFFT(dimsvolume) * 2, (tfloat)0);
-	tfloat* d_samples = CudaMallocValueFilled(ElementsFFT(dimsvolume), (tfloat)0);
+	int3 dimsimage = toInt3(dims.x, dims.y, 1);
 
-	d_ReconstructFourierAdd(d_volumeft, d_samples, d_projections, d_weights, h_ctf, dimsproj, dimsvolume, h_angles);
+	if (!everythingcentered)	// d_imageft needs to be centered for reconstruction
+		d_RemapHalfFFT2Half(d_imagesft, d_imagesft, dimsimage, nimages);
 
-	d_MaxOp(d_samples, (tfloat)1, d_samples, ElementsFFT(dimsvolume));
-	d_Inv(d_samples, d_samples, ElementsFFT(dimsvolume));
-	d_ComplexMultiplyByVector(d_volumeft, d_samples, d_volumeft, ElementsFFT(dimsvolume));
-	cudaFree(d_samples);
-	d_RemapHalf2HalfFFT(d_volumeft, d_volumeft, dimsvolume);
+	d_ValueFill(d_volumeft, ElementsFFT(dims), make_cuComplex(0, 0));
+	d_ValueFill(d_volumepsf, ElementsFFT(dims), (tfloat)0);
 
-	d_IFFTC2R(d_volumeft, d_volume, 3, dimsvolume);
-	d_RemapFullFFT2Full(d_volume, d_volume, dimsvolume);
+	d_ReconstructFourierAdd(d_volumeft, d_volumepsf, dims, d_imagesft, d_imagespsf, h_angles, h_shifts, nimages);
 
+	tfloat* d_weights;
+	cudaMalloc((void**)&d_weights, ElementsFFT(dims) * sizeof(tfloat));
+	cudaMemcpy(d_weights, d_volumepsf, ElementsFFT(dims) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+
+	d_MinOp(d_volumepsf, (tfloat)1, d_volumepsf, ElementsFFT(dims));
+	d_MaxOp(d_weights, (tfloat)1, d_weights, ElementsFFT(dims));
+	d_Inv(d_weights, d_weights, ElementsFFT(dims));
+	d_ComplexMultiplyByVector(d_volumeft, d_weights, d_volumeft, ElementsFFT(dims));
+
+	if (!everythingcentered)	// Volume and PSF come centered from d_ReconstructFourierAdd
+	{
+		d_RemapHalf2HalfFFT(d_volumeft, d_volumeft, dims);
+		d_RemapHalf2HalfFFT(d_volumepsf, d_volumepsf, dims);
+	}
+
+	cudaFree(d_weights);
+
+	if (!everythingcentered)
+		d_RemapHalf2HalfFFT(d_imagesft, d_imagesft, dimsimage, nimages);
+}
+
+void d_ReconstructFourierPrecise(tfloat* d_images, tfloat* d_imagespsf, tfloat* d_volume, tfloat* d_volumepsf, int3 dims, tfloat3* h_angles, tfloat2* h_shifts, int nimages, bool dogridding)
+{
+	tcomplex* d_volumeft = (tcomplex*)CudaMallocValueFilled(ElementsFFT(dims) * 2, (tfloat)0);
+
+	d_ReconstructFourierPreciseAdd(d_volumeft, d_volumepsf, dims, d_images, d_imagespsf, h_angles, h_shifts, nimages, T_INTERP_SINC, false, !dogridding);
+
+	if (dogridding)
+	{
+		tfloat* d_newweight = CudaMallocValueFilled(Elements(dims), (tfloat)1);
+		int TpB = min(192, NextMultipleOf(ElementsFFT(dims), 32));
+		dim3 grid = dim3((ElementsFFT(dims) + TpB - 1) / TpB);
+		SoftMaskKernel <<<grid, TpB>>> (d_newweight, dims.x, dims.x / 2 + 1, ElementsFFT(dims));
+		/*d_SphereMask(d_newweight, d_newweight, dims, NULL, 0, NULL);
+		d_RemapFull2HalfFFT(d_newweight, d_newweight, dims);*/
+
+		d_ReconstructionFourierCorrection(d_volumepsf, d_newweight, dims, 2);
+		CudaWriteToBinaryFile("d_newweight.bin", d_newweight, ElementsFFT(dims) * sizeof(tfloat));
+
+		d_ComplexMultiplyByVector(d_volumeft, d_newweight, d_volumeft, ElementsFFT(dims));
+		cudaFree(d_newweight);
+	}
+
+	d_IFFTC2R(d_volumeft, d_volume, 3, dims);
+	d_RemapFullFFT2Full(d_volume, d_volume, dims);
+	d_RemapHalfFFT2Half(d_volumepsf, d_volumepsf, dims);
+
+	if (dogridding)
+	{
+		dim3 TpB = dim3(8, 8, 8);
+		dim3 grid = dim3((dims.x + 7) / 8, (dims.x + 7) / 8, (dims.x + 7) / 8);
+		CorrectGriddingKernel <<<grid, TpB>>> (d_volume, dims.x);
+	}
 
 	cudaFree(d_volumeft);
 }
 
-
-////////////////
-//CUDA kernels//
-////////////////
-
-/*__global__ void ReconstructFourierKernel(tcomplex* d_projft, tcomplex* d_volumeft, tfloat* d_samples, int3 dimsvolume, int3 dimsproj, glm::vec3* d_vecX, glm::vec3* d_vecY)
+void d_ReconstructionFourierCorrection(tfloat* d_weight, tfloat* d_newweight, int3 dims, int paddingfactor)
 {
-	int elements = ElementsFFT(dimsproj);
-	d_projft += elements * blockIdx.y;
+	tfloat* d_zeroIm;
+	cudaMalloc((void**)&d_zeroIm, ElementsFFT(dims) * sizeof(tfloat));
+	tcomplex* d_conv;
+	cudaMalloc((void**)&d_conv, ElementsFFT(dims) * sizeof(tcomplex));
 
-	for (int id = blockIdx.x * blockDim.x + threadIdx.x; id < elements; id += gridDim.x * blockDim.x)
+	tfloat* d_buffer;
+	cudaMalloc((void**)&d_buffer, ElementsFFT(dims) * sizeof(tfloat));
+
+	// Precalc blob values
+	tfloat* d_precompblob;
 	{
-		int y = id / (dimsproj.x / 2 + 1);
-		int x = id % (dimsproj.x / 2 + 1);
+		double radius = 1.9 * (double)paddingfactor;
+		double alpha = 15.0;
+		int order = 0;
+		int elements = 10000;
+		double sampling = 0.5 / (double)elements;
+		tfloat* h_blobvalues = (tfloat*)malloc(elements * sizeof(tfloat));
+		for (int i = 0; i < elements; i++)
+			h_blobvalues[i] = kaiser_Fourier_value((double)i * sampling, radius, alpha, order);
+		tfloat* d_blobvalues = (tfloat*)CudaMallocFromHostArray(h_blobvalues, elements * sizeof(tfloat));
 
-		glm::vec3 rotated = (float)(x - dimsvolume.x / 2) * d_vecX[blockIdx.y] + (float)(y - dimsvolume.y / 2) * d_vecY[blockIdx.y];
-		if(rotated.x * rotated.x + rotated.y * rotated.y + rotated.z * rotated.z >= dimsvolume.x * dimsvolume.x / 4)
-			continue;
+		cudaMalloc((void**)&d_precompblob, Elements(dims) * sizeof(tfloat));
+		int TpB = min(192, NextMultipleOf(Elements(dims), 32));
+		dim3 grid = (Elements(dims) + TpB - 1) / TpB;
+		PrecomputeBlobKernel <<<grid, TpB>>> (d_precompblob, dims.x, d_blobvalues, (tfloat)sampling, elements, h_blobvalues[0]);
 
-		bool isnegative = false;
-		if(rotated.x > 0.0f)
-		{
-			rotated = -rotated;
-			isnegative = true;
-		}
-		rotated += glm::vec3((float)(dimsvolume.x / 2));
-		int x0 = (int)rotated.x;
-		int y0 = (int)rotated.y;
-		int z0 = (int)rotated.z;
-
-		if(x0 >= dimsvolume.x || y0 >= dimsvolume.y || z0 >= dimsvolume.z)
-			continue;
-
-		int x1 = min(x0 + 1, dimsvolume.x - 1);
-		int y1 = min(y0 + 1, dimsvolume.y - 1);
-		int z1 = min(z0 + 1, dimsvolume.z - 1);
-
-		tcomplex val = d_projft[id];
-		if(isnegative)
-			val = cconj(val);
-		
-		float xd = rotated.x - floor(rotated.x);
-		float yd = rotated.y - floor(rotated.y);
-		float zd = rotated.z - floor(rotated.z);
-
-		float c0 = 1.0f - zd;
-		float c1 = zd;
-
-		float c00 = (1.0f - yd) * c0;
-		float c10 = yd * c0;
-		float c01 = (1.0f - yd) * c1;
-		float c11 = yd * c1;
-
-		float c000 = (1.0f - xd) * c00;
-		float c100 = xd * c00;
-		float c010 = (1.0f - xd) * c10;
-		float c110 = xd * c10;
-		float c001 = (1.0f - xd) * c01;
-		float c101 = xd * c01;
-		float c011 = (1.0f - xd) * c11;
-		float c111 = xd * c11;
-
-		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0), c000 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0)) + 1, c000 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0), c000);
-
-		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1), c100 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1)) + 1, c100 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1), c100);
-
-		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0), c010 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0)) + 1, c010 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0), c010);
-
-		atomicAdd((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1), c110 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1)) + 1, c110 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z0 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1), c110);
-
-
-		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0), c001 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0)) + 1, c001 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x0), c001);
-
-		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1), c101 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1)) + 1, c101 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y0) * (dimsvolume.x / 2 + 1) + x1), c101);
-
-		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0), c011 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0)) + 1, c011 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x0), c011);
-
-		atomicAdd((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1), c111 * val.x);
-		atomicAdd(((tfloat*)(d_volumeft + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1)) + 1, c111 * val.y);
-		atomicAdd((tfloat*)(d_samples + (z1 * dimsvolume.y + y1) * (dimsvolume.x / 2 + 1) + x1), c111);
+		cudaFree(d_blobvalues);
+		free(h_blobvalues);
 	}
-}*/
+
+	for (int i = 0; i < 10; i++)
+	{
+		d_ValueFill(d_zeroIm, ElementsFFT(dims), (tfloat)0);
+
+		d_MultiplyByVector(d_newweight, d_weight, d_buffer, ElementsFFT(dims));
+		d_ConvertSplitComplexToTComplex(d_buffer, d_zeroIm, d_conv, ElementsFFT(dims));
+
+		d_IFFTC2R(d_conv, (tfloat*)d_conv, 3, dims);
+
+		d_MultiplyByVector((tfloat*)d_conv, d_precompblob, (tfloat*)d_conv, Elements(dims));
+
+		d_FFTR2C((tfloat*)d_conv, d_conv, 3, dims);
+
+		int TpB = min(192, NextMultipleOf(ElementsFFT(dims), 32));
+		dim3 grid = dim3((ElementsFFT(dims) + TpB - 1) / TpB);
+		UpdateWeightKernel <<<grid, TpB>>> (d_conv, d_weight, d_newweight, ElementsFFT(dims));
+	}
+
+	cudaFree(d_zeroIm);
+	cudaFree(d_conv);
+	cudaFree(d_buffer);
+	cudaFree(d_precompblob);
+}
+
+__global__ void PrecomputeBlobKernel(tfloat* d_precompblob, uint dim, tfloat* d_funcvals, tfloat funcsampling, int funcelements, tfloat normftblob)
+{
+	uint id = blockIdx.x * blockDim.x + threadIdx.x;
+	if (id >= dim * dim * dim)
+		return;
+
+	uint idx = id % dim;
+	uint idy = (id / dim) % dim;
+	uint idz = id / (dim * dim);
+
+	int x = (idx + dim / 2) % dim;
+	x -= (int)(dim / 2);
+	int y = (idy + dim / 2) % dim;
+	y -= (int)(dim / 2);
+	int z = (idz + dim / 2) % dim;
+	z -= (int)(dim / 2);
+
+	tfloat val = 0;
+	tfloat r = sqrt((tfloat)(x * x + y * y + z * z)) / (tfloat)dim;
+	int funcid = (int)(r / funcsampling);
+	if (funcid < funcelements)
+		val = d_funcvals[funcid] / normftblob;
+
+	d_precompblob[id] = val;
+}
+
+__global__ void SoftMaskKernel(tfloat* d_input, uint dim, uint dimft, uint n)
+{
+	uint id = blockIdx.x * blockDim.x + threadIdx.x;
+	if (id >= n)
+		return;
+
+	uint idx = id % dimft;
+	uint idy = (id / dimft) % dim;
+	uint idz = id / (dimft * dim);
+
+	int x = idx;
+	int y = (idy + dim / 2) % dim;
+	y -= (int)(dim / 2);
+	int z = (idz + dim / 2) % dim;
+	z -= (int)(dim / 2);
+
+	/*float r = sqrt((float)(x * x + y * y + z * z));
+	float falloff = min(max(0.0f, r - (float)(dim / 2 - 4)), 4.0f);
+	falloff = cos(falloff * 0.25f * PI) * 0.5f + 0.5f;*/
+	float falloff = x * x + y * y + z * z >= dim * dim / 4 ? 0.0f : 1.0f;
+	d_input[id] *= falloff;
+}
+
+__global__ void UpdateWeightKernel(tcomplex* d_conv, tfloat* d_weight, tfloat* d_newweight, uint n)
+{
+	uint id = blockIdx.x * blockDim.x + threadIdx.x;
+	if (id >= n)
+		return;
+
+	tfloat update = abs(d_conv[id].x);
+	tfloat weight = d_newweight[id];
+	//if (d_weight[id] == 0)
+		//d_newweight[id] = 0;
+	if (update > 0)
+		d_newweight[id] = min((tfloat)1e24, weight / max((tfloat)1e-6, update));
+	else
+		d_newweight[id] = weight;
+}
+
+__global__ void CorrectGriddingKernel(tfloat* d_volume, uint dim)
+{
+	uint idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx >= dim)
+		return;
+	uint idy = blockIdx.y * blockDim.y + threadIdx.y;
+	if (idy >= dim)
+		return;
+	uint idz = blockIdx.z * blockDim.z + threadIdx.z;
+	if (idz >= dim)
+		return;
+
+	int x = (int)idx - (int)(dim / 2);
+	int y = (int)idy - (int)(dim / 2);
+	int z = (int)idz - (int)(dim / 2);
+
+	tfloat r = sqrt((tfloat)(x * x + y * y + z * z));
+	r /= (tfloat)dim;
+
+	if (r > 0)
+		d_volume[(idz * dim + idy) * dim + idx] /= sinc(r) * sinc(r);
+}

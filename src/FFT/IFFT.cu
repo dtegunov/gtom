@@ -31,7 +31,7 @@ cufftHandle d_IFFTC2RGetPlan(int const ndimensions, int3 const dimensions, int b
 
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan, int3 dimensions, int batch)
 {
-	#ifdef TOM_DOUBLE
+	#ifdef GTOM_DOUBLE
 		cufftExecZ2D(*plan, d_input, d_output);
 	#else
 		cufftExecC2R(*plan, d_input, d_output);
@@ -42,7 +42,7 @@ void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* pla
 
 void d_IFFTC2R(tcomplex* const d_input, tfloat* const d_output, cufftHandle* plan)
 {
-	#ifdef TOM_DOUBLE
+	#ifdef GTOM_DOUBLE
 		cufftExecZ2D(*plan, d_input, d_output);
 	#else
 		cufftExecC2R(*plan, d_input, d_output);
@@ -61,7 +61,7 @@ void d_IFFTZ2D(cufftDoubleComplex* const d_input, double* const d_output, int co
 				  direction, batch);
 
 	cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE);
-	#ifdef TOM_DOUBLE
+	#ifdef GTOM_DOUBLE
 		cufftExecZ2D(plan, d_input, d_output);
 	#else
 		cufftExecZ2D(plan, d_input, d_output);
@@ -109,7 +109,7 @@ cufftHandle d_IFFTC2CGetPlan(int const ndimensions, int3 const dimensions, int b
 
 void d_IFFTC2C(tcomplex* const d_input, tcomplex* const d_output, cufftHandle* plan, int3 const dimensions)
 {
-	#ifdef TOM_DOUBLE
+	#ifdef GTOM_DOUBLE
 		cufftExecZ2Z(*plan, d_input, d_output);
 	#else
 		cufftExecC2C(*plan, d_input, d_output, CUFFT_INVERSE);

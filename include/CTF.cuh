@@ -1,5 +1,6 @@
 #pragma once
 #include "Prerequisites.cuh"
+#include "Angles.cuh"
 #include "Optimization.cuh"
 
 struct CTFParams
@@ -49,19 +50,19 @@ struct CTFFitParams
 	int maskouterradius;
 
 	CTFFitParams() :
-		pixelsize(1e-10),
-		Cs(2e-3),
-		Cc(2.2e-3),
-		voltage(300e3),
-		defocus(-3e-6),
+		pixelsize(0),
+		Cs(0),
+		Cc(0),
+		voltage(0),
+		defocus(0),
 		astigmatismangle(0),
 		defocusdelta(0),
-		amplitude(0.07),
+		amplitude(0),
 		Bfactor(0),
 		decayCohIll(0),
-		decayspread(0.8),
+		decayspread(0),
 		dimsperiodogram(toInt2(512, 512)),
-		maskinnerradius(8),
+		maskinnerradius(1),
 		maskouterradius(128) {}
 
 	CTFFitParams(CTFParams p) :
@@ -77,7 +78,7 @@ struct CTFFitParams
 		decayCohIll(p.decayCohIll),
 		decayspread(p.decayspread),
 		dimsperiodogram(toInt2(512, 512)),
-		maskinnerradius(8),
+		maskinnerradius(1),
 		maskouterradius(128) {}
 };
 
@@ -98,74 +99,77 @@ struct CTFParamsLean
 	double q0;
 
 	CTFParamsLean(CTFParams p) :
-		ny(0.5f / p.pixelsize),
-		lambda(sqrt(150.4 / (p.voltage * (1.0 + p.voltage / 1022000.0))) * 1e-10),
+		ny(0.5f / (p.pixelsize * 1e10)),
+		lambda(sqrt(150.4 / (p.voltage * (1.0 + p.voltage / 1022000.0)))),
 		lambda3(lambda * lambda * lambda),
-		Cs(p.Cs),
-		ccvoltage(p.Cc / p.voltage),
-		defocus(p.defocus),
+		Cs(p.Cs * 1e10),
+		ccvoltage(p.Cc * 1e10 / p.voltage),
+		defocus(p.defocus * 1e10),
 		astigmatismangle(p.astigmatismangle),
-		defocusdelta(p.defocusdelta * 0.5),
+		defocusdelta(p.defocusdelta * 0.5e10),
 		amplitude(p.amplitude),
 		Bfactor(-p.Bfactor * 0.25),
 		decayCohIll(p.decayCohIll),
 		decayspread(p.decayspread),
-		q0(p.decayCohIll / (pow((double)p.Cs * pow((double)lambda, 3.0), 0.25))){}
+		q0(p.decayCohIll / (pow((double)p.Cs * 1e10 * pow((double)lambda, 3.0), 0.25))){}
 };
 
 class CTFTiltParams
 {
 public:
-	tfloat3 angles;
+	tfloat imageangle;
+	tfloat2 stageangle;
+	tfloat2 specimenangle;
 	CTFParams centerparams;
 
 	CTFTiltParams(tfloat3 _angles, CTFParams _centerparams)
 	{
-		angles = _angles;
+		imageangle = _angles.z;
+		stageangle = tfloat2(_angles.x, _angles.y);
+		specimenangle = tfloat2(0);
 		centerparams = _centerparams;
 	}
 
-	tfloat* GetZGrid2D(int2 dims, tfloat2 spacingangstrom, tfloat3 offsetangstrom)
+	CTFTiltParams(tfloat _imageangle, tfloat2 _stageangle, tfloat2 _specimenangle, CTFParams _centerparams)
 	{
-		tfloat* grid = (tfloat*)malloc(Elements2(dims) * sizeof(tfloat));
-		spacingangstrom = tfloat2(spacingangstrom.x * 1e-10f, spacingangstrom.y * 1e-10f);
-		offsetangstrom = tfloat3(offsetangstrom.x * 1e-10f, offsetangstrom.y * 1e-10f, offsetangstrom.z * 1e-10f);
-		tfloat2 dimsangstrom = tfloat2((tfloat)(dims.x - 1) * spacingangstrom.x, (tfloat)(dims.y - 1) * spacingangstrom.y);
-		tfloat tantheta = tan(angles.y);
-		tfloat cosphi = cos(angles.x);
-		tfloat sinphi = sin(angles.x);
-
-		#pragma omp for
-		for (int y = 0; y < dims.y; y++)
-		{
-			for (int x = 0; x < dims.x; x++)
-			{
-				tfloat2 flatcoords = tfloat2((tfloat)x * spacingangstrom.x - dimsangstrom.x / 2.0 + offsetangstrom.x,
-											 (tfloat)y * spacingangstrom.y - dimsangstrom.y / 2.0 + offsetangstrom.y);
-				tfloat z = flatcoords.x * tantheta * cosphi + flatcoords.y * tantheta * sinphi + offsetangstrom.z;
-				grid[y * dims.x + x] = centerparams.defocus + z;
-			}
-		}
-
-		return grid;
+		imageangle = _imageangle;
+		stageangle = _stageangle;
+		specimenangle = _specimenangle;
+		centerparams = _centerparams;
 	}
 
-	CTFParams* GetParamsGrid2D(int2 dims, tfloat2 spacingangstrom, tfloat3 offsetangstrom)
+	void GetZGrid2D(int2 dimsimage, int2 dimsregion, int3* h_positions, uint npoints, float* h_zvalues)
 	{
-		CTFParams* grid = (CTFParams*)malloc(Elements2(dims) * sizeof(CTFParams));
-		tfloat* zgrid = this->GetZGrid2D(dims, spacingangstrom, offsetangstrom);
+		float2 imagecenter = make_float2(dimsimage.x / 2.0f, dimsimage.y / 2.0f);
+		float2 regioncenter = make_float2(dimsregion.x / 2.0f, dimsregion.y / 2.0f);
 
-		#pragma omp for schedule(dynamic, 1024)
-		for (int i = 0; i < Elements2(dims); i++)
+		glm::mat2 transform2d = Matrix2Rotation(imageangle);
+		glm::mat3 transform3d = Matrix3RotationInPlaneAxis(stageangle.x, stageangle.y) * Matrix3RotationInPlaneAxis(specimenangle.x, specimenangle.y);
+		glm::vec3 planenormal = transform3d * glm::vec3(0, 0, 1);
+
+		for (uint n = 0; n < npoints; n++)
+		{
+			glm::vec2 flatcoords = glm::vec2(h_positions[n].x + regioncenter.x - imagecenter.x,
+											 h_positions[n].y + regioncenter.y - imagecenter.y) * centerparams.pixelsize;
+			flatcoords = transform2d * flatcoords;
+			float d = glm::dot(glm::vec3(-flatcoords.x, -flatcoords.y, 0), planenormal) / planenormal.z;	// Distance from plane along a vertical line (0, 0, 1)
+			h_zvalues[n] = centerparams.defocus + d;
+		}
+	}
+
+	void GetParamsGrid2D(int2 dimsimage, int2 dimsregion, int3* h_positions, uint npoints, CTFParams* h_params)
+	{
+		float* h_zvalues = (float*)malloc(npoints * sizeof(float));
+		this->GetZGrid2D(dimsimage, dimsregion, h_positions, npoints, h_zvalues);
+
+		for (uint n = 0; n < npoints; n++)
 		{
 			CTFParams pointparams = centerparams;
-			pointparams.defocus = zgrid[i];
-			grid[i] = pointparams;
+			pointparams.defocus = h_zvalues[n];
+			h_params[n] = pointparams;
 		}
 
-		free(zgrid);
-
-		return grid;
+		free(h_zvalues);
 	}
 };
 
@@ -191,7 +195,7 @@ template<bool ampsquared> __device__ double d_GetCTF(double k, double angle, CTF
 		e_e_k = exp(-(PI * delta_z * p.lambda * 2.0 * k2));
 	}
 
-	double w = PIHALF * (term1 - p.lambda * 2.0 * (p.defocus + p.defocusdelta * cos(2.0 * (angle - p.astigmatismangle))) * k2);
+	double w = PIHALF * (term1 - p.lambda * 2.0 * (p.defocus + p.defocusdelta * sin(2.0 * (angle - p.astigmatismangle))) * k2);
 	double amplitude = cos(w);
 	double phase = sin(w);
 
@@ -206,6 +210,11 @@ template<bool ampsquared> __device__ double d_GetCTF(double k, double angle, CTF
 	return amplitude;
 }
 
+//AliasingCutoff.cu:
+uint CTFGetAliasingCutoff(CTFParams params, uint sidelength);
+
+//CommonPSF.cu:
+void d_ForceCommonPSF(tcomplex* d_inft1, tcomplex* d_inft2, tcomplex* d_outft1, tcomplex* d_outft2, tfloat* d_psf1, tfloat* d_psf2, tfloat* d_commonpsf, uint n, bool same2, int batch);
 
 //Correct.cu:
 void d_CTFCorrect(tcomplex* d_input, int3 dimsinput, CTFParams params, tcomplex* d_output);
@@ -214,19 +223,36 @@ void d_CTFCorrect(tcomplex* d_input, int3 dimsinput, CTFParams params, tcomplex*
 void d_CTFDecay(tfloat* d_input, tfloat* d_output, int2 dims, int degree, int stripwidth);
 
 //Fit.cu:
-void d_CTFFitCreateTarget(tfloat* d_image, int2 dimsimage, tfloat* d_decay, int3* d_origins, int norigins, CTFFitParams p, tfloat* d_densetarget, float2* d_densecoords);
-void d_CTFFit(tfloat* d_dense, float2* d_densepoints, uint denselength, CTFFitParams p, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev);
-void d_CTFFit(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CTFFitParams p, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev);
+void d_CTFFitCreateTarget2D(tfloat* d_image, int2 dimsimage, CTFParams params, CTFFitParams fp, float overlapfraction, tfloat* d_ps2dpolar, float2* d_ps2dcoords);
+void d_CTFFitCreateTarget2D(tfloat* d_image, int2 dimsimage, int3* d_origins, CTFParams* h_params, int norigins, CTFFitParams fp, tfloat* d_ps2dpolar, float2* d_ps2dcoords, bool sumtoone = false, tfloat* d_outps1dmin = NULL, tfloat* d_outps1dmax = NULL);
+void d_CTFFitCreateTarget1D(tfloat* d_ps2dpolar, float2* d_ps2dcoords, int2 dimspolar, CTFParams* h_params, int norigins, CTFFitParams fp, tfloat* d_ps1d, float2* d_ps1dcoords);
+void d_CTFFit(tfloat* d_target, float2* d_targetcoords, int2 dimstarget, CTFParams* h_startparams, uint ntargets, CTFFitParams p, int refinements, vector<pair<tfloat, CTFParams>> &fits, tfloat &score, tfloat &mean, tfloat &stddev);
+void d_CTFFit(tfloat* d_image, int2 dimsimage, float overlapfraction, CTFParams startparams, CTFFitParams fp, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev);
 void AddCTFParamsRange(vector<pair<tfloat, CTFParams>> &v_params, CTFFitParams p);
+void h_CTFFitEnvelope(tfloat* h_input, uint diminput, tfloat* h_envelopemin, tfloat* h_envelopemax, char peakextent, uint outputstart, uint outputend, uint batch);
+
+//InterpolateIrregular.cu:
+void Interpolate1DOntoGrid(vector<tfloat2> sortedpoints, tfloat* h_output, uint gridstart, uint gridend);
 
 //Periodogram.cu:
-void d_Periodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, int2 dimsregion, tfloat* d_output);
+void d_CTFPeriodogram(tfloat* d_image, int2 dimsimage, float overlapfraction, int2 dimsregion, tfloat* d_output2d);
+void d_CTFPeriodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, int2 dimsregion, tfloat* d_output2d);
+
+//RotationalAverage.cu:
+void d_CTFRotationalAverage(tfloat* d_re, int2 dimsinput, CTFParams* h_params, tfloat* d_average, ushort freqlow, ushort freqhigh, int batch = 1);
+void d_CTFRotationalAverage(tfloat* d_input, float2* d_inputcoords, uint inputlength, uint sidelength, CTFParams* h_params, tfloat* d_average, ushort freqlow, ushort freqhigh, int batch = 1);
 
 //Simulate.cu:
 void d_CTFSimulate(CTFParams* h_params, float2* d_addresses, tfloat* d_output, uint n, bool amplitudesquared = false, int batch = 1);
 
+//TiltCorrect.cu:
+void d_CTFTiltCorrect(tfloat* d_image, int2 dimsimage, CTFTiltParams tiltparams, tfloat snr, tfloat* d_output);
+
 //TiltFit.cu:
-void d_CTFTiltFit(tfloat* d_image, int2 dimsimage, CTFFitParams p, int refinements, int tilespacing, CTFTiltParams &fit, tfloat &score, tfloat &scorestddev);
+void d_AccumulateSpectra(tfloat* d_ps1d, tfloat* d_defoci, uint nspectra, tfloat* d_accumulated, tfloat accumulateddefocus, tfloat* d_perbatchoffsets, CTFParams p, CTFFitParams fp, uint batch = 1);
+void h_CTFTiltFit(tfloat* h_image, int2 dimsimage, uint nimages, float overlapfraction, vector<CTFTiltParams> &startparams, CTFFitParams fp, tfloat maxtheta, tfloat2 &specimentilt, tfloat* h_defoci);
+void d_CTFTiltFit(tfloat* d_image, int2 dimsimage, float overlapfraction, CTFTiltParams &startparams, CTFFitParams fp, vector<tfloat3> &v_angles, int defocusrefinements, vector<tfloat2> &v_results);
 
 //Wiener.cu:
-void d_WienerPerFreq(tcomplex* d_input, int3 dimsinput, tfloat* d_fsc, CTFParams params, tcomplex* d_output, tfloat* d_outputweights);
+void d_CTFWiener(tcomplex* d_input, int3 dimsinput, tfloat* d_fsc, CTFParams* h_params, tcomplex* d_output, tfloat* d_outputweights, uint batch = 1);
+void d_CTFWiener(tcomplex* d_input, int3 dimsinput, tfloat snr, CTFParams* h_params, tcomplex* d_output, tfloat* d_outputweights, uint batch = 1);

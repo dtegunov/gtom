@@ -9,7 +9,7 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-template <int ndims, bool cubicinterp> __global__ void InterpolateKernel(tfloat* d_output, int3 dimsnew, cudaTextureObject_t t_input, int3 dimsold, tfloat3 factor, tfloat3 offset);
+template <int ndims, bool cubicinterp> __global__ void InterpolateKernel(tfloat* d_output, int3 dimsnew, cudaTex t_input, int3 dimsold, tfloat3 factor, tfloat3 offset);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 	if(mode == T_INTERP_MODE::T_INTERP_LINEAR || mode == T_INTERP_MODE::T_INTERP_CUBIC)
 	{
 		cudaArray* a_image;
-		cudaTextureObject_t t_image;
+		cudaTex t_image;
 		tfloat* d_temp;
 		cudaMalloc((void**)&d_temp, Elements(olddims) * sizeof(tfloat));
 
@@ -44,9 +44,9 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 			if (mode == T_INTERP_CUBIC)
 			{
 				if (ndims == 2)
-					d_CubicBSplinePrefilter2D(d_temp, olddims.x * sizeof(tfloat), toInt2(olddims));
+					d_CubicBSplinePrefilter2D(d_temp, toInt2(olddims));
 				else if (ndims == 3)
-					d_CubicBSplinePrefilter3D(d_temp, olddims.x * sizeof(tfloat), olddims);
+					d_CubicBSplinePrefilter3D(d_temp, olddims);
 			}
 			if (ndims == 3)
 				d_BindTextureTo3DArray(d_temp, a_image, t_image, olddims, cudaFilterModeLinear, false);
@@ -129,7 +129,7 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 //CUDA kernels//
 ////////////////
 
-template <int ndims, bool cubicinterp> __global__ void InterpolateKernel(tfloat* d_output, int3 dimsnew, cudaTextureObject_t t_input, int3 dimsold, tfloat3 factor, tfloat3 offset)
+template <int ndims, bool cubicinterp> __global__ void InterpolateKernel(tfloat* d_output, int3 dimsnew, cudaTex t_input, int3 dimsold, tfloat3 factor, tfloat3 offset)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx >= dimsnew.x)

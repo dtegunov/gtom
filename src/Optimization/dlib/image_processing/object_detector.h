@@ -1,7 +1,7 @@
 // Copyright (C) 2011  Davis E. King (davis@dlib.net)
 // License: Boost Software License   See LICENSE.txt for the full license.
-#ifndef DLIB_OBJECT_DeTECTOR_H__
-#define DLIB_OBJECT_DeTECTOR_H__
+#ifndef DLIB_OBJECT_DeTECTOR_Hh_
+#define DLIB_OBJECT_DeTECTOR_Hh_
 
 #include "object_detector_abstract.h"
 #include "../geometry.h"
@@ -11,6 +11,26 @@
 
 namespace dlib
 {
+
+// ----------------------------------------------------------------------------------------
+
+    struct rect_detection
+    {
+        double detection_confidence;
+        unsigned long weight_index;
+        rectangle rect;
+
+        bool operator<(const rect_detection& item) const { return detection_confidence < item.detection_confidence; }
+    };
+
+    struct full_detection
+    {
+        double detection_confidence;
+        unsigned long weight_index;
+        full_object_detection rect;
+
+        bool operator<(const full_detection& item) const { return detection_confidence < item.detection_confidence; }
+    };
 
 // ----------------------------------------------------------------------------------------
 
@@ -47,11 +67,12 @@ namespace dlib
 // ----------------------------------------------------------------------------------------
 
     template <
-        typename image_scanner_type
+        typename image_scanner_type_
         >
     class object_detector
     {
     public:
+        typedef image_scanner_type_ image_scanner_type;
         typedef typename image_scanner_type::feature_vector_type feature_vector_type;
 
         object_detector (
@@ -83,6 +104,10 @@ namespace dlib
         const feature_vector_type& get_w (
             unsigned long idx = 0
         ) const { return w[idx].w; }
+        
+        const processed_weight_vector<image_scanner_type>& get_processed_w (
+            unsigned long idx = 0
+        ) const { return w[idx]; }
 
         const test_box_overlap& get_overlap_tester (
         ) const;
@@ -129,23 +154,10 @@ namespace dlib
             double adjust_threshold = 0
         );
 
-        struct rect_detection
-        {
-            double detection_confidence;
-            unsigned long weight_index;
-            rectangle rect;
-
-            bool operator<(const rect_detection& item) const { return detection_confidence < item.detection_confidence; }
-        };
-
-        struct full_detection
-        {
-            double detection_confidence;
-            unsigned long weight_index;
-            full_object_detection rect;
-
-            bool operator<(const full_detection& item) const { return detection_confidence < item.detection_confidence; }
-        };
+        // These typedefs are here for backwards compatibility with previous versions of
+        // dlib.
+        typedef ::dlib::rect_detection rect_detection;
+        typedef ::dlib::full_detection full_detection;
 
         template <
             typename image_type
@@ -439,6 +451,8 @@ namespace dlib
 
         // Do non-max suppression
         final_dets.clear();
+        if (w.size() > 1)
+            std::sort(dets_accum.rbegin(), dets_accum.rend());
         for (unsigned long i = 0; i < dets_accum.size(); ++i)
         {
             if (overlaps_any_box(final_dets, dets_accum[i].rect))
@@ -446,7 +460,6 @@ namespace dlib
 
             final_dets.push_back(dets_accum[i]);
         }
-        std::sort(final_dets.rbegin(), final_dets.rend());
     }
 
 // ----------------------------------------------------------------------------------------
@@ -610,6 +623,6 @@ namespace dlib
 
 }
 
-#endif // DLIB_OBJECT_DeTECTOR_H__
+#endif // DLIB_OBJECT_DeTECTOR_Hh_
 
 

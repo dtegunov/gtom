@@ -1611,12 +1611,12 @@ namespace
                 if (get_rect(out).contains(rect))
                 {
                     T val = sum(pointwise_multiply(filt, subm(mat(img),rect)));
-                    DLIB_CASSERT(val == out[r][c],"err: " << val-out[r][c]);
-                    DLIB_CASSERT(area.contains(point(c,r)),"");
+                    DLIB_TEST_MSG(val == out[r][c],"err: " << val-out[r][c]);
+                    DLIB_TEST(area.contains(point(c,r)));
                 }
                 else
                 {
-                    DLIB_CASSERT(!area.contains(point(c,r)),"");
+                    DLIB_TEST(!area.contains(point(c,r)));
                 }
             }
         }
@@ -1659,16 +1659,157 @@ namespace
                 if (get_rect(out).contains(rect))
                 {
                     T val = sum(pointwise_multiply(col_filt*row_filt, subm(mat(img),rect)));
-                    DLIB_CASSERT(val == out[r][c],"err: " << val-out[r][c]);
+                    DLIB_TEST_MSG(val == out[r][c],"err: " << val-out[r][c]);
 
-                    DLIB_CASSERT(area.contains(point(c,r)),"");
+                    DLIB_TEST(area.contains(point(c,r)));
                 }
                 else
                 {
-                    DLIB_CASSERT(!area.contains(point(c,r)),"");
+                    DLIB_TEST(!area.contains(point(c,r)));
                 }
             }
         }
+    }
+
+// ----------------------------------------------------------------------------------------
+
+    void run_hough_test()
+    {
+        array2d<unsigned char> img(300,300);
+
+
+        for (int k = -2; k <= 2; ++k)
+        {
+            print_spinner();
+            running_stats<double> rs;
+            array2d<int> himg;
+            hough_transform ht(200+k);
+            double angle1 = 0;
+            double angle2 = 0;
+            const int len = 90;
+            // Draw a bunch of random lines, hough transform them, then make sure the hough
+            // transform detects them accurately.
+            for (int i = 0; i < 500; ++i)
+            {
+                point cent = center(get_rect(img));
+                point arc = cent + point(len,0);
+                arc = rotate_point(cent, arc, angle1);
+
+                point l = arc + point(500,0);
+                point r = arc - point(500,0);
+                l = rotate_point(arc, l, angle2);
+                r = rotate_point(arc, r, angle2);
+
+                angle1 += pi/13;
+                angle2 += pi/40;
+
+                assign_all_pixels(img, 0);
+                draw_line(img, l, r, 255);
+                rectangle box = translate_rect(get_rect(ht),point(50,50));
+                ht(img, box, himg);
+
+                point p = max_point(mat(himg));
+                DLIB_TEST(himg[p.y()][p.x()] > 255*3);
+
+                l -= point(50,50);
+                r -= point(50,50);
+                std::pair<point,point> line = ht.get_line(p);
+                // make sure the best scoring hough point matches the line we drew.
+                double dist1 = distance_to_line(make_pair(l,r), line.first);
+                double dist2 = distance_to_line(make_pair(l,r), line.second);
+                //cout << "DIST1: " << dist1 << endl;
+                //cout << "DIST2: " << dist2 << endl;
+                rs.add(dist1);
+                rs.add(dist2);
+                DLIB_TEST(dist1 < 2.5);
+                DLIB_TEST(dist2 < 2.5);
+            }
+            //cout << "rs.mean(): " << rs.mean() << endl;
+            DLIB_TEST(rs.mean() < 0.7);
+        }
+    }
+
+// ----------------------------------------------------------------------------------------
+
+    void test_extract_image_chips()
+    {
+        dlib::rand rnd;
+
+        // Make sure that cropping a white box out of a larger white image always produces an
+        // exact white box.  This should catch any bad border effects from a messed up internal
+        // cropping.
+        for (int iter = 0; iter < 1000; ++iter)
+        {
+            print_spinner();
+            const long nr = rnd.get_random_32bit_number()%100 + 1;
+            const long nc = rnd.get_random_32bit_number()%100 + 1;
+            const long size = rnd.get_random_32bit_number()%10000 + 4;
+            const double angle = rnd.get_random_double() * pi;
+
+            matrix<int> img(501,501), chip;
+            img = 255;
+            chip_details details(centered_rect(center(get_rect(img)),nr,nc), size, angle);
+            extract_image_chip(img, details, chip);
+            DLIB_TEST_MSG(max(abs(chip-255))==0,"nr: " << nr << "  nc: "<< nc << "  size: " << size << "  angle: " << angle 
+                << " error: " << max(abs(chip-255)) );
+        }
+
+
+        {
+            // Make sure that the interpolation in extract_image_chip() keeps stuff in the
+            // right places.
+
+            matrix<unsigned char> img(10,10), chip;
+            img = 0;
+            img(1,1) = 255;
+            img(8,8) = 255;
+
+            extract_image_chip(img, chip_details(get_rect(img), 9*9), chip);
+
+            DLIB_TEST(chip(1,1) == 195);
+            DLIB_TEST(chip(7,7) == 195);
+            chip(1,1) -= 195;
+            chip(7,7) -= 195;
+            DLIB_TEST(sum(matrix_cast<int>(chip)) == 0);
+        }
+
+
+
+        // Test the rotation ability of extract_image_chip().  Do this by drawing a line and
+        // then rotating it so it's horizontal.  Check that it worked correctly by hough
+        // transforming it.
+        hough_transform ht(151);
+        matrix<unsigned char> img(300,300);
+        for (int iter = 0; iter < 1000; ++iter)
+        {
+            print_spinner();
+            img = 0;
+            const int len = 9000;
+            point cent = center(get_rect(img));
+            point l = cent + point(len,0);
+            point r = cent - point(len,0);
+            const double angle = rnd.get_random_double()*pi*3;
+            l = rotate_point(cent, l, angle);
+            r = rotate_point(cent, r, angle);
+            draw_line(img, l, r, 255);
+
+
+            const long wsize = rnd.get_random_32bit_number()%350 + 150;
+
+            matrix<unsigned char> temp;
+            chip_details details(centered_rect(center(get_rect(img)), wsize,wsize),  chip_dims(ht.size(),ht.size()), angle);
+            extract_image_chip(img, details, temp);
+
+
+            matrix<long> tform;
+            ht(temp, get_rect(temp), tform);
+            std::pair<point,point> line = ht.get_line(max_point(tform));
+
+            DLIB_TEST_MSG(line.first.y() == line.second.y()," wsize: " << wsize);
+            DLIB_TEST(length(line.first-line.second) > 100);
+            DLIB_TEST(length((line.first+line.second)/2.0 - center(get_rect(temp))) <= 1);
+        }
+
     }
 
 // ----------------------------------------------------------------------------------------
@@ -1686,6 +1827,8 @@ namespace
         )
         {
             image_test();
+            run_hough_test();
+            test_extract_image_chips();
             test_integral_image<long, unsigned char>();
             test_integral_image<double, int>();
             test_integral_image<long, unsigned char>();
@@ -1741,6 +1884,16 @@ namespace
             for (int i = 0; i < 100; ++i)
                 test_separable_filtering_center<float>(rnd);
 
+            {
+                print_spinner();
+                matrix<unsigned char> img(40,80);
+                assign_all_pixels(img, 255);
+                skeleton(img);
+
+                DLIB_TEST(sum(matrix_cast<int>(mat(img)))/255 == 40);
+                draw_line(img, point(20,19), point(59,19), 00);
+                DLIB_TEST(sum(matrix_cast<int>(mat(img))) == 0);
+            }
         }
     } a;
 

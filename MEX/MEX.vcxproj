@@ -20,6 +20,8 @@
     <None Include="Correlation\cgtom_similarity_matrix_2d.cu" />
     <None Include="Correlation\cgtom_similarity_matrix_3d.cu" />
     <None Include="CTF\cgtom_ctf_fit_correct.cu" />
+    <None Include="CTF\cgtom_ctf_tiltcorrect.cu" />
+    <None Include="CTF\cgtom_ctf_tiltfit.cu" />
     <None Include="CTF\cgtom_wiener_correct.cu" />
     <None Include="FFT\cgtom_fftc2c.cu" />
     <None Include="FFT\cgtom_fftr2c.cu" />
@@ -30,15 +32,18 @@
     <None Include="Helper.cu" />
     <None Include="ImageManipulation\cgtom_lowpass_anisotropic.cu" />
     <None Include="ImageManipulation\cgtom_lowpass_local.cu" />
+    <None Include="Optimization\cgtom_opt_spa_params.cu" />
     <None Include="Projection\cgtom_proj_backward.cu" />
-    <None Include="Projection\cgtom_proj_forward.cu" />
+    <None Include="Projection\cgtom_proj_forward_fourier.cu" />
     <None Include="Projection\cgtom_proj_forward_raytrace.cu" />
     <None Include="Reconstruction\cgtom_rec_fourier.cu" />
     <None Include="Reconstruction\cgtom_rec_fourier_finalize.cu" />
     <None Include="Reconstruction\cgtom_rec_sirt.cu" />
+    <None Include="Reconstruction\cgtom_rec_wbp.cu" />
     <None Include="Resolution\cgtom_fsc_anisotropic.cu" />
     <None Include="Resolution\cgtom_fsc_local.cu" />
     <None Include="Transformation\cgtom_transform.cu" />
+    <None Include="Transformation\cgtom_warp2d.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h" />
@@ -89,8 +94,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Program Files\MATLAB\R2014b\toolbox\distcomp\gpu\extern\include;C:\Program Files\MATLAB\R2014b\extern\include;$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files\MATLAB\R2014b\extern\lib;$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files\MATLAB\R2015a\toolbox\distcomp\gpu\extern\include;C:\Program Files\MATLAB\R2015a\extern\include;$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files\MATLAB\R2015a\extern\lib;$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|Win32'">
     <IncludePath>C:\Program Files\MATLAB\R2013a\toolbox\distcomp\gpu\extern\include;C:\Program Files\MATLAB\R2013a\extern\include;$(CUDA_PATH)\include;$(IncludePath)</IncludePath>

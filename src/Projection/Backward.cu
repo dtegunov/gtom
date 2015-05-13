@@ -11,7 +11,7 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-template <bool iscentered, bool cubicinterp> __global__ void ProjBackwardKernel(tfloat* d_volume, int3 dimsvolume, cudaTextureObject_t t_image, int2 dimsimage, glm::mat4 transform);
+template <bool iscentered, bool cubicinterp> __global__ void ProjBackwardKernel(tfloat* d_volume, uint3 dimsvolume, cudaTex* dt_image, uint2 dimsimage, glm::mat4* d_transforms, uint nimages);
 template <bool iscentered> __global__ void ProjBackwardSincKernel(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int2 dimsimage, glm::mat4 transform);
 
 
@@ -19,7 +19,7 @@ template <bool iscentered> __global__ void ProjBackwardSincKernel(tfloat* d_volu
 //Equivalent of TOM's tom_backproj3d method//
 /////////////////////////////////////////////
 
-void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter, tfloat* d_image, int3 dimsimage, tfloat3* h_angles, tfloat2* h_offsets, tfloat2* h_scales, T_INTERP_MODE mode, bool outputzerocentered, int batch)
+void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter, tfloat* d_image, int2 dimsimage, tfloat3* h_angles, tfloat2* h_offsets, tfloat2* h_scales, T_INTERP_MODE mode, bool outputzerocentered, int batch)
 {
 	glm::mat4* h_transforms = (glm::mat4*)malloc(batch * sizeof(glm::mat4));
 	for (int b = 0; b < batch; b++)
@@ -34,41 +34,52 @@ void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter,
 
 	if (mode == T_INTERP_LINEAR || mode == T_INTERP_CUBIC)
 	{
-		cudaArray* a_image;
-		cudaTextureObject_t t_image;
-		tfloat* d_temp;
-		cudaMalloc((void**)&d_temp, Elements(dimsimage) * sizeof(tfloat));
+		cudaArray_t* ha_image = (cudaArray_t*)malloc(batch * sizeof(cudaArray_t));
+		cudaTex* ht_image = (cudaTex*)malloc(batch * sizeof(cudaTex));
 
-		for (int b = 0; b < batch; b++)
+		if (mode == T_INTERP_CUBIC)
 		{
-			cudaMemcpy(d_temp, d_image + Elements(dimsimage) * b, Elements(dimsimage) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-			if (mode == T_INTERP_CUBIC)
-				d_CubicBSplinePrefilter2D(d_temp, dimsimage.x * sizeof(tfloat), toInt2(dimsimage.x, dimsimage.y));
-			d_BindTextureToArray(d_temp, a_image, t_image, toInt2(dimsimage.x, dimsimage.y), cudaFilterModeLinear, false);
+			tfloat* d_temp;
+			cudaMalloc((void**)&d_temp, Elements2(dimsimage) * batch * sizeof(tfloat));
+			cudaMemcpy(d_temp, d_image, Elements2(dimsimage) * batch * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+			d_CubicBSplinePrefilter2D(d_temp, dimsimage, batch);
+			d_BindTextureToArray(d_temp, ha_image, ht_image, dimsimage, cudaFilterModeLinear, false, batch);
+			cudaFree(d_temp);
+		}
+		else
+			d_BindTextureToArray(d_image, ha_image, ht_image, dimsimage, cudaFilterModeLinear, false, batch);
 
-			dim3 TpB = dim3(16, 16);
-			dim3 grid = dim3((dimsvolume.x + 15) / 16, (dimsvolume.y + 15) / 16, dimsvolume.z);
-			
-			if (outputzerocentered)
-			{
-				if (mode == T_INTERP_LINEAR)
-					ProjBackwardKernel<true, false> << <grid, TpB >> > (d_volume, dimsvolume, t_image, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
-				else
-					ProjBackwardKernel<true, true> << <grid, TpB >> > (d_volume, dimsvolume, t_image, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
-			}
+		cudaTex* dt_image = (cudaTex*)CudaMallocFromHostArray(ht_image, batch * sizeof(cudaTex));
+		glm::mat4* d_transforms = (glm::mat4*)CudaMallocFromHostArray(h_transforms, batch * sizeof(glm::mat4));
+
+		dim3 TpB = dim3(8, 8, 8);
+		dim3 grid = dim3((dimsvolume.x + 7) / 8, (dimsvolume.y + 7) / 8, (dimsvolume.z + 7) / 8);
+
+		if (outputzerocentered)
+		{
+			if (mode == T_INTERP_LINEAR)
+				ProjBackwardKernel<true, false> << <grid, TpB >> > (d_volume, toUint3(dimsvolume), dt_image, toUint2(dimsimage), d_transforms, batch);
 			else
-			{
-				if (mode == T_INTERP_LINEAR)
-					ProjBackwardKernel<false, false> << <grid, TpB >> > (d_volume, dimsvolume, t_image, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
-				else
-					ProjBackwardKernel<false, true> << <grid, TpB >> > (d_volume, dimsvolume, t_image, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
-			}
-
-			cudaDestroyTextureObject(t_image);
-			cudaFreeArray(a_image);
+				ProjBackwardKernel<true, true> << <grid, TpB >> > (d_volume, toUint3(dimsvolume), dt_image, toUint2(dimsimage), d_transforms, batch);
+		}
+		else
+		{
+			if (mode == T_INTERP_LINEAR)
+				ProjBackwardKernel<false, false> << <grid, TpB >> > (d_volume, toUint3(dimsvolume), dt_image, toUint2(dimsimage), d_transforms, batch);
+			else
+				ProjBackwardKernel<false, true> << <grid, TpB >> > (d_volume, toUint3(dimsvolume), dt_image, toUint2(dimsimage), d_transforms, batch);
 		}
 
-		cudaFree(d_temp);
+		for (int n = 0; n < batch; n++)
+		{
+			cudaDestroyTextureObject(ht_image[n]);
+			cudaFreeArray(ha_image[n]);
+		}
+
+		free(ht_image);
+		free(ha_image);
+		cudaFree(d_transforms);
+		cudaFree(dt_image);
 	}
 	else if (mode == T_INTERP_SINC)
 	{
@@ -77,9 +88,9 @@ void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter,
 
 		for (int b = 0; b < batch; b++)
 			if (outputzerocentered)
-				ProjBackwardSincKernel<true> <<<grid, TpB >>> (d_volume, dimsvolume, d_image + Elements(dimsimage) * b, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
+				ProjBackwardSincKernel<true> <<<grid, TpB >>> (d_volume, dimsvolume, d_image + Elements2(dimsimage) * b, dimsimage, h_transforms[b]);
 			else
-				ProjBackwardSincKernel<false> <<<grid, TpB >>> (d_volume, dimsvolume, d_image + Elements(dimsimage) * b, toInt2(dimsimage.x, dimsimage.y), h_transforms[b]);
+				ProjBackwardSincKernel<false> << <grid, TpB >> > (d_volume, dimsvolume, d_image + Elements2(dimsimage) * b, dimsimage, h_transforms[b]);
 	}
 
 	free(h_transforms);
@@ -90,17 +101,19 @@ void d_ProjBackward(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter,
 //CUDA kernels//
 ////////////////
 
-template <bool iscentered, bool cubicinterp> __global__ void ProjBackwardKernel(tfloat* d_volume, int3 dimsvolume, cudaTextureObject_t t_image, int2 dimsimage, glm::mat4 transform)
+template <bool iscentered, bool cubicinterp> __global__ void ProjBackwardKernel(tfloat* d_volume, uint3 dimsvolume, cudaTex* dt_image, uint2 dimsimage, glm::mat4* d_transforms, uint nimages)
 {
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	uint idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx >= dimsvolume.x)
 		return;
-	int idy = blockIdx.y * blockDim.y + threadIdx.y;
+	uint idy = blockIdx.y * blockDim.y + threadIdx.y;
 	if (idy >= dimsvolume.y)
 		return;
-	int idz = blockIdx.z;
+	uint idz = blockIdx.z * blockDim.z + threadIdx.z;
+	if (idz >= dimsvolume.z)
+		return;
 
-	int outx, outy, outz;
+	uint outx, outy, outz;
 	if (!iscentered)
 	{
 		outx = (idx + (dimsvolume.x + 1) / 2) % dimsvolume.x;
@@ -115,12 +128,25 @@ template <bool iscentered, bool cubicinterp> __global__ void ProjBackwardKernel(
 	}
 
 	glm::vec4 position = glm::vec4(idx, idy, idz, 1);
-	position = transform * position;
+	tfloat sum = 0.0f;
+	uint samples = 0;
+	
+	for (uint n = 0; n < nimages; n++)
+	{
+		glm::vec4 positiontrans = d_transforms[n] * position;
 
-	if (cubicinterp)
-		d_volume[(outz * dimsvolume.y + outy) * dimsvolume.x + outx] += cubicTex2D(t_image, position.x, position.y);
-	else
-		d_volume[(outz * dimsvolume.y + outy) * dimsvolume.x + outx] += tex2D<tfloat>(t_image, position.x, position.y);
+		if (positiontrans.x >= -1e-6f && positiontrans.x <= dimsimage.x + 1e-6f && positiontrans.y >= -1e-6f && positiontrans.y <= dimsimage.y + 1e-6f)
+		{
+			if (cubicinterp)
+				sum += cubicTex2D(dt_image[n], positiontrans.x, positiontrans.y);
+			else
+				sum += tex2D<tfloat>(dt_image[n], positiontrans.x, positiontrans.y);
+			samples++;
+		}
+	}
+
+	if (samples > 0)
+		d_volume[(outz * dimsvolume.y + outy) * dimsvolume.x + outx] += sum / (tfloat)samples;
 }
 
 template <bool iscentered> __global__ void ProjBackwardSincKernel(tfloat* d_volume, int3 dimsvolume, tfloat* d_image, int2 dimsimage, glm::mat4 transform)

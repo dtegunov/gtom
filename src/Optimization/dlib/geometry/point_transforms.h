@@ -20,6 +20,13 @@ namespace dlib
     {
     public:
         point_rotator (
+        )
+        {
+            sin_angle = 0;
+            cos_angle = 1;
+        }
+
+        point_rotator (
             const double& angle
         )
         {
@@ -47,6 +54,18 @@ namespace dlib
             return temp; 
         }
 
+        inline friend void serialize (const point_rotator& item, std::ostream& out)
+        {
+            serialize(item.sin_angle, out);
+            serialize(item.cos_angle, out);
+        }
+
+        inline friend void deserialize (point_rotator& item, std::istream& in)
+        {
+            deserialize(item.sin_angle, in);
+            deserialize(item.cos_angle, in);
+        }
+
     private:
         double sin_angle;
         double cos_angle;
@@ -57,6 +76,16 @@ namespace dlib
     class point_transform
     {
     public:
+
+        point_transform (
+        )
+        {
+            sin_angle = 0;
+            cos_angle = 1;
+            translate.x() = 0;
+            translate.y() = 0;
+        }
+
         point_transform (
             const double& angle,
             const dlib::vector<double,2>& translate_
@@ -90,6 +119,20 @@ namespace dlib
         const dlib::vector<double,2> get_b(
         ) const { return translate; }
 
+        inline friend void serialize (const point_transform& item, std::ostream& out)
+        {
+            serialize(item.sin_angle, out);
+            serialize(item.cos_angle, out);
+            serialize(item.translate, out);
+        }
+
+        inline friend void deserialize (point_transform& item, std::istream& in)
+        {
+            deserialize(item.sin_angle, in);
+            deserialize(item.cos_angle, in);
+            deserialize(item.translate, in);
+        }
+
     private:
         double sin_angle;
         double cos_angle;
@@ -101,6 +144,15 @@ namespace dlib
     class point_transform_affine
     {
     public:
+
+        point_transform_affine (
+        )
+        {
+            m = identity_matrix<double>(2);
+            b.x() = 0;
+            b.y() = 0;
+        }
+
         point_transform_affine (
             const matrix<double,2,2>& m_,
             const dlib::vector<double,2>& b_
@@ -121,10 +173,32 @@ namespace dlib
         const dlib::vector<double,2>& get_b(
         ) const { return b; }
 
+        inline friend void serialize (const point_transform_affine& item, std::ostream& out)
+        {
+            serialize(item.m, out);
+            serialize(item.b, out);
+        }
+
+        inline friend void deserialize (point_transform_affine& item, std::istream& in)
+        {
+            deserialize(item.m, in);
+            deserialize(item.b, in);
+        }
+
     private:
         matrix<double,2,2> m;
         dlib::vector<double,2> b;
     };
+
+// ----------------------------------------------------------------------------------------
+
+    inline point_transform_affine operator* (
+        const point_transform_affine& lhs,
+        const point_transform_affine& rhs
+    )
+    {
+        return point_transform_affine(lhs.get_m()*rhs.get_m(), lhs.get_m()*rhs.get_b()+lhs.get_b());
+    }
 
 // ----------------------------------------------------------------------------------------
 
@@ -172,9 +246,81 @@ namespace dlib
 
 // ----------------------------------------------------------------------------------------
 
+    template <typename T>
+    point_transform_affine find_similarity_transform (
+        const std::vector<dlib::vector<T,2> >& from_points,
+        const std::vector<dlib::vector<T,2> >& to_points
+    )
+    {
+        // make sure requires clause is not broken
+        DLIB_ASSERT(from_points.size() == to_points.size() &&
+                    from_points.size() >= 2,
+            "\t point_transform_affine find_similarity_transform(from_points, to_points)"
+            << "\n\t Invalid inputs were given to this function."
+            << "\n\t from_points.size(): " << from_points.size()
+            << "\n\t to_points.size():   " << to_points.size()
+            );
+
+        // We use the formulas from the paper: Least-squares estimation of transformation
+        // parameters between two point patterns by Umeyama.  They are equations 34 through
+        // 43.
+
+        dlib::vector<double,2> mean_from, mean_to;
+        double sigma_from = 0, sigma_to = 0;
+        matrix<double,2,2> cov;
+        cov = 0;
+
+        for (unsigned long i = 0; i < from_points.size(); ++i)
+        {
+            mean_from += from_points[i];
+            mean_to += to_points[i];
+        }
+        mean_from /= from_points.size();
+        mean_to   /= from_points.size();
+
+        for (unsigned long i = 0; i < from_points.size(); ++i)
+        {
+            sigma_from += length_squared(from_points[i] - mean_from);
+            sigma_to += length_squared(to_points[i] - mean_to);
+            cov += (to_points[i] - mean_to)*trans(from_points[i] - mean_from);
+        }
+
+        sigma_from /= from_points.size();
+        sigma_to   /= from_points.size();
+        cov        /= from_points.size();
+
+        matrix<double,2,2> u, v, s, d;
+        svd(cov, u,d,v);
+        s = identity_matrix(cov);
+        if (det(cov) < 0 || (det(cov) == 0 && det(u)*det(v)<0))
+        {
+            if (d(1,1) < d(0,0))
+                s(1,1) = -1;
+            else
+                s(0,0) = -1;
+        }
+
+        matrix<double,2,2> r = u*s*trans(v);
+        double c = 1; 
+        if (sigma_from != 0)
+            c = 1.0/sigma_from * trace(d*s);
+        vector<double,2> t = mean_to - c*r*mean_from;
+
+        return point_transform_affine(c*r, t);
+    }
+
+// ----------------------------------------------------------------------------------------
+
     class point_transform_projective
     {
     public:
+
+        point_transform_projective (
+        )
+        {
+            m = identity_matrix<double>(3);
+        }
+
         point_transform_projective (
             const matrix<double,3,3>& m_
         ) :m(m_)
@@ -208,10 +354,29 @@ namespace dlib
         const matrix<double,3,3>& get_m(
         ) const { return m; }
 
+        inline friend void serialize (const point_transform_projective& item, std::ostream& out)
+        {
+            serialize(item.m, out);
+        }
+
+        inline friend void deserialize (point_transform_projective& item, std::istream& in)
+        {
+            deserialize(item.m, in);
+        }
 
     private:
         matrix<double,3,3> m;
     };
+
+// ----------------------------------------------------------------------------------------
+
+    inline point_transform_projective operator* (
+        const point_transform_projective& lhs,
+        const point_transform_projective& rhs
+    )
+    {
+        return point_transform_projective(lhs.get_m()*rhs.get_m());
+    }
 
 // ----------------------------------------------------------------------------------------
 
@@ -245,6 +410,8 @@ namespace dlib
                   find_projective_transform_basic() as a starting point for a BFGS based
                   non-linear optimizer which will optimize the correct mean squared error
                   criterion.
+
+                  A great essay on this subject is Homography Estimation by Elan Dubrofsky.
         !*/
         {
             // make sure requires clause is not broken

@@ -40,6 +40,8 @@
     <ClInclude Include="include\Resolution.cuh" />
     <ClInclude Include="include\Tomography.cuh" />
     <ClInclude Include="include\Transformation.cuh" />
+    <ClInclude Include="src\Optimization\polynomials\Polynomial.h" />
+    <ClInclude Include="src\Optimization\polynomials\PolynomialRootFinder.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\Alignment\Align2D.cu" />
@@ -50,12 +52,17 @@
     <CudaCompile Include="src\Correlation\SimilarityMatrix.cu" />
     <CudaCompile Include="src\Correlation\LocalPeaks.cu" />
     <CudaCompile Include="src\Correlation\Peak.cu" />
+    <CudaCompile Include="src\CTF\AliasingCutoff.cu" />
+    <CudaCompile Include="src\CTF\CommonPSF.cu" />
     <CudaCompile Include="src\CTF\Correct.cu" />
     <CudaCompile Include="src\CTF\Decay.cu" />
     <CudaCompile Include="src\CTF\Fit.cu" />
+    <CudaCompile Include="src\CTF\LocalMinMax.cu" />
     <CudaCompile Include="src\CTF\Periodogram.cu" />
+    <CudaCompile Include="src\CTF\RotationalAverage.cu" />
     <CudaCompile Include="src\CTF\Simulate.cu" />
     <CudaCompile Include="src\CTF\TiltFit.cu" />
+    <CudaCompile Include="src\CTF\TiltCorrect.cu" />
     <CudaCompile Include="src\CTF\Wiener.cu" />
     <CudaCompile Include="src\CubicSplines\cubicPrefilter2D.cu" />
     <CudaCompile Include="src\CubicSplines\cubicPrefilter3D.cu" />
@@ -85,7 +92,9 @@
     <CudaCompile Include="src\Generics\SumMinMax.cu" />
     <CudaCompile Include="src\Helpers\AngularSpacing.cu" />
     <CudaCompile Include="src\Helpers\Euler.cu" />
+    <CudaCompile Include="src\Helpers\GridSpacing.cu" />
     <CudaCompile Include="src\Helpers\HermitianSymmetry.cu" />
+    <CudaCompile Include="src\Helpers\InterpolateIrregular.cu" />
     <CudaCompile Include="src\Helpers\MDPointer.cu" />
     <CudaCompile Include="src\Helpers\Memory.cu" />
     <CudaCompile Include="src\Helpers\Misc.cu" />
@@ -96,9 +105,18 @@
     <CudaCompile Include="src\ImageManipulation\LocalLowpass.cu" />
     <CudaCompile Include="src\ImageManipulation\Norm.cu" />
     <CudaCompile Include="src\ImageManipulation\Xray.cu" />
+    <CudaCompile Include="src\Masking\ConeMask.cu" />
     <CudaCompile Include="src\Masking\IrregularSphereMask.cu" />
+    <CudaCompile Include="src\Masking\RectangleMask.cu" />
+    <CudaCompile Include="src\Masking\Remap.cu" />
+    <CudaCompile Include="src\Masking\SphereMask.cu" />
     <CudaCompile Include="src\Masking\Windows.cu" />
     <CudaCompile Include="src\Optimization\PolynomialFit.cu" />
+    <CudaCompile Include="src\Optimization\OptimizeSPAParams.cu" />
+    <CudaCompile Include="src\Optimization\OptimizeStackWarp2D.cu" />
+    <CudaCompile Include="src\Optimization\OptimizeTomoParams.cu" />
+    <CudaCompile Include="src\Optimization\OptimizeTomoParamsWBP.cu" />
+    <CudaCompile Include="src\PCA\Filter.cu" />
     <CudaCompile Include="src\PCA\GS.cu" />
     <CudaCompile Include="src\PCA\NIPALS.cu" />
     <CudaCompile Include="src\Projection\Backward.cu" />
@@ -110,7 +128,6 @@
     <CudaCompile Include="src\Resolution\FSC.cu" />
     <CudaCompile Include="src\Resolution\LocalAnisotropicFSC.cu" />
     <CudaCompile Include="src\Resolution\LocalFSC.cu" />
-    <CudaCompile Include="src\Tomography\InterpolateSingleAxis.cu" />
     <CudaCompile Include="src\Transformation\Rotation.cu" />
     <CudaCompile Include="src\Reconstruction\RecSIRT.cu" />
     <CudaCompile Include="src\Reconstruction\RecWBP.cu" />
@@ -120,15 +137,16 @@
     <CudaCompile Include="src\Transformation\FFTLines.cu" />
     <CudaCompile Include="src\Transformation\Scale.cu" />
     <CudaCompile Include="src\Transformation\Shift.cu" />
-    <CudaCompile Include="src\Masking\Remap.cu" />
-    <CudaCompile Include="src\Masking\RectangleMask.cu" />
-    <CudaCompile Include="src\Masking\SphereMask.cu" />
+    <CudaCompile Include="src\Transformation\Warp2D.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Helpers\KaiserBessel.cpp" />
     <ClCompile Include="src\IO\em.cpp" />
     <ClCompile Include="src\IO\mrc.cpp" />
     <ClCompile Include="src\IO\raw.cpp" />
     <ClCompile Include="src\Optimization\dlib\all\source.cpp" />
+    <ClCompile Include="src\Optimization\polynomials\Polynomial.cpp" />
+    <ClCompile Include="src\Optimization\polynomials\PolynomialRootFinder.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C5083A95-7B41-47E7-99A5-FE08DC0ECDB1}</ProjectGuid>
@@ -157,7 +175,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 6.5.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 7.0.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -199,7 +217,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_30,sm_30</CodeGeneration>
+      <CodeGeneration>compute_52,sm_52</CodeGeneration>
       <PtxAsOptionV>true</PtxAsOptionV>
       <AdditionalCompilerOptions>/openmp</AdditionalCompilerOptions>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
@@ -274,6 +292,6 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 6.5.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 7.0.targets" />
   </ImportGroup>
 </Project>

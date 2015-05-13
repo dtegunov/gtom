@@ -314,7 +314,7 @@ float* CudaMallocZeroFilledFloat(size_t elements);
  * \param[in] copies	Number of copies
  * \returns Array pointer in device memory
  */
-template<class T> void CudaMemcpyMulti(T* dst, T* src, size_t elements, int copies);
+template<class T> void CudaMemcpyMulti(T* dst, T* src, uint elements, uint copies, uint batch = 1);
 
 /**
  * \brief Copies elements from source to destination using strided access for both pointers.
@@ -420,5 +420,28 @@ cudaPitchedPtr CopyVolumeHostToDevice(tfloat* h_input, int3 dims);
 
  //TextureObject.cu:
 
- void d_BindTextureToArray(tfloat* d_input, cudaArray* &d_createdarray, cudaTextureObject_t &texture, int2 dims, cudaTextureFilterMode filtermode, bool normalizedcoords);
- void d_BindTextureTo3DArray(tfloat* d_input, cudaArray* &d_createdarray, cudaTextureObject_t &texture, int3 dims, cudaTextureFilterMode filtermode, bool normalizedcoords);
+void d_BindTextureToArray(tfloat* d_input, cudaArray_t &createdarray, cudaTex &createdtexture, int2 dims, cudaTextureFilterMode filtermode, bool normalizedcoords);
+void d_BindTextureToArray(tfloat* d_input, cudaArray_t* &h_createdarrays, cudaTex* &h_createdtextures, int2 dims, cudaTextureFilterMode filtermode, bool normalizedcoords, int nimages);
+void d_BindTextureTo3DArray(tfloat* d_input, cudaArray_t &createdarray, cudaTex &createdtexture, int3 dims, cudaTextureFilterMode filtermode, bool normalizedcoords);
+void d_BindTextureTo3DArray(tfloat* d_input, cudaArray_t* &h_createdarrays, cudaTex* &h_createdtextures, int3 dims, cudaTextureFilterMode filtermode, bool normalizedcoords, int nvolumes);
+
+//KaiserBessel.cpp:
+double chebev(double a, double b, double c[], int m, double x);
+void beschb(double x, double *gam1, double *gam2, double *gampl, double *gammi);
+void bessjy(double x, double xnu, double *rj, double *ry, double *rjp, double *ryp);
+double bessj0(double x);
+double bessi0(double x);
+double bessi1(double x);
+double bessi0_5(double x);
+double bessi1_5(double x);
+double bessi2(double x);
+double bessi2_5(double x);
+double bessi3(double x);
+double bessi3_5(double x);
+double bessi4(double x);
+double bessj1_5(double x);
+double bessj3_5(double x);
+double kaiser_Fourier_value(double w, double a, double alpha, int m);
+
+//GridSpacing.cu:
+int3* GetEqualGridSpacing(int2 dimsimage, int2 dimsregion, float overlapfraction, int2 &dimsgrid);

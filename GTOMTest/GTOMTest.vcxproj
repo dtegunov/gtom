@@ -145,16 +145,23 @@
     <ClCompile Include="Align2D.cpp" />
     <ClCompile Include="Align3D.cpp" />
     <ClCompile Include="AnisotropicFSC.cpp" />
+    <ClCompile Include="ConeMask.cpp" />
     <ClCompile Include="CTFCorrect.cpp" />
     <ClCompile Include="CTFFit.cpp" />
+    <ClCompile Include="CTFTiltCorrect.cpp" />
     <ClCompile Include="CTFTiltFit.cpp" />
     <ClCompile Include="Decay.cpp" />
     <ClCompile Include="Euler.cpp" />
     <ClCompile Include="FFTLines.cpp" />
     <ClCompile Include="GS.cpp" />
     <ClCompile Include="NIPALS.cpp" />
+    <ClCompile Include="OptimizeSPAParams.cpp" />
+    <ClCompile Include="OptimizeStackWarp2D.cpp" />
+    <ClCompile Include="OptimizeTomoParams.cpp" />
+    <ClCompile Include="PCAFilter.cpp" />
     <ClCompile Include="Periodogram.cpp" />
     <ClCompile Include="PolynomialFit.cpp" />
+    <ClCompile Include="RotationalAverage.cpp" />
     <ClCompile Include="RecCompare.cpp" />
     <ClCompile Include="RecSIRT.cpp" />
     <ClCompile Include="Backward.cpp" />
@@ -190,6 +197,8 @@
     <ClCompile Include="SimilarityMatrix.cpp" />
     <ClCompile Include="SphereMask.cpp" />
     <ClCompile Include="Sum.cpp" />
+    <ClCompile Include="TextureObject.cpp" />
+    <ClCompile Include="Warp2D.cpp" />
     <ClCompile Include="Wiener.cpp" />
     <ClCompile Include="Xray.cpp" />
   </ItemGroup>

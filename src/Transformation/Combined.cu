@@ -12,7 +12,7 @@
 ////////////////////////////
 
 template<bool iscentered> __global__ void ScaleRotateShift2DSincKernel(tfloat* d_input, tfloat* d_output, int2 dims, glm::mat3 transform);
-template<bool iscentered> __global__ void ScaleRotateShift2DCubicKernel(cudaTextureObject_t t_input, tfloat* d_output, int2 dims, glm::mat3 transform);
+template<bool iscentered> __global__ void ScaleRotateShift2DCubicKernel(cudaTex t_input, tfloat* d_output, int2 dims, glm::mat3 transform);
 
 
 //////////////////////////////////////////
@@ -41,14 +41,14 @@ void d_ScaleRotateShift2D(tfloat* d_input, tfloat* d_output, int2 dims, tfloat2*
 	else if (mode == T_INTERP_CUBIC)
 	{
 		cudaArray* a_input;
-		cudaTextureObject_t t_input;
+		cudaTex t_input;
 		tfloat* d_prefilter;
 		cudaMalloc((void**)&d_prefilter, dims.x * dims.y * sizeof(tfloat));
 		
 		for (int b = 0; b < batch; b++)
 		{
 			cudaMemcpy(d_prefilter, d_input + dims.x * dims.y * b, dims.x * dims.y * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-			d_CubicBSplinePrefilter2D(d_prefilter, dims.x * sizeof(tfloat), dims);
+			d_CubicBSplinePrefilter2D(d_prefilter, dims);
 			d_BindTextureToArray(d_prefilter, a_input, t_input, dims, cudaFilterModeLinear, false);
 
 			d_ScaleRotateShiftCubic2D(t_input, d_output + dims.x * dims.y * b, dims, h_scales[b], h_angles[b], h_shifts[b], outputzerocentered);
@@ -61,7 +61,7 @@ void d_ScaleRotateShift2D(tfloat* d_input, tfloat* d_output, int2 dims, tfloat2*
 	free(h_transforms);
 }
 
-void d_ScaleRotateShiftCubic2D(cudaTextureObject_t t_input, tfloat* d_output, int2 dims, tfloat2 scale, tfloat angle, tfloat2 shift, bool outputzerocentered)
+void d_ScaleRotateShiftCubic2D(cudaTex t_input, tfloat* d_output, int2 dims, tfloat2 scale, tfloat angle, tfloat2 shift, bool outputzerocentered)
 {
 	glm::mat3 transform = Matrix3Translation(tfloat2(dims.x / 2, dims.y / 2)) *
 						  Matrix3Scale(tfloat3(1.0f / scale.x, 1.0f / scale.y, 1.0f)) *
@@ -139,7 +139,7 @@ template<bool iscentered> __global__ void ScaleRotateShift2DSincKernel(tfloat* d
 	}
 }
 
-template<bool iscentered> __global__ void ScaleRotateShift2DCubicKernel(cudaTextureObject_t t_input, tfloat* d_output, int2 dims, glm::mat3 transform)
+template<bool iscentered> __global__ void ScaleRotateShift2DCubicKernel(cudaTex t_input, tfloat* d_output, int2 dims, glm::mat3 transform)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	int idy = blockIdx.y * blockDim.y + threadIdx.y;

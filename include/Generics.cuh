@@ -715,3 +715,14 @@ template<class T> void d_ReduceAdd(T* d_input, T* d_output, int vectorlength, in
 * \param[in] batch	Number of vector sets to be reduced independently
 */
 template<class T> void d_ReduceMean(T* d_input, T* d_output, int vectorlength, int nvectors, int batch = 1);
+
+/**
+* \brief Average over multiple vectors with individual weights for all values
+* \param[in] d_input	Array with input data
+* \param[in] d_inputweights	Array with input data weights
+* \param[in] d_output	Array that will contain the reduced data
+* \param[in] vectorlength	Vector length
+* \param[in] nvectors	Number of vectors to average over
+* \param[in] batch	Number of vector sets to be reduced independently
+*/
+template<class T> void d_ReduceMeanWeighted(T* d_input, tfloat* d_inputweights, T* d_output, int vectorlength, int nvectors, int batch = 1);

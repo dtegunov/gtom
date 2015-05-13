@@ -8,8 +8,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
 	mxInitGPU();
 
-	if (nrhs < 2)
-		mexErrMsgIdAndTxt(errId, "Not enough parameters (2 or 3 expected).");
+	if (nrhs != 4)
+		mexErrMsgIdAndTxt(errId, "Not enough parameters (4 expected).");
 
 	mxArrayAdapter images(prhs[0]);
 	int3 dimsimages = MWDimsToInt3(mxGetNumberOfDimensions(images.underlyingarray), mxGetDimensions(images.underlyingarray));

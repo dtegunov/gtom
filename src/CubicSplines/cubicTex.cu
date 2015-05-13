@@ -50,7 +50,7 @@ following papers:
 //! Straight forward implementation, using 4 nearest neighbour lookups.
 //! @param tex  1D texture
 //! @param x  unnormalized x texture coordinate
-template <class T> __device__ tfloat cubicTex1DSimple(cudaTextureObject_t tex, tfloat x)
+template <class T> __device__ tfloat cubicTex1DSimple(cudaTex tex, tfloat x)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
 	const tfloat coord_grid = x - (tfloat)0.5;
@@ -73,7 +73,7 @@ template <class T> __device__ tfloat cubicTex1DSimple(cudaTextureObject_t tex, t
 //! @param tex  2D texture
 //! @param x  unnormalized x texture coordinate
 //! @param y  unnormalized y texture coordinate
-template <class T> __device__ float cubicTex2DSimple(cudaTextureObject_t tex, float x, float y)
+template <class T> __device__ float cubicTex2DSimple(cudaTex tex, float x, float y)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
 	const float2 coord_grid = make_float2(x - 0.5f, y - 0.5f);
@@ -101,7 +101,7 @@ template <class T> __device__ float cubicTex2DSimple(cudaTextureObject_t tex, fl
 //! Straight forward implementation, using 64 nearest neighbour lookups.
 //! @param tex  3D texture
 //! @param coord  unnormalized 3D texture coordinate
-template <class T> __device__ float cubicTex3DSimple(cudaTextureObject_t tex, float x, float y, float z)
+template <class T> __device__ float cubicTex3DSimple(cudaTex tex, float x, float y, float z)
 {
 	// transform the coordinate from [0,extent] to [-0.5, extent-0.5]
 	const float3 coord_grid = make_float3(x - 0.5f, y - 0.5f, z - 0.5f);

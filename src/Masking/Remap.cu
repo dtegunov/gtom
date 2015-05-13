@@ -9,7 +9,7 @@
 
 template <class T> __global__ void RemapKernel(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch);
 template <class T> __global__ void RemapReverseKernel(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsdestination, T defvalue, int batch);
-template<bool cubicinterp> __global__ void RemapInterpolated2DKernel(cudaTextureObject_t t_input, tfloat* d_output, float2* d_addresses, int n);
+template<bool cubicinterp> __global__ void RemapInterpolated2DKernel(cudaTex t_input, tfloat* d_output, float2* d_addresses, int n);
 
 
 //////////////////
@@ -36,7 +36,7 @@ template <class T> void d_RemapReverse(T* d_input, intptr_t* d_map, T* d_output,
 template void d_RemapReverse<tfloat>(tfloat* d_input, intptr_t* d_map, tfloat* d_output, size_t elementsmapped, size_t elementsdestination, tfloat defvalue, int batch);
 template void d_RemapReverse<int>(int* d_input, intptr_t* d_map, int* d_output, size_t elementsmapped, size_t elementsdestination, int defvalue, int batch);
 
-template <class T> void Remap(T* h_input, intptr_t* h_map, T* h_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch)
+template <class T> void h_Remap(T* h_input, intptr_t* h_map, T* h_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch)
 {
 	T* d_input = (T*)CudaMallocFromHostArray(h_input, elementsoriginal * batch * sizeof(T));
 	intptr_t* d_map = (intptr_t*)CudaMallocFromHostArray(h_map, elementsmapped * sizeof(intptr_t));
@@ -51,8 +51,8 @@ template <class T> void Remap(T* h_input, intptr_t* h_map, T* h_output, size_t e
 	cudaFree(d_map);
 	cudaFree(d_output);
 }
-template void Remap<tfloat>(tfloat* d_input, intptr_t* d_map, tfloat* d_output, size_t elementsmapped, size_t elementsoriginal, tfloat defvalue, int batch);
-template void Remap<int>(int* d_input, intptr_t* d_map, int* d_output, size_t elementsmapped, size_t elementsoriginal, int defvalue, int batch);
+template void h_Remap<tfloat>(tfloat* d_input, intptr_t* d_map, tfloat* d_output, size_t elementsmapped, size_t elementsoriginal, tfloat defvalue, int batch);
+template void h_Remap<int>(int* d_input, intptr_t* d_map, int* d_output, size_t elementsmapped, size_t elementsoriginal, int defvalue, int batch);
 
 template <class T> __global__ void RemapKernel(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch)
 {
@@ -92,7 +92,7 @@ template <class T> __global__ void RemapReverseKernel(T* d_input, intptr_t* d_ma
 void d_RemapInterpolated2D(tfloat* d_input, int2 dimsinput, tfloat* d_output, float2* d_addresses, int n, T_INTERP_MODE mode)
 {
 	cudaArray* a_input;
-	cudaTextureObject_t t_input;
+	cudaTex t_input;
 	if (mode == T_INTERP_LINEAR)
 		d_BindTextureToArray(d_input, a_input, t_input, dimsinput, cudaFilterModeLinear, false);
 	else if (mode == T_INTERP_CUBIC)
@@ -100,7 +100,7 @@ void d_RemapInterpolated2D(tfloat* d_input, int2 dimsinput, tfloat* d_output, fl
 		tfloat* d_temp;
 		cudaMalloc((void**)&d_temp, Elements2(dimsinput) * sizeof(tfloat));
 		cudaMemcpy(d_temp, d_input, Elements2(dimsinput) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-		d_CubicBSplinePrefilter2D(d_temp, dimsinput.x * sizeof(tfloat), dimsinput);
+		d_CubicBSplinePrefilter2D(d_temp, dimsinput);
 		d_BindTextureToArray(d_temp, a_input, t_input, dimsinput, cudaFilterModeLinear, false);
 		cudaFree(d_temp);
 	}
@@ -116,7 +116,7 @@ void d_RemapInterpolated2D(tfloat* d_input, int2 dimsinput, tfloat* d_output, fl
 	cudaFreeArray(a_input);
 }
 
-template<bool cubicinterp> __global__ void RemapInterpolated2DKernel(cudaTextureObject_t t_input, tfloat* d_output, float2* d_addresses, int n)
+template<bool cubicinterp> __global__ void RemapInterpolated2DKernel(cudaTex t_input, tfloat* d_output, float2* d_addresses, int n)
 {
 	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < n; idx += gridDim.x * blockDim.x)
 	{

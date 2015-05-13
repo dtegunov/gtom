@@ -210,6 +210,33 @@
     <ClCompile Include="Euler.cpp">
       <Filter>Source Files\Helpers</Filter>
     </ClCompile>
+    <ClCompile Include="OptimizeSPAParams.cpp">
+      <Filter>Source Files\Optimization</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureObject.cpp">
+      <Filter>Source Files\Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="OptimizeTomoParams.cpp">
+      <Filter>Source Files\Optimization</Filter>
+    </ClCompile>
+    <ClCompile Include="PCAFilter.cpp">
+      <Filter>Source Files\PCA</Filter>
+    </ClCompile>
+    <ClCompile Include="CTFTiltCorrect.cpp">
+      <Filter>Source Files\CTF</Filter>
+    </ClCompile>
+    <ClCompile Include="RotationalAverage.cpp">
+      <Filter>Source Files\CTF</Filter>
+    </ClCompile>
+    <ClCompile Include="Warp2D.cpp">
+      <Filter>Source Files\Transformation</Filter>
+    </ClCompile>
+    <ClCompile Include="OptimizeStackWarp2D.cpp">
+      <Filter>Source Files\Optimization</Filter>
+    </ClCompile>
+    <ClCompile Include="ConeMask.cpp">
+      <Filter>Source Files\Masking</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">

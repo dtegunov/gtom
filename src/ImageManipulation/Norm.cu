@@ -234,12 +234,12 @@ template<bool outputmu> __global__ void NormMeanStdDevMonoKernel(tfloat* d_input
 		s_stddev = sqrt(((double)elements * sum2 - (sum1 * sum1))) / (double)elements;
 	}
 	__syncthreads();
-	
-	double mean = s_mean;
-	double stddev = s_stddev;
+
+	tfloat mean = s_mean;
+	tfloat stddev = s_stddev > 0.0 ? 1.0 / s_stddev : 0.0;
 
 	for (int i = threadIdx.x; i < elements; i += blockDim.x)
-		d_output[i] = (d_input[i] - mean) / stddev;
+		d_output[i] = (d_input[i] - mean) * stddev;
 
 	if (outputmu && threadIdx.x == 0)
 		d_mu[blockIdx.x] = tfloat2(mean, stddev);
@@ -286,11 +286,11 @@ template<bool outputmu> __global__ void NormMeanStdDevMonoMaskedKernel(tfloat* d
 	}
 	__syncthreads();
 
-	double mean = s_mean;
-	double stddev = s_stddev;
+	tfloat mean = s_mean;
+	tfloat stddev = s_stddev > 0.0 ? 1.0 / s_stddev : 0.0;
 
 	for (int i = threadIdx.x; i < elements; i += blockDim.x)
-		d_output[i] = (d_input[i] - mean) / stddev;
+		d_output[i] = (d_input[i] - mean) * stddev;
 
 	if (outputmu && threadIdx.x == 0)
 		d_mu[blockIdx.x] = tfloat2(mean, stddev);

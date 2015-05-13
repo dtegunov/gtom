@@ -16,6 +16,7 @@ TEST(Reconstruction, RecCompare)
 		int2 dimsimage = toInt2(64, 64);
 		int nimages = 61;
 		tfloat3* h_angles = (tfloat3*)malloc(nimages * sizeof(tfloat3));
+		tfloat2* h_shifts = (tfloat2*)MallocValueFilled(nimages * 2, (tfloat)0);
 		tfloat2* h_translations = (tfloat2*)malloc(nimages * sizeof(tfloat2));
 		tfloat2* h_scales = (tfloat2*)malloc(nimages * sizeof(tfloat2));
 		for (int n = 0; n < nimages; n++)
@@ -27,10 +28,12 @@ TEST(Reconstruction, RecCompare)
 
 		tfloat* d_volume = CudaMallocValueFilled(Elements(dimsvolume), 0.0f);
 		tfloat* d_volume2 = CudaMallocValueFilled(64 * 64 * 64, 0.0f);
+		tfloat* d_volume2psf = CudaMallocValueFilled(33 * 64 * 64, 1.0f);
 		tfloat* d_images = (tfloat*)CudaMallocFromBinaryFile("Data/Reconstruction/SIRTvsWBP.bin");
 		tfloat* d_volumeoriginal = (tfloat*)CudaMallocFromBinaryFile("Data/Reconstruction/SIRTvsWBPvolume.bin");
 		d_NormMonolithic(d_volumeoriginal, d_volumeoriginal, 64 * 64 * 16, T_NORM_MEAN01STD, 1);
 		tfloat* d_reprojections = CudaMallocValueFilled(Elements2(dimsimage) * nimages, 0.0f);
+		tfloat* d_reprojectionspsf = CudaMallocValueFilled(ElementsFFT2(dimsimage) * nimages, 1.0f);
 		tfloat* d_masks = CudaMallocValueFilled(Elements2(dimsimage) * nimages, 1.0f);
 		//d_SphereMask(d_masks, d_masks, toInt3(dimsimage), NULL, 0.0f, NULL, nimages);
 		d_RectangleMask(d_masks, d_masks, toInt3(64, 64, 1), toInt3(dimsimage), NULL, nimages);
@@ -46,7 +49,7 @@ TEST(Reconstruction, RecCompare)
 		scores << "WBP:\n\n";
 		for (int s = 1; s <= 3; s++)
 		{
-			d_RecWBP(d_volume, dimsvolume, volumeoffset, d_images, dimsimage, nimages, h_angles, h_translations, h_scales, T_INTERP_LINEAR, s, true);
+			d_RecWBP(d_volume, dimsvolume, volumeoffset, d_images, dimsimage, nimages, h_angles, h_translations, h_scales, T_INTERP_LINEAR, true);
 			CudaWriteToBinaryFile("d_volumewbp.bin", d_volume, Elements(dimsvolume) * sizeof(tfloat));
 			/*d_Pad(d_volume, d_volume2, dimsvolume, toInt3(64, 64, 16), T_PAD_VALUE, 0.0f);
 			d_NormMonolithic(d_volume2, d_volume2, 64 * 64 * 16, T_NORM_MEAN01STD, 1);
@@ -59,7 +62,7 @@ TEST(Reconstruction, RecCompare)
 			int3 dimsvolume2 = toInt3(64, 64, 64);
 			d_Pad(d_volume, d_volume2, dimsvolume, dimsvolume2, T_PAD_VALUE, 0.0f);
 			d_RemapFull2FullFFT(d_volume2, d_volume2, dimsvolume2);
-			d_ProjForward(d_volume2, dimsvolume2, d_reprojections, toInt3(dimsimage), h_angles, T_INTERP_CUBIC, nimages);
+			d_ProjForward(d_volume2, d_volume2psf, dimsvolume2, d_reprojections, d_reprojectionspsf, h_angles, h_shifts, T_INTERP_CUBIC, nimages);
 			d_RemapFullFFT2Full(d_reprojections, d_reprojections, toInt3(dimsimage), nimages);
 			//CudaWriteToBinaryFile("d_wbp.bin", d_reprojections, Elements2(dimsimage) * nimages * sizeof(tfloat));
 
@@ -79,7 +82,7 @@ TEST(Reconstruction, RecCompare)
 		{
 			for (int i = 100; i <= 150; i += 10)
 			{
-				d_RecSIRT(d_volume, NULL, dimsvolume, volumeoffset, d_images, dimsimage, nimages, h_angles, h_translations, h_scales, T_INTERP_LINEAR, s, i, true);
+				d_RecSIRT(d_volume, NULL, dimsvolume, volumeoffset, d_images, dimsimage, nimages, h_angles, h_translations, h_scales, NULL, T_INTERP_LINEAR, s, i, true);
 				CudaWriteToBinaryFile("d_volumesirt.bin", d_volume, Elements(dimsvolume) * sizeof(tfloat));
 				/*d_Pad(d_volume, d_volume2, dimsvolume, toInt3(64, 64, 16), T_PAD_VALUE, 0.0f);
 				d_NormMonolithic(d_volume2, d_volume2, 64 * 64 * 16, T_NORM_MEAN01STD, 1);
@@ -92,7 +95,7 @@ TEST(Reconstruction, RecCompare)
 				int3 dimsvolume2 = toInt3(64, 64, 64);
 				d_Pad(d_volume, d_volume2, dimsvolume, dimsvolume2, T_PAD_VALUE, 0.0f);
 				d_RemapFull2FullFFT(d_volume2, d_volume2, dimsvolume2);
-				d_ProjForward(d_volume2, dimsvolume2, d_reprojections, toInt3(dimsimage), h_angles, T_INTERP_CUBIC, nimages);
+				d_ProjForward(d_volume2, d_volume2psf, dimsvolume2, d_reprojections, d_reprojectionspsf, h_angles, h_shifts, T_INTERP_CUBIC, nimages);
 				d_RemapFullFFT2Full(d_reprojections, d_reprojections, toInt3(dimsimage), nimages);
 				//CudaWriteToBinaryFile("d_sirt.bin", d_reprojections, Elements2(dimsimage) * nimages * sizeof(tfloat));
 

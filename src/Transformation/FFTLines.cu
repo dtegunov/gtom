@@ -5,7 +5,7 @@
 #include "Helper.cuh"
 #include "Transformation.cuh"
 
-template<bool cubicinterp> __global__ void FFTLinesKernel(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int2 dimsft, float anglestep, int linewidth);
+template<bool cubicinterp> __global__ void FFTLinesKernel(cudaTex t_Re, cudaTex t_Im, tcomplex* d_output, int2 dimsft, float anglestep, int linewidth);
 
 
 void d_FFTLines(tcomplex* d_input, tcomplex* d_output, int2 dims, T_INTERP_MODE mode, int anglesteps, int linewidth, int batch)
@@ -18,15 +18,15 @@ void d_FFTLines(tcomplex* d_input, tcomplex* d_output, int2 dims, T_INTERP_MODE 
 	for (int b = 0; b < batch; b++)
 	{
 		cudaArray* a_Re, *a_Im;
-		cudaTextureObject_t t_Re, t_Im;
+		cudaTex t_Re, t_Im;
 		
 		d_ConvertTComplexToSplitComplex(d_input + ElementsFFT2(dims) * b, d_temp, d_temp + ElementsFFT2(dims), ElementsFFT2(dims));
 		d_RemapHalfFFT2Half(d_temp, d_temp, toInt3(dims), 2);
 
 		if (mode == T_INTERP_CUBIC)
 		{
-			d_CubicBSplinePrefilter2D(d_temp, (dims.x / 2 + 1) * sizeof(tfloat), toInt2(dims.x / 2 + 1, dims.y));
-			d_CubicBSplinePrefilter2D(d_temp + ElementsFFT2(dims), (dims.x / 2 + 1) * sizeof(tfloat), toInt2(dims.x / 2 + 1, dims.y));
+			d_CubicBSplinePrefilter2D(d_temp, toInt2(dims.x / 2 + 1, dims.y));
+			d_CubicBSplinePrefilter2D(d_temp + ElementsFFT2(dims), toInt2(dims.x / 2 + 1, dims.y));
 		}
 
 		d_BindTextureToArray(d_temp, a_Re, t_Re, toInt2(dims.x / 2 + 1, dims.y), cudaFilterModeLinear, false);
@@ -49,7 +49,7 @@ void d_FFTLines(tcomplex* d_input, tcomplex* d_output, int2 dims, T_INTERP_MODE 
 	cudaFree(d_temp);
 }
 
-template<bool cubicinterp> __global__ void FFTLinesKernel(cudaTextureObject_t t_Re, cudaTextureObject_t t_Im, tcomplex* d_output, int2 dimsft, float anglestep, int linewidth)
+template<bool cubicinterp> __global__ void FFTLinesKernel(cudaTex t_Re, cudaTex t_Im, tcomplex* d_output, int2 dimsft, float anglestep, int linewidth)
 {
 	int line = (int)threadIdx.y - linewidth / 2;
 	float angle = (float)blockIdx.x * anglestep + PIHALF;

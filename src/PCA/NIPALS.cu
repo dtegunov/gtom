@@ -1,5 +1,8 @@
 #include "Prerequisites.cuh"
+#include "Generics.cuh"
 #include "Helper.cuh"
+
+#include "cusolverDn.h"
 
 // C/C++ example for the CUBLAS (NVIDIA)
 // implementation of NIPALS-PCA algorithm
@@ -14,21 +17,20 @@ void d_PCANIPALS(tfloat* d_data, int samples, int length, int ncomponents, tfloa
 	cublasHandle_t handle;
 	cublasCreate(&handle);
 
-	// Transpose input
-	tfloat one = 1.0, zero = 0;
-	cublasSgeam(handle, CUBLAS_OP_T, CUBLAS_OP_T, samples, length, &one, d_data, length, &zero, d_data, length, d_residual, samples);
-
-	// Mean center the data
 	tfloat* d_U;
 	cudaMalloc((void**)&d_U, samples * length * sizeof(tfloat));
 	tfloat alpha = 1.0f;
-	cublasScopy(handle, samples, d_residual, 1, d_U, 1);
-	for (int n = 1; n < length; n++)
-		cublasSaxpy(handle, samples, &alpha, d_residual + samples * n, 1, d_U, 1);
 
-	alpha = -1.0f / (tfloat)length;
-	for (int n = 0; n < length; n++)
-		cublasSaxpy(handle, samples, &alpha, d_U, 1, d_residual + samples * n, 1);
+	// Mean center the data
+	tfloat* d_mean;
+	cudaMalloc((void**)&d_mean, length * sizeof(tfloat));
+	d_ReduceMean(d_data, d_mean, length, samples);
+	d_SubtractVector(d_data, d_mean, d_U, length, samples);	
+	cudaFree(d_mean);
+
+	// Transpose the centered data
+	tfloat one = 1.0, zero = 0;
+	cublasSgeam(handle, CUBLAS_OP_T, CUBLAS_OP_T, samples, length, &one, d_U, length, &zero, d_U, length, d_residual, samples);
 
 	tfloat a, b;
 	tfloat Snrm2Result = 0;
@@ -64,4 +66,5 @@ void d_PCANIPALS(tfloat* d_data, int samples, int length, int ncomponents, tfloa
 	cudaMemcpy(d_residual, d_U, samples * length * sizeof(tfloat), cudaMemcpyDeviceToDevice);
 
 	cudaFree(d_U);
+	cublasDestroy(handle);
 }

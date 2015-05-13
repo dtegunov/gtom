@@ -413,17 +413,15 @@ namespace dlib
     )
     {
         typedef typename in_scalar_vector_type::value_type scalar_type;
-        typedef typename trainer_type::sample_type sample_type;
         typedef typename trainer_type::mem_manager_type mem_manager_type;
-        typedef matrix<sample_type,0,1,mem_manager_type> sample_vector_type;
         typedef matrix<scalar_type,0,1,mem_manager_type> scalar_vector_type;
 
         // make sure requires clause is not broken
         DLIB_ASSERT(is_binary_classification_problem(x,y) == true &&
-                    1 < folds && folds <= x.nr(),
+                    1 < folds && folds <= std::min(sum(y>0),sum(y<0)),
             "\tmatrix cross_validate_trainer()"
             << "\n\t invalid inputs were given to this function"
-            << "\n\t x.nr(): " << x.nr() 
+            << "\n\t std::min(sum(y>0),sum(y<0)): " << std::min(sum(y>0),sum(y<0))
             << "\n\t folds:  " << folds 
             << "\n\t is_binary_classification_problem(x,y): " << ((is_binary_classification_problem(x,y))? "true":"false")
             );
@@ -447,7 +445,7 @@ namespace dlib
         const long num_neg_train_samples = num_neg - num_neg_test_samples; 
 
 
-        sample_vector_type x_test, x_train;
+        matrix<long,0,1> x_test, x_train;
         scalar_vector_type y_test, y_train;
         x_test.set_size (num_pos_test_samples  + num_neg_test_samples);
         y_test.set_size (num_pos_test_samples  + num_neg_test_samples);
@@ -469,7 +467,7 @@ namespace dlib
             {
                 if (y(pos_idx) == +1.0)
                 {
-                    x_test(cur) = x(pos_idx);
+                    x_test(cur) = pos_idx;
                     y_test(cur) = +1.0;
                     ++cur;
                 }
@@ -481,7 +479,7 @@ namespace dlib
             {
                 if (y(neg_idx) == -1.0)
                 {
-                    x_test(cur) = x(neg_idx);
+                    x_test(cur) = neg_idx;
                     y_test(cur) = -1.0;
                     ++cur;
                 }
@@ -499,7 +497,7 @@ namespace dlib
             {
                 if (y(train_pos_idx) == +1.0)
                 {
-                    x_train(cur) = x(train_pos_idx);
+                    x_train(cur) = train_pos_idx;
                     y_train(cur) = +1.0;
                     ++cur;
                 }
@@ -511,7 +509,7 @@ namespace dlib
             {
                 if (y(train_neg_idx) == -1.0)
                 {
-                    x_train(cur) = x(train_neg_idx);
+                    x_train(cur) = train_neg_idx;
                     y_train(cur) = -1.0;
                     ++cur;
                 }
@@ -521,7 +519,7 @@ namespace dlib
             try
             {
                 // do the training and testing
-                res += test_binary_decision_function(trainer.train(x_train,y_train),x_test,y_test);
+                res += test_binary_decision_function(trainer.train(rowm(x,x_train),y_train),rowm(x,x_test),y_test);
             }
             catch (invalid_nu_error&)
             {

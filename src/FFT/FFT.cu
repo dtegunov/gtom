@@ -30,7 +30,7 @@ cufftHandle d_FFTR2CGetPlan(int const ndimensions, int3 const dimensions, int ba
 
 void d_FFTR2C(tfloat* const d_input, tcomplex* const d_output, cufftHandle* plan)
 {
-	#ifdef TOM_DOUBLE
+	#ifdef GTOM_DOUBLE
 		cufftExecD2Z(*plan, d_input, d_output);
 	#else
 		cufftExecR2C(*plan, d_input, d_output);
@@ -61,7 +61,7 @@ void d_FFTC2C(tcomplex* const d_input, tcomplex* const d_output, int const ndime
 				  direction, batch);
 
 	cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE);
-	#ifdef TOM_DOUBLE
+	#ifdef GTOM_DOUBLE
 		cufftExecZ2Z(plan, d_input, d_output);
 	#else
 		cufftExecC2C(plan, d_input, d_output, CUFFT_FORWARD);

@@ -55,8 +55,8 @@ following papers:
 // Local GPU device procedures
 //--------------------------------------------------------------------------
 template<class T> __host__ __device__ T InitialCausalCoefficient(T* c,			// coefficients
-																int DataLength,	// number of coefficients
-																int step)			// element interleave in bytes
+																uint DataLength,	// number of coefficients
+																uint interleave)			// element interleave in words
 {
 	const int Horizon = min(12, DataLength);
 
@@ -64,25 +64,24 @@ template<class T> __host__ __device__ T InitialCausalCoefficient(T* c,			// coef
 	// accelerated loop
 	float zn = Pole;
 	T Sum = *c;
-	for (int n = 0; n < Horizon; n++) {
+	for (uint n = 0; n < Horizon; n++) 
+	{
 		Sum += zn * *c;
 		zn *= Pole;
-		c = (T*)((char*)c + step);
+		c += interleave;
 	}
 	return(Sum);
 }
 
-template<class T> __host__ __device__ T InitialAntiCausalCoefficient(T* c,			// last coefficient
-																				uint DataLength,	// number of samples or coefficients
-																				int step)			// element interleave in bytes
+template<class T> __host__ __device__ T InitialAntiCausalCoefficient(T* c)			// last coefficient
 {
 	// this initialization corresponds to clamping boundaries
-	return((Pole / (Pole - 1.0f)) * *c);
+	return ((Pole / (Pole - 1.0f)) * *c);
 }
 
 template<class T> __host__ __device__ void ConvertToInterpolationCoefficients(T* coeffs,		// input samples --> output coefficients
 																			  uint DataLength,	// number of samples or coefficients
-																			  int step)			// element interleave in bytes
+																			  uint interleave)			// element interleave in words
 {
 	// compute the overall gain
 	const float Lambda = (1.0f - Pole) * (1.0f - 1.0f / Pole);
@@ -90,17 +89,19 @@ template<class T> __host__ __device__ void ConvertToInterpolationCoefficients(T*
 	// causal initialization
 	T* c = coeffs;
 	T previous_c;  //cache the previously calculated c rather than look it up again (faster!)
-	*c = previous_c = Lambda * InitialCausalCoefficient(c, DataLength, step);
+	*c = previous_c = Lambda * InitialCausalCoefficient(c, DataLength, interleave);
 	// causal recursion
-	for (uint n = 1; n < DataLength; n++) {
-		c = (T*)((char*)c + step);
+	for (uint n = 1; n < DataLength; n++) 
+	{
+		c += interleave;
 		*c = previous_c = Lambda * *c + Pole * previous_c;
 	}
 	// anticausal initialization
-	*c = previous_c = InitialAntiCausalCoefficient(c, DataLength, step);
+	*c = previous_c = InitialAntiCausalCoefficient(c);
 	// anticausal recursion
-	for (int n = DataLength - 2; 0 <= n; n--) {
-		c = (T*)((char*)c - step);
+	for (int n = DataLength - 2; 0 <= n; n--) 
+	{
+		c -= interleave;
 		*c = previous_c = Pole * (previous_c - *c);
 	}
 }

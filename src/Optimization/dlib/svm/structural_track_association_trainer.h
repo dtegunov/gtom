@@ -1,7 +1,7 @@
 // Copyright (C) 2014  Davis E. King (davis@dlib.net)
 // License: Boost Software License   See LICENSE.txt for the full license.
-#ifndef DLIB_STRUCTURAL_TRACK_ASSOCIATION_TRAnER_H__
-#define DLIB_STRUCTURAL_TRACK_ASSOCIATION_TRAnER_H__
+#ifndef DLIB_STRUCTURAL_TRACK_ASSOCIATION_TRAnER_Hh_
+#define DLIB_STRUCTURAL_TRACK_ASSOCIATION_TRAnER_Hh_
 
 #include "structural_track_association_trainer_abstract.h"
 #include "../algs.h"
@@ -91,6 +91,48 @@ namespace dlib
             return max_cache_size; 
         }
 
+        void set_loss_per_false_association (
+            double loss
+        )
+        {
+            // make sure requires clause is not broken
+            DLIB_ASSERT(loss > 0, 
+                "\t void structural_track_association_trainer::set_loss_per_false_association(loss)"
+                << "\n\t Invalid inputs were given to this function "
+                << "\n\t loss: " << loss
+                << "\n\t this: " << this
+                );
+
+            loss_per_false_association = loss;
+        }
+
+        double get_loss_per_false_association (
+        ) const
+        {
+            return loss_per_false_association;
+        }
+
+        void set_loss_per_track_break (
+            double loss
+        )
+        {
+            // make sure requires clause is not broken
+            DLIB_ASSERT(loss > 0, 
+                "\t void structural_track_association_trainer::set_loss_per_track_break(loss)"
+                << "\n\t Invalid inputs were given to this function "
+                << "\n\t loss: " << loss
+                << "\n\t this: " << this
+                );
+
+            loss_per_track_break = loss;
+        }
+
+        double get_loss_per_track_break (
+        ) const
+        {
+            return loss_per_track_break;
+        }
+
         void be_verbose (
         )
         {
@@ -178,6 +220,8 @@ namespace dlib
             trainer.set_max_cache_size(max_cache_size);
             trainer.set_num_threads(num_threads);
             trainer.set_oca(solver);
+            trainer.set_loss_per_missed_association(loss_per_track_break);
+            trainer.set_loss_per_false_association(loss_per_false_association);
 
             std::vector<std::pair<std::vector<detection_type>, std::vector<track_type> > > assignment_samples;
             std::vector<std::vector<long> > labels;
@@ -338,6 +382,8 @@ namespace dlib
         unsigned long num_threads;
         unsigned long max_cache_size;
         bool learn_nonnegative_weights;
+        double loss_per_track_break;
+        double loss_per_false_association;
 
         void set_defaults ()
         {
@@ -347,10 +393,12 @@ namespace dlib
             num_threads = 2;
             max_cache_size = 5;
             learn_nonnegative_weights = false;
+            loss_per_track_break = 1;
+            loss_per_false_association = 1;
         }
     };
 
 }
 
-#endif // DLIB_STRUCTURAL_TRACK_ASSOCIATION_TRAnER_H__
+#endif // DLIB_STRUCTURAL_TRACK_ASSOCIATION_TRAnER_Hh_
 

@@ -129,20 +129,20 @@ void WriteToBinaryFile(string path, void* data, size_t bytes)
 //Device memory//
 /////////////////
 
-template<class T> void CudaMemcpyMulti(T* dst, T* src, size_t elements, int copies)
+template<class T> void CudaMemcpyMulti(T* dst, T* src, uint elements, uint copies, uint batch)
 {
 	size_t TpB = min(256, elements);
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 8192));
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 8192), batch);
 	MemcpyMultiKernel <<<grid, TpB>>> (dst, src, elements, copies);
 }
-template void CudaMemcpyMulti<char>(char* dst, char* src, size_t elements, int copies);
-template void CudaMemcpyMulti<short>(short* dst, short* src, size_t elements, int copies);
-template void CudaMemcpyMulti<int>(int* dst, int* src, size_t elements, int copies);
-template void CudaMemcpyMulti<long>(long* dst, long* src, size_t elements, int copies);
-template void CudaMemcpyMulti<float>(float* dst, float* src, size_t elements, int copies);
-template void CudaMemcpyMulti<double>(double* dst, double* src, size_t elements, int copies);
-template void CudaMemcpyMulti<float2>(float2* dst, float2* src, size_t elements, int copies);
-template void CudaMemcpyMulti<double2>(double2* dst, double2* src, size_t elements, int copies);
+template void CudaMemcpyMulti<char>(char* dst, char* src, uint elements, uint copies, uint batch);
+template void CudaMemcpyMulti<short>(short* dst, short* src, uint elements, uint copies, uint batch);
+template void CudaMemcpyMulti<int>(int* dst, int* src, uint elements, uint copies, uint batch);
+template void CudaMemcpyMulti<long>(long* dst, long* src, uint elements, uint copies, uint batch);
+template void CudaMemcpyMulti<float>(float* dst, float* src, uint elements, uint copies, uint batch);
+template void CudaMemcpyMulti<double>(double* dst, double* src, uint elements, uint copies, uint batch);
+template void CudaMemcpyMulti<float2>(float2* dst, float2* src, uint elements, uint copies, uint batch);
+template void CudaMemcpyMulti<double2>(double2* dst, double2* src, uint elements, uint copies, uint batch);
 
 template<class T> void CudaMemcpyStrided(T* dst, T* src, size_t elements, int stridedst, int stridesrc)
 {
@@ -168,7 +168,6 @@ void* CudaMallocAligned2D(size_t widthbytes, size_t height, int* pitch, int alig
 
    void* ptr;
    cudaMalloc((void**)&ptr, widthbytes* height);
-	cudaStreamQuery(0);
 
    return ptr;
 }
@@ -178,7 +177,6 @@ void* CudaMallocFromHostArray(void* h_array, size_t size)
 	void* d_array;
 	cudaMalloc((void**)&d_array, size);
 	cudaMemcpy(d_array, h_array, size, cudaMemcpyHostToDevice);
-	cudaStreamQuery(0);
 
 	return d_array;
 }
@@ -188,7 +186,6 @@ void* CudaMallocFromHostArray(void* h_array, size_t devicesize, size_t hostsize)
 	void* d_array;
 	cudaMalloc((void**)&d_array, devicesize);
 	cudaMemcpy(d_array, h_array, hostsize, cudaMemcpyHostToDevice);
-	cudaStreamQuery(0);
 
 	return d_array;
 }
@@ -449,7 +446,7 @@ cudaPitchedPtr CopyVolumeDeviceToDevice(tfloat* d_input, int3 dims)
 	const cudaExtent extent = make_cudaExtent(dims.x * sizeof(tfloat), dims.y, dims.z);
 	cudaMalloc3D(&deviceTo, extent);
 	cudaMemcpy3DParms p = { 0 };
-	p.srcPtr = make_cudaPitchedPtr((void*)d_input, dims.x * sizeof(float), dims.x, dims.y);
+	p.srcPtr = make_cudaPitchedPtr((void*)d_input, dims.x * sizeof(tfloat), dims.x, dims.y);
 	p.dstPtr = deviceTo;
 	p.extent = extent;
 	p.kind = cudaMemcpyDeviceToDevice;
@@ -463,7 +460,7 @@ cudaPitchedPtr CopyVolumeHostToDevice(tfloat* h_input, int3 dims)
 	const cudaExtent extent = make_cudaExtent(dims.x * sizeof(tfloat), dims.y, dims.z);
 	cudaMalloc3D(&deviceTo, extent);
 	cudaMemcpy3DParms p = { 0 };
-	p.srcPtr = make_cudaPitchedPtr((void*)h_input, dims.x * sizeof(float), dims.x, dims.y);
+	p.srcPtr = make_cudaPitchedPtr((void*)h_input, dims.x * sizeof(tfloat), dims.x, dims.y);
 	p.dstPtr = deviceTo;
 	p.extent = extent;
 	p.kind = cudaMemcpyHostToDevice;
@@ -478,12 +475,15 @@ cudaPitchedPtr CopyVolumeHostToDevice(tfloat* h_input, int3 dims)
 
 template <class T> __global__ void MemcpyMultiKernel(T* d_output, T* d_input, size_t elements, int copies)
 {
-	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
+	d_output += elements * copies * blockIdx.y;
+	d_input += elements * blockIdx.y;
+
+	for(uint id = blockIdx.x * blockDim.x + threadIdx.x; 
 		id < elements; 
 		id += blockDim.x * gridDim.x)
 	{
 		T value = d_input[id];
-		for (int i = 0; i < copies; i++)
+		for (uint i = 0; i < copies; i++)
 			d_output[i * elements + id] = value;
 	}
 }

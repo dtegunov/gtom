@@ -72,8 +72,8 @@ struct HeaderMRC
 		pixelsize(make_float3(1.0f, 1.0f, 1.0f)),
 		angles(make_float3(0, 0, 0)),
 		maporder(toInt3(1, 2, 3)),
-		minvalue(0),
-		maxvalue(0),
+		minvalue(-1.0f),
+		maxvalue(1.0f),
 		meanvalue(0),
 		extendedbytes(0),
 		creatid(0),
@@ -92,7 +92,7 @@ struct HeaderMRC
 		numlabels(0) {}
 };
 
-typedef enum EM_DATATYPE: unsigned char
+enum EM_DATATYPE: unsigned char
 {
 	EM_BYTE = 1,
 	EM_SHORT = 2,
@@ -159,12 +159,15 @@ struct HeaderEM
 };
 
  //mrc.cu:
-void ReadMRC(string path, void** data, MRC_DATATYPE datatype, int nframe = -1);
+void ReadMRC(string path, void** data, int nframe = -1);
 HeaderMRC ReadMRCHeader(string path);
 HeaderMRC ReadMRCHeader(FILE* inputfile);
+void WriteMRC(void* data, HeaderMRC header, string path);
+void WriteMRC(tfloat* data, int3 dims, string path);
+void d_WriteMRC(tfloat* d_data, int3 dims, string path);
 
 //em.cu:
-void ReadEM(string path, void** data, EM_DATATYPE datatype, int nframe = -1);
+void ReadEM(string path, void** data, int nframe = -1);
 HeaderEM ReadEMHeader(string path);
 HeaderEM ReadEMHeader(FILE* inputfile);
 

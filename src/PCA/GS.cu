@@ -1,4 +1,5 @@
 #include "Prerequisites.cuh"
+#include "Generics.cuh"
 #include "Helper.cuh"
 
 // C/C++ example for the CUBLAS (NVIDIA)
@@ -11,44 +12,34 @@
 
 void d_PCAGS(tfloat* d_data, int samples, int length, int ncomponents, tfloat* d_eigenvalues, tfloat* d_eigenvectors, tfloat* d_residual, int maxiterations, tfloat maxerror)
 {
-	// PCA model: X = TP’ + R
-	// input: X, MxN matrix (data)
-	// input: M = number of rows in X
-	// input: N = number of columns in X
-	// input: K = number of components (K<=N)
-	// output: T, MxK scores matrix
-	// output: P, NxK loads matrix
-	// output: R, MxN residual matrix
-
 	cublasHandle_t handle;
 	cublasCreate(&handle);
 
 	// Allocate memory for eigenvalues
 	tfloat* h_L;
-	h_L = (tfloat*)malloc(ncomponents * sizeof(tfloat));;
-
-	// Transpose input
-	tfloat one = 1.0, zero = 0, minone = -1.0;
-	cublasSgeam(handle, CUBLAS_OP_T, CUBLAS_OP_T, samples, length, &one, d_data, length, &zero, d_data, length, d_residual, samples);
-
-	// Mean center the data
+	h_L = (tfloat*)malloc(ncomponents * sizeof(tfloat));
 	tfloat* d_U;
 	cudaMalloc((void**)&d_U, samples * length * sizeof(tfloat));
 	tfloat alpha = 1.0f;
-	cublasScopy(handle, samples, d_residual, 1, d_U, 1);
-	for (int n = 1; n < length; n++)
-		cublasSaxpy(handle, samples, &alpha, d_residual + samples * n, 1, d_U, 1);
 
-	alpha = -1.0f / (tfloat)length;
-	for (int n = 0; n < length; n++)
-		cublasSaxpy(handle, samples, &alpha, d_U, 1, d_residual + samples * n, 1);
+	// Mean center the data
+	tfloat* d_mean;
+	cudaMalloc((void**)&d_mean, length * sizeof(tfloat));
+	d_ReduceMean(d_data, d_mean, length, samples);
+	d_SubtractVector(d_data, d_mean, d_U, length, samples);
+	cudaFree(d_mean);
+
+	// Transpose the centered data
+	tfloat one = 1.0, zero = 0, minone = -1.0;
+	cublasSgeam(handle, CUBLAS_OP_T, CUBLAS_OP_T, samples, length, &one, d_U, length, &zero, d_U, length, d_residual, samples);
 	
 	// GS-PCA
 	tfloat a;
 	tfloat Snrm2Result = 0;
 	for (int k = 0; k < ncomponents; k++)
 	{
-		cublasScopy(handle, samples, d_residual + samples * k, 1, d_eigenvalues + samples * k, 1);		a = 0.0;
+		cublasScopy(handle, samples, d_residual + samples * k, 1, d_eigenvalues + samples * k, 1);
+		a = 0.0;
 		for (int j = 0; j < maxiterations; j++)
 		{
 			cublasSgemv(handle, CUBLAS_OP_T, samples, length, &one, d_residual, samples, d_eigenvalues + samples * k, 1, &zero, d_eigenvectors + length * k, 1);
@@ -95,4 +86,5 @@ void d_PCAGS(tfloat* d_data, int samples, int length, int ncomponents, tfloat* d
 
 	free(h_L);
 	cudaFree(d_U);
-}
+	cublasDestroy(handle);
+}

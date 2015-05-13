@@ -1,0 +1,407 @@
+#include "Prerequisites.cuh"
+#include "CTF.cuh"
+#include "FFT.cuh"
+#include "Generics.cuh"
+#include "Helper.cuh"
+#include "ImageManipulation.cuh"
+#include "Masking.cuh"
+#include "Optimization.cuh"
+#include "Transformation.cuh"
+
+
+//Estimates the highest frequency that can be discretized on the give grid without aliasing
+//Adapted from "CTER—Rapid estimation of CTF parameters with error assessment", Penczek et al. 2014
+
+uint CTFGetAliasingCutoff(CTFParams params, uint sidelength)
+{
+	double aliasinglevel = 1.0 / (params.pixelsize * 1e10 * (double)(sidelength / 2 + 1));
+	double lambda = CTFParamsLean(params).lambda * 1e10;
+
+	for (uint x = 1; x < sidelength / 2; x++)
+	{
+		double s = (double)x / ((double)(sidelength / 2 * 2) * params.pixelsize * 1e10);
+
+		double a = 0.5 * params.defocus * 1e10 * lambda;
+		double b = 0.25 * params.Cs * 1e10 * lambda * lambda * lambda;
+
+		double factors[5];
+		factors[4] = b;
+		factors[3] = 4.0 * b * s;
+		factors[2] = 6.0 * b * s * s - a;
+		factors[1] = 4.0 * b * s * s * s - 2.0 * a * s;
+		factors[0] = -1.0;
+
+		int numroots = 0;
+		Polynomial poly;
+		poly.SetCoefficients(factors, 4);
+		double rootsRe[10], rootsIm[10];
+		poly.FindRoots(rootsRe, rootsIm, &numroots);
+
+		double smallest = 1e30;
+		for (uint i = 0; i < numroots; i++)
+			smallest = min(smallest, sqrt(rootsRe[i] * rootsRe[i] + rootsIm[i] * rootsIm[i]));
+
+		if (smallest < aliasinglevel)
+			return x - 1;
+	}
+
+	return sidelength / 2;
+}
+
+void InterpolateOntoGrid(vector<tfloat2> sortedpoints, tfloat* h_output, uint gridstart, uint gridend)
+{
+	// Nearest neighbor extrapolation
+	if (sortedpoints[0].x > gridstart)
+	{
+		tfloat val = sortedpoints[0].y;
+		for (uint i = gridstart; i < (uint)sortedpoints[0].x; i++)
+			h_output[i - gridstart] = val;
+	}
+	if (sortedpoints[sortedpoints.size() - 1].x < gridend)
+	{
+		tfloat val = sortedpoints[sortedpoints.size() - 1].y;
+		for (uint i = (uint)sortedpoints[sortedpoints.size() - 1].x; i <= gridend; i++)
+			h_output[i - gridstart] = val;
+		gridend = sortedpoints[sortedpoints.size() - 1].x;
+	}
+
+	// Interpolated interval not within any two points
+	if (gridstart >= gridend)
+		return;
+
+	// Cubic interpolation
+	tfloat2 samples[4];
+	tfloat factors[4];
+	int p1 = 0;
+	samples[0] = sortedpoints[max(0, p1 - 1)];
+	samples[1] = sortedpoints[p1];
+	samples[2] = sortedpoints[min((int)sortedpoints.size() - 1, p1 + 1)];
+	samples[3] = sortedpoints[min((int)sortedpoints.size() - 1, p1 + 2)];
+	factors[0] = -0.5 * samples[0].y + 1.5 * samples[1].y - 1.5 * samples[2].y + 0.5 * samples[3].y;
+	factors[1] = samples[0].y - 2.5 * samples[1].y + 2.0 * samples[2].y - 0.5 * samples[3].y;
+	factors[2] = -0.5 * samples[0].y + 0.5 * samples[2].y;
+	factors[3] = samples[1].y;
+	for (int i = max(gridstart, (int)sortedpoints[0].x); i <= gridend; i++)
+	{
+		while (i > sortedpoints[min((int)sortedpoints.size() - 1, p1 + 1)].x && p1 < sortedpoints.size() - 1)
+		{
+			p1++;
+			samples[0] = sortedpoints[max(0, p1 - 1)];
+			samples[1] = sortedpoints[p1];
+			samples[2] = sortedpoints[min((int)sortedpoints.size() - 1, p1 + 1)];
+			samples[3] = sortedpoints[min((int)sortedpoints.size() - 1, p1 + 2)];
+			factors[0] = -0.5 * samples[0].y + 1.5 * samples[1].y - 1.5 * samples[2].y + 0.5 * samples[3].y;
+			factors[1] = samples[0].y - 2.5 * samples[1].y + 2.0 * samples[2].y - 0.5 * samples[3].y;
+			factors[2] = -0.5 * samples[0].y + 0.5 * samples[2].y;
+			factors[3] = samples[1].y;
+		}
+
+		tfloat interp = ((tfloat)i - samples[1].x) / max(1.0, samples[2].x - samples[1].x);
+		h_output[i - gridstart] = ((factors[0] * interp + factors[1]) * interp + factors[2]) * interp + factors[3];
+	}
+}
+
+void h_CTFFitEnvelope(tfloat* h_input, uint diminput, tfloat* h_envelopemin, tfloat* h_envelopemax, char peakextent, uint outputstart, uint outputend, uint batch)
+{
+	outputend = min(outputend, diminput - 1);
+	uint outputlength = outputend - outputstart + 1;
+	for (uint b = 0; b < batch; b++)
+	{
+		// Locate maxima and minima
+		tfloat* h_temp = h_input + b * diminput;
+		vector<tfloat2> minima;
+		vector<tfloat2> maxima;
+		for (int i = 0; i < diminput; i++)
+		{
+			tfloat refval = h_temp[i];
+			bool ismin = true, ismax = true;
+			for (int j = max(0, i - peakextent); j <= min(diminput - 1, i + peakextent); j++)
+			{
+				if (h_temp[j] > refval)
+					ismax = false;
+				else if (h_temp[j] < refval)
+					ismin = false;
+			}
+			if (ismin == ismax)
+				continue;
+			else if (ismin)
+				minima.push_back(tfloat2(i, refval));
+			else
+				maxima.push_back(tfloat2(i, refval));
+		}
+
+		tfloat* h_tempmin = h_envelopemin + b * outputlength;
+		tfloat* h_tempmax = h_envelopemax + b * outputlength;
+		// When no peaks found, make absolut max/min values the envelope (i. e. 2 horizontal lines)
+		if (minima.size() == 0 || maxima.size() == 0)
+		{
+			tfloat minval = 1e30, maxval = -1e30;
+			for (uint i = 0; i < diminput; i++)
+			{
+				minval = min(minval, h_temp[i]);
+				maxval = max(maxval, h_temp[i]);
+			}
+			for (uint i = 0; i < outputlength; i++)
+			{
+				h_tempmin[i] = minval;
+				h_tempmax[i] = maxval;
+			}
+			continue;
+		}
+
+		// Good to interpolate
+		InterpolateOntoGrid(minima, h_tempmin, outputstart, outputend);
+		InterpolateOntoGrid(maxima, h_tempmax, outputstart, outputend);
+	}
+}
+
+void d_CTFFitCreateTarget(tfloat* d_image, int2 dimsimage, tfloat* d_decay, int3* d_origins, int norigins, CTFFitParams p, tfloat* d_densetarget, float2* d_densecoords)
+{
+	tfloat* d_ps;
+	cudaMalloc((void**)&d_ps, ElementsFFT2(p.dimsperiodogram) * sizeof(tfloat));
+	d_Periodogram(d_image, dimsimage, d_origins, norigins, p.dimsperiodogram, d_ps);
+	d_Log(d_ps, d_ps, ElementsFFT2(p.dimsperiodogram));
+
+	int2 dimspolar = GetCart2PolarFFTSize(p.dimsperiodogram);
+	tfloat* d_pspolar;
+	cudaMalloc((void**)&d_pspolar, Elements2(dimspolar) * sizeof(tfloat));
+	d_Cart2PolarFFT(d_ps, d_pspolar, p.dimsperiodogram, T_INTERP_CUBIC);
+
+	int2 dimsps = toInt2(p.maskouterradius - p.maskinnerradius, dimspolar.y);
+	for (int y = 0; y < dimsps.y; y++)
+		cudaMemcpy(d_ps + dimsps.x * y, d_pspolar + dimspolar.x * y + p.maskinnerradius, dimsps.x * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+	cudaFree(d_pspolar);
+
+	tfloat* d_background;
+	if (d_decay == NULL)
+	{
+		cudaMalloc((void**)&d_background, Elements2(dimsps) * sizeof(tfloat));
+		d_CTFDecay(d_ps, d_background, dimsps, 4, 16);
+	}
+	else
+	{
+		d_background = d_decay;
+	}
+
+	d_SubtractVector(d_ps, d_background, d_ps, Elements2(dimsps));
+
+	if (d_decay == NULL)
+		cudaFree(d_background);
+
+	uint denselength = GetCart2PolarFFTNonredundantSize(p.dimsperiodogram, p.maskinnerradius, p.maskouterradius);
+	float2* h_polar2dense = (float2*)malloc(denselength * sizeof(float2));
+
+	for (int r = p.maskinnerradius, i = 0; r < p.maskouterradius; r++)
+	{
+		int steps = r * 2;
+		float anglestep = (float)dimsps.y / (float)steps;
+		for (int a = 0; a < steps; a++)
+			h_polar2dense[i++] = make_float2((float)(r - p.maskinnerradius) + 0.5f, (float)a * anglestep + 0.5f);
+	}
+	float2* d_polar2dense = (float2*)CudaMallocFromHostArray(h_polar2dense, denselength * sizeof(float2));
+	free(h_polar2dense);
+
+	d_RemapInterpolated2D(d_ps, dimsps, d_densetarget, d_polar2dense, denselength, T_INTERP_CUBIC);
+	d_Norm(d_densetarget, d_densetarget, denselength, (tfloat*)NULL, T_NORM_MEAN01STD, (tfloat)0);
+	cudaFree(d_polar2dense);
+	cudaFree(d_ps);
+
+	float2* h_ctfpoints = (float2*)malloc(denselength * sizeof(float2));
+	float invhalfsize = 2.0f / (float)p.dimsperiodogram.x;
+	for (int r = p.maskinnerradius, i = 0; r < p.maskouterradius; r++)
+	{
+		float rf = (float)r;
+		int steps = r * 2;
+		float anglestep = PI / (float)steps;
+		for (int a = 0; a < steps; a++)
+		{
+			float angle = (float)a * anglestep + PIHALF;
+			float2 point = make_float2(cos(angle) * rf * invhalfsize, sin(angle) * rf * invhalfsize);
+			h_ctfpoints[i++] = make_float2(sqrt(point.x * point.x + point.y * point.y), angle);
+		}
+	}
+	cudaMemcpy(d_densecoords, h_ctfpoints, denselength * sizeof(float2), cudaMemcpyHostToDevice);
+	free(h_ctfpoints);
+}
+
+void d_CTFFit(tfloat* d_dense, float2* d_densepoints, uint denselength, CTFFitParams p, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev)
+{
+	tfloat* d_simulated;
+	cudaMalloc((void**)&d_simulated, denselength * sizeof(tfloat));
+
+	CTFParams bestfit;
+	tfloat bestscore = 0.0f;
+	vector<tfloat> scores;
+	vector<pair<tfloat, CTFParams>> v_params;
+
+	AddCTFParamsRange(v_params, p);
+
+	for (int i = 0; i < refinements + 1; i++)
+	{
+		long memlimit = 128 * 1024 * 1024;
+		int batchsize = min(32768, min(memlimit / (long)(denselength * sizeof(tfloat)), (int)v_params.size()));
+		tfloat* d_batchsim;
+		cudaMalloc((void**)&d_batchsim, denselength * batchsize * sizeof(tfloat));
+		tfloat* d_batchscores;
+		cudaMalloc((void**)&d_batchscores, v_params.size() * sizeof(tfloat));
+		tfloat* h_batchscores = (tfloat*)malloc(v_params.size() * sizeof(tfloat));
+		CTFParams* h_params = (CTFParams*)malloc(v_params.size() * sizeof(CTFParams));
+		for (int i = 0; i < v_params.size(); i++)
+			h_params[i] = v_params[i].second;
+
+		for (int b = 0; b < v_params.size(); b += batchsize)
+		{
+			int curbatch = min((int)v_params.size() - b, batchsize);
+
+			d_CTFSimulate(h_params + b, d_densepoints, d_batchsim, denselength, true, curbatch);
+			d_NormMonolithic(d_batchsim, d_batchsim, denselength, (tfloat*)NULL, T_NORM_MEAN01STD, curbatch);
+			d_MultiplyByVector(d_batchsim, d_dense, d_batchsim, denselength, curbatch);
+			d_SumMonolithic(d_batchsim, d_batchscores + b, denselength, curbatch);
+		}
+		free(h_params);
+		cudaMemcpy(h_batchscores, d_batchscores, v_params.size() * sizeof(tfloat), cudaMemcpyDeviceToHost);
+		for (int i = 0; i < v_params.size(); i++)
+		{
+			h_batchscores[i] /= (tfloat)denselength;
+			v_params[i].first = h_batchscores[i];
+			scores.push_back(h_batchscores[i]);
+		}
+		free(h_batchscores);
+		cudaFree(d_batchscores);
+		cudaFree(d_batchsim);
+
+		// Sort v_params by score in descending order
+		sort(v_params.begin(), v_params.end(),
+			[](const pair<tfloat, CTFFitParams> &a, const pair<tfloat, CTFFitParams> &b) -> bool
+		{
+			return a.first > b.first;
+		});
+
+		bestscore = v_params[0].first;
+		bestfit = v_params[0].second;
+
+		// Decrease search step size
+		tfloat3* h_p = (tfloat3*)&p;
+		for (int j = 0; j < 11; j++)
+			if (h_p[j].x != h_p[j].y)
+				h_p[j].z /= 4.0;
+
+		vector<pair<tfloat, CTFParams>> v_paramsNew;
+		for (int i = 0; i < min(10, (int)v_params.size()); i++)
+		{
+			CTFParams fit = v_params[i].second;
+			CTFFitParams pNew = p;
+			tfloat3* h_p = (tfloat3*)&pNew;
+			tfloat* h_f = (tfloat*)&fit;
+			for (int j = 0; j < 11; j++)
+				if (h_p[j].x != h_p[j].y)
+					h_p[j] = tfloat3(h_f[j] - h_p[j].z * 3.0, h_f[j] + h_p[j].z * 3.0, h_p[j].z);
+			AddCTFParamsRange(v_paramsNew, pNew);
+		}
+
+		v_params = v_paramsNew;
+	}
+
+	cudaFree(d_simulated);
+
+	if (scores.size() > 1)
+	{
+		mean = 0;
+		for (int i = 0; i < scores.size(); i++)
+			mean += scores[i];
+		mean /= (tfloat)scores.size();
+		stddev = 0;
+		for (int i = 0; i < scores.size(); i++)
+			stddev += pow(scores[i] - mean, 2.0);
+		stddev = sqrt(stddev / (tfloat)scores.size());
+	}
+	fit = bestfit;
+	score = bestscore;
+}
+
+void d_CTFFit(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, CTFFitParams p, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev)
+{
+	uint denselength = GetCart2PolarFFTNonredundantSize(p.dimsperiodogram, p.maskinnerradius, p.maskouterradius);
+	tfloat* d_ps;
+	cudaMalloc((void**)&d_ps, denselength * sizeof(tfloat));
+	float2* d_ctfpoints;
+	cudaMalloc((void**)&d_ctfpoints, denselength * sizeof(float2));
+
+	d_CTFFitCreateTarget(d_image, dimsimage, NULL, d_origins, norigins, p, d_ps, d_ctfpoints);
+
+	d_CTFFit(d_ps, d_ctfpoints, denselength, p, refinements, fit, score, mean, stddev);
+}
+
+void AddCTFParamsRange(vector<pair<tfloat, CTFParams>> &v_params, CTFFitParams p)
+{
+	for (tfloat pixelsize = p.pixelsize.x; pixelsize <= p.pixelsize.y; pixelsize += p.pixelsize.z)
+	{
+		for (tfloat cs = p.Cs.x; cs <= p.Cs.y; cs += p.Cs.z)
+		{
+			for (tfloat cc = p.Cc.x; cc <= p.Cc.y; cc += p.Cc.z)
+			{
+				for (tfloat voltage = p.voltage.x; voltage <= p.voltage.y; voltage += p.voltage.z)
+				{
+					for (tfloat defocus = p.defocus.x; defocus <= p.defocus.y; defocus += p.defocus.z)
+					{
+						for (tfloat defocusdelta = p.defocusdelta.x; defocusdelta <= p.defocusdelta.y; defocusdelta += p.defocusdelta.z)
+						{
+							for (tfloat astigmatismangle = p.astigmatismangle.x; astigmatismangle <= p.astigmatismangle.y; astigmatismangle += p.astigmatismangle.z)
+							{
+								for (tfloat amplitude = p.amplitude.x; amplitude <= p.amplitude.y; amplitude += p.amplitude.z)
+								{
+									for (tfloat bfactor = p.Bfactor.x; bfactor <= p.Bfactor.y; bfactor += p.Bfactor.z)
+									{
+										for (tfloat decaycoh = p.decayCohIll.x; decaycoh <= p.decayCohIll.y; decaycoh += p.decayCohIll.z)
+										{
+											for (tfloat decayspread = p.decayspread.x; decayspread <= p.decayspread.y; decayspread += p.decayspread.z)
+											{
+												CTFParams testparams;
+												testparams.pixelsize = pixelsize;
+												testparams.Cs = cs;
+												testparams.Cc = cc;
+												testparams.voltage = voltage;
+												testparams.defocus = defocus;
+												testparams.defocusdelta = defocusdelta;
+												testparams.astigmatismangle = astigmatismangle;
+												testparams.amplitude = amplitude;
+												testparams.Bfactor = bfactor;
+												testparams.decayCohIll = decaycoh;
+												testparams.decayspread = decayspread;
+
+												v_params.push_back(pair<tfloat, CTFParams>((tfloat)0, testparams));
+
+												if (p.decayspread.x == p.decayspread.y)
+													break;
+											}
+											if (p.decayCohIll.x == p.decayCohIll.y)
+												break;
+										}
+										if (p.Bfactor.x == p.Bfactor.y)
+											break;
+									}
+									if (p.amplitude.x == p.amplitude.y)
+										break;
+								}
+								if (p.astigmatismangle.x == p.astigmatismangle.y || defocusdelta == 0.0f)
+									break;
+							}
+							if (p.defocusdelta.x == p.defocusdelta.y)
+								break;
+						}
+						if (p.defocus.x == p.defocus.y)
+							break;
+					}
+					if (p.voltage.x == p.voltage.y)
+						break;
+				}
+				if (p.Cc.x == p.Cc.y)
+					break;
+			}
+			if (p.Cs.x == p.Cs.y)
+				break;
+		}
+		if (p.pixelsize.x == p.pixelsize.y)
+			break;
+	}
+}

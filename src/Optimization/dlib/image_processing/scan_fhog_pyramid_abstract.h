@@ -1,7 +1,7 @@
 // Copyright (C) 2013  Davis E. King (davis@dlib.net)
 // License: Boost Software License   See LICENSE.txt for the full license.
-#undef DLIB_SCAN_fHOG_PYRAMID_ABSTRACT_H__
-#ifdef DLIB_SCAN_fHOG_PYRAMID_ABSTRACT_H__
+#undef DLIB_SCAN_fHOG_PYRAMID_ABSTRACT_Hh_
+#ifdef DLIB_SCAN_fHOG_PYRAMID_ABSTRACT_Hh_
 
 #include <vector>
 #include "../image_transforms/fhog_abstract.h"
@@ -338,6 +338,7 @@ namespace dlib
                   particular, the size of the window we scan over the HOG feature pyramid
                   is #get_fhog_window_width() by #get_fhog_window_height() HOG cells in
                   size.    
+                - #is_loaded_with_image() == false
         !*/
 
         unsigned long get_detection_window_width (
@@ -386,6 +387,7 @@ namespace dlib
         /*!
             ensures
                 - #get_padding() == new_padding
+                - #is_loaded_with_image() == false
         !*/
 
         unsigned long get_padding (
@@ -415,6 +417,7 @@ namespace dlib
                 - new_cell_size > 0
             ensures
                 - #get_cell_size() == new_cell_size
+                - #is_loaded_with_image() == false
         !*/
 
         inline long get_num_dimensions (
@@ -601,7 +604,7 @@ namespace dlib
             ensures
                 - This function allows you to determine the feature vector used for an
                   object detection output from detect().  Note that this vector is
-                  added to psi.  Note also that you must use get_full_object_detection() to
+                  added to psi.  Note also that you can use get_full_object_detection() to
                   convert a rectangle from detect() into the needed full_object_detection.
                 - The dimensionality of the vector added to psi is get_num_dimensions().  This
                   means that elements of psi after psi(get_num_dimensions()-1) are not modified.
@@ -694,9 +697,88 @@ namespace dlib
     !*/
 
 // ----------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------
+
+    template <
+        typename pyramid_type,
+        typename image_type
+        >
+    void evaluate_detectors (
+        const std::vector<object_detector<scan_fhog_pyramid<pyramid_type>>>& detectors,
+        const image_type& img,
+        std::vector<rect_detection>& dets,
+        const double adjust_threshold = 0
+    );
+    /*!
+        requires
+            - image_type == is an implementation of array2d/array2d_kernel_abstract.h
+            - img contains some kind of pixel type. 
+              (i.e. pixel_traits<typename image_type::type> is defined)
+        ensures
+            - This function runs each of the provided object_detector objects over img and
+              stores the resulting detections into #dets.  Importantly, this function is
+              faster than running each detector individually because it computes the HOG
+              features only once and then reuses them for each detector.  However, it is
+              important to note that this speedup is only possible if all the detectors use
+              the same cell_size parameter that determines how HOG features are computed.
+              If different cell_size values are used then this function will not be any
+              faster than running the detectors individually.
+            - This function applies non-max suppression individually to the output of each
+              detector.  Therefore, the output is the same as if you ran each detector
+              individually and then concatenated the results. 
+            - To be precise, this function performs object detection on the given image and
+              stores the detected objects into #dets.  In particular, we will have that:
+                - #dets is sorted such that the highest confidence detections come first.
+                  E.g. element 0 is the best detection, element 1 the next best, and so on.
+                - #dets.size() == the number of detected objects.
+                - #dets[i].detection_confidence == The strength of the i-th detection.
+                  Larger values indicate that the detector is more confident that #dets[i]
+                  is a correct detection rather than being a false alarm.  Moreover, the
+                  detection_confidence is equal to the detection value output by the
+                  scanner minus the threshold value stored at the end of the weight vector.
+                - #dets[i].rect == the bounding box for the i-th detection.
+                - The detection #dets[i].rect was produced by detectors[#dets[i].weight_index].
+            - The detection threshold is adjusted by having adjust_threshold added to it.
+              Therefore, an adjust_threshold value > 0 makes detecting objects harder while
+              a negative value makes it easier.  Moreover, the following will be true for
+              all valid i:
+                - #dets[i].detection_confidence >= adjust_threshold
+              This means that, for example, you can obtain the maximum possible number of
+              detections by setting adjust_threshold equal to negative infinity.
+            - This function is threadsafe in the sense that multiple threads can call
+              evaluate_detectors() with the same instances of detectors and img without
+              requiring a mutex lock.
+    !*/
+
+// ----------------------------------------------------------------------------------------
+
+    template <
+        typename pyramid_type,
+        typename image_type
+        >
+    std::vector<rectangle> evaluate_detectors (
+        const std::vector<object_detector<scan_fhog_pyramid<pyramid_type>>>& detectors,
+        const image_type& img,
+        const double adjust_threshold = 0
+    );
+    /*!
+        requires
+            - image_type == is an implementation of array2d/array2d_kernel_abstract.h
+            - img contains some kind of pixel type. 
+              (i.e. pixel_traits<typename image_type::type> is defined)
+        ensures
+            - This function just calls the above evaluate_detectors() routine and copies
+              the output dets into a vector<rectangle> object and returns it.  Therefore,
+              this function is provided for convenience.
+            - This function is threadsafe in the sense that multiple threads can call
+              evaluate_detectors() with the same instances of detectors and img without
+              requiring a mutex lock.
+    !*/
+
+// ----------------------------------------------------------------------------------------
 
 }
 
-#endif // DLIB_SCAN_fHOG_PYRAMID_ABSTRACT_H__
+#endif // DLIB_SCAN_fHOG_PYRAMID_ABSTRACT_Hh_
 
 

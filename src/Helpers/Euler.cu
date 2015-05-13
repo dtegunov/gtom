@@ -1,4 +1,5 @@
 #include "Prerequisites.cuh"
+#include "glm/gtc/matrix_transform.hpp"
 #include "Angles.cuh"
 
 glm::mat4 Matrix4Euler(tfloat3 angles)
@@ -114,6 +115,85 @@ float EulerCompare(tfloat3 angles1, tfloat3 angles2)
 	return glm::dot(v1, v2);
 }
 
+glm::vec3 ViewVectorFromPolar(tfloat3 polar)
+{
+	glm::mat3 mforvec = Matrix3RotationZ(polar.z) * Matrix3RotationY(polar.y) * Matrix3RotationX(polar.x);
+	glm::vec3 v = mforvec * glm::vec3(0, 0, 1);
+
+	return v;
+}
+
+glm::mat3 Matrix3PolarViewVector(tfloat3 polar, tfloat alpha)
+{
+	glm::vec3 v = ViewVectorFromPolar(polar);
+	tfloat sa = sin(alpha), ca = cos(alpha);
+
+	glm::mat3 rotation = glm::mat3(ca + v.x * v.x * (1.0f - ca),
+								   v.y * v.x * (1.0f - ca) + v.z * sa,
+								   v.z * v.x * (1.0f - ca) - v.y * sa,
+								   
+								   v.x * v.y * (1.0f - ca) - v.z * sa,
+								   ca + v.y * v.y * (1.0f - ca),
+								   v.z * v.y * (1.0f - ca) + v.x * sa,
+								   
+								   v.x * v.z * (1.0f - ca) + v.y * sa,
+								   v.y * v.z * (1.0f - ca) - v.x * sa,
+								   ca + v.z * v.z * (1.0f - ca));
+
+	return rotation;
+}
+
+glm::mat4 Matrix4PolarViewVector(tfloat3 vector, tfloat alpha)
+{
+	glm::mat3 mforvec = Matrix3RotationZ(vector.z) * Matrix3RotationY(vector.y) * Matrix3RotationX(vector.x);
+	glm::vec3 v = mforvec * glm::vec3(0, 0, 1);
+	tfloat sa = sin(alpha), ca = cos(alpha);
+
+	glm::mat4 rotation = glm::mat4(ca + v.x * v.x * (1.0f - ca),
+									v.y * v.x * (1.0f - ca) + v.z * sa,
+									v.z * v.x * (1.0f - ca) - v.y * sa,
+									0.0f,
+
+									v.x * v.y * (1.0f - ca) - v.z * sa,
+									ca + v.y * v.y * (1.0f - ca),
+									v.z * v.y * (1.0f - ca) + v.x * sa,
+									0.0f,
+
+									v.x * v.z * (1.0f - ca) + v.y * sa,
+									v.y * v.z * (1.0f - ca) - v.x * sa,
+									ca + v.z * v.z * (1.0f - ca),
+									0.0f,
+		
+									0.0f,
+									0.0f,
+									0.0f,
+									1.0f);
+
+	return rotation;
+}
+
+tfloat3 EulerFromViewVector(glm::vec3 view)
+{
+	tfloat theta = acos(view.z);
+	tfloat phi = atan2(view.y, view.x);
+
+	return tfloat3(phi, theta, (tfloat)0);
+}
+
+tfloat3 EulerFromPolarViewVector(tfloat3 polar, tfloat alpha)
+{
+	glm::vec3 view = ViewVectorFromPolar(polar);
+	tfloat3 euler = EulerFromViewVector(view);
+	euler.z = alpha;
+
+	return euler;
+}
+
+tfloat3 PolarViewVectorFromEuler(tfloat3 euler)
+{
+	return tfloat3(0.0f, euler.y, euler.z);
+}
+
 glm::mat4 Matrix4Translation(tfloat3 translation)
 {
 	return glm::mat4(1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  translation.x, translation.y, translation.z, 1);
@@ -180,6 +260,32 @@ glm::mat3 Matrix3RotationZ(tfloat angle)
 	double s = sin(angle);
 
 	return glm::mat3(c, s, 0,  -s, c, 0,  0, 0, 1);
+}
+
+glm::mat3 Matrix3RotationCustom(tfloat3 axis, tfloat angle)
+{
+	double c = cos(angle);
+	double c1 = 1.0 - c;
+	double s = sin(angle);
+
+	return glm::mat3(
+		c + axis.x + axis.x * c1,
+		axis.y * axis.x * c1 + axis.z * s,
+		axis.z * axis.x * c1 - axis.y * s,
+
+		axis.x * axis.y * c1 - axis.z * s,
+		c + axis.y * axis.y * c1,
+		axis.z * axis.y * c1 + axis.x * s,
+
+		axis.x * axis.z * c1 + axis.y * s,
+		axis.y * axis.z * c1 - axis.x * s,
+		c + axis.z * axis.z * c1
+		);
+}
+
+glm::mat3 Matrix3RotationInPlaneAxis(tfloat axisangle, tfloat rotationangle)
+{
+	return Matrix3RotationCustom(tfloat3(cos(axisangle), sin(axisangle), 0.0), rotationangle);
 }
 
 glm::mat2 Matrix2Scale(tfloat2 scale)

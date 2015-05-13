@@ -1,18 +1,13 @@
-function [ reconstruction ] = gtom_rec_fourier( projections, weights, ctf, angles, volumesize )
+function [ volume, volumepsf ] = gtom_rec_fourier( projections, weights, angles, shifts )
 
-if size(angles, 1) ~= 3 && size(angles, 2) == 3
+if size(angles, 1) ~= 3
     angles = angles';
-else
-    error 'Angles must contain 3 values per column.';
+    if size(angles, 1) ~= 3
+        error 'Angles must contain 3 values per column.';
+    end;
 end;
 
-if size(ctf, 1) ~= 11 && size(ctf, 2) == 11
-    ctf = ctf';
-elseif size(ctf, 1) ~= 11
-    error 'CTF must contain 11 values per column.';
-end;
-
-reconstruction = cgtom_rec_fourier(projections, weights, ctf, angles, volumesize);
+[ volume, volumepsf ] = cgtom_rec_fourier(projections, weights, angles, shifts);
 
 end
 

@@ -6,19 +6,19 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-template <class T> __global__ void MultiplyByVectorKernel(T* d_input, T* multiplicators, T* d_output, size_t elements, int batch);
+template <class T> __global__ void MultiplyByVectorKernel(T* d_input, T* multiplicators, T* d_output, size_t elements);
 template <class T> __global__ void MultiplyByScalarKernel(T* d_input, T* d_output, size_t elements, T multiplicator);
 template <class T> __global__ void MultiplyByScalarKernel(T* d_input, T* multiplicators, T* d_output, size_t elements);
 
-__global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tfloat* multiplicators, tcomplex* d_output, size_t elements, int batch);
+__global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tfloat* multiplicators, tcomplex* d_output, size_t elements);
 __global__ void ComplexMultiplyByScalarKernel(tcomplex* d_input, tcomplex* d_output, size_t elements, tfloat multiplicator);
 __global__ void ComplexMultiplyByScalarKernel(tcomplex* d_input, tfloat* multiplicators, tcomplex* d_output, size_t elements);
 
-__global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tcomplex* multiplicators, tcomplex* d_output, size_t elements, int batch);
+__global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tcomplex* multiplicators, tcomplex* d_output, size_t elements);
 __global__ void ComplexMultiplyByScalarKernel(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator);
 __global__ void ComplexMultiplyByScalarKernel(tcomplex* d_input, tcomplex* multiplicators, tcomplex* d_output, size_t elements);
 
-__global__ void ComplexMultiplyByConjVectorKernel(tcomplex* d_input, tcomplex* multiplicators, tcomplex* d_output, size_t elements, int batch);
+__global__ void ComplexMultiplyByConjVectorKernel(tcomplex* d_input, tcomplex* multiplicators, tcomplex* d_output, size_t elements);
 __global__ void ComplexMultiplyByConjScalarKernel(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator);
 __global__ void ComplexMultiplyByConjScalarKernel(tcomplex* d_input, tcomplex* multiplicators, tcomplex* d_output, size_t elements);
 
@@ -60,8 +60,8 @@ template <class T> void d_MultiplyByVector(T* d_input, T* d_multiplicators, T* d
 {
 	size_t TpB = min(256, elements);
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
-	dim3 grid = dim3((uint)totalblocks);
-	MultiplyByVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements, batch);
+	dim3 grid = dim3((uint)totalblocks, batch);
+	MultiplyByVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 	cudaStreamQuery(0);
 }
 template void d_MultiplyByVector<tfloat>(tfloat* d_input, tfloat* d_multiplicators, tfloat* d_output, size_t elements, int batch);
@@ -90,20 +90,15 @@ template <class T> void d_MultiplyByScalar(T* d_input, T* d_multiplicators, T* d
 template void d_MultiplyByScalar<tfloat>(tfloat* d_input, tfloat* d_multiplicators, tfloat* d_output, size_t elements, int batch);
 template void d_MultiplyByScalar<int>(int* d_input, int* d_multiplicators, int* d_output, size_t elements, int batch);
 
-template <class T> __global__ void MultiplyByVectorKernel(T* d_input, T* d_multiplicators, T* d_output, size_t elements, int batch)
+template <class T> __global__ void MultiplyByVectorKernel(T* d_input, T* d_multiplicators, T* d_output, size_t elements)
 {
 	T val;
-	d_input += blockIdx.x * blockDim.x + threadIdx.x;
-	d_output += blockIdx.x * blockDim.x + threadIdx.x;
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
 		id < elements; 
 		id += blockDim.x * gridDim.x)
 	{
 		val = d_multiplicators[id];
-		for(size_t n = 0; n < batch; n++)
-			d_output[elements * n] = d_input[elements * n] * val;
-		d_input += blockDim.x * gridDim.x;
-		d_output += blockDim.x * gridDim.x;
+		d_output[id + elements * blockIdx.y] = d_input[id + elements * blockIdx.y] * val;
 	}
 }
 
@@ -137,26 +132,22 @@ template <class T> __global__ void MultiplyByScalarKernel(T* d_input, T* d_multi
 void d_ComplexMultiplyByVector(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
 {
 	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
-	dim3 grid = dim3((uint)totalblocks);
-	ComplexMultiplyByVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements, batch);
-	cudaStreamQuery(0);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768), batch);
+	ComplexMultiplyByVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 }
 
 void d_ComplexMultiplyByVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
 {
 	size_t TpB = min(256, NextMultipleOf(elements, 32));
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768), (batch + 63) / 64);
-	ComplexMultiplyByVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements, batch);
-	cudaStreamQuery(0);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768), batch);
+	ComplexMultiplyByVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 }
 
 void d_ComplexMultiplyByConjVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
 {
 	size_t TpB = min(256, NextMultipleOf(elements, 32));
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768), (batch + 63) / 64);
-	ComplexMultiplyByConjVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements, batch);
-	cudaStreamQuery(0);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768), batch);
+	ComplexMultiplyByConjVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tfloat multiplicator)
@@ -165,7 +156,6 @@ void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t ele
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_output, elements, multiplicator);
-	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator)
@@ -174,7 +164,6 @@ void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t ele
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_output, elements, multiplicator);
-	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator)
@@ -183,7 +172,6 @@ void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_output, size_t
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByConjScalarKernel <<<grid, (uint)TpB>>> (d_input, d_output, elements, cconj(multiplicator));
-	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
@@ -192,7 +180,6 @@ void d_ComplexMultiplyByScalar(tcomplex* d_input, tfloat* d_multiplicators, tcom
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
-	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
@@ -201,7 +188,6 @@ void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_multiplicators, tc
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
-	cudaStreamQuery(0);
 }
 
 void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
@@ -210,10 +196,9 @@ void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_multiplicators
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	ComplexMultiplyByConjScalarKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
-	cudaStreamQuery(0);
 }
 
-__global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
+__global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements)
 {
 	tfloat val;
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
@@ -221,47 +206,32 @@ __global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tfloat* d_multi
 		id += blockDim.x * gridDim.x)
 	{
 		val = d_multiplicators[id];
-		for(size_t n = 0; n < batch; n++)
-		{
-			d_output[id + elements * n].x = d_input[id + elements * n].x * val;
-			d_output[id + elements * n].y = d_input[id + elements * n].y * val;
-		}
+		d_output[id + elements * blockIdx.y].x = d_input[id + elements * blockIdx.y].x * val;
+		d_output[id + elements * blockIdx.y].y = d_input[id + elements * blockIdx.y].y * val;
 	}
 }
 
-__global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
+__global__ void ComplexMultiplyByVectorKernel(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements)
 {
-	size_t start = blockIdx.y * 64;
-	size_t end = min(start + 64, batch);
-
 	tcomplex val;
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
 		id < elements; 
 		id += blockDim.x * gridDim.x)
 	{
 		val = d_multiplicators[id];
-		for(size_t n = start; n < end; n++)
-		{
-			d_output[id + elements * n] = cmul(d_input[id + elements * n], val);
-		}
+		d_output[id + elements * blockIdx.y] = cmul(d_input[id + elements * blockIdx.y], val);
 	}
 }
 
-__global__ void ComplexMultiplyByConjVectorKernel(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
+__global__ void ComplexMultiplyByConjVectorKernel(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements)
 {
-	size_t start = blockIdx.y * 64;
-	size_t end = min(start + 64, batch);
-
 	tcomplex val;
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
 		id < elements; 
 		id += blockDim.x * gridDim.x)
 	{
 		val = cconj(d_multiplicators[id]);
-		for(size_t n = start; n < end; n++)
-		{
-			d_output[id + elements * n] = cmul(d_input[id + elements * n], val);
-		}
+		d_output[id + elements * blockIdx.y] = cmul(d_input[id + elements * blockIdx.y], val);
 	}
 }
 
@@ -756,7 +726,7 @@ __global__ void ComplexPolarToCartKernel(tcomplex* d_polar, tcomplex* d_cart, si
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
 		id < elements; 
 		id += blockDim.x * gridDim.x)
-		#ifndef TOM_DOUBLE
+		#ifndef GTOM_DOUBLE
 			d_cart[id] = make_cuComplex(cos(d_polar[id].y) * d_polar[id].x, sin(d_polar[id].y) * d_polar[id].x);
 		#else
 			d_cart[id] = make_cuDoubleComplex(cos(d_polar[id].y) * d_polar[id].x, sin(d_polar[id].y) * d_polar[id].x);
@@ -775,7 +745,7 @@ __global__ void ComplexCartToPolarKernel(tcomplex* d_cart, tcomplex* d_polar, si
 	for(size_t id = blockIdx.x * blockDim.x + threadIdx.x; 
 		id < elements; 
 		id += blockDim.x * gridDim.x)
-		#ifndef TOM_DOUBLE
+		#ifndef GTOM_DOUBLE
 			d_cart[id] = make_cuComplex(sqrt(d_cart[id].x * d_cart[id].x + d_cart[id].y * d_cart[id].y), atan2(d_cart[id].y, d_cart[id].x));
 		#else
 			d_cart[id] = make_cuDoubleComplex(sqrt(d_cart[id].x * d_cart[id].x + d_cart[id].y * d_cart[id].y), atan2(d_cart[id].y, d_cart[id].x));

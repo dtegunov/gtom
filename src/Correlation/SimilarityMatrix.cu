@@ -9,7 +9,7 @@
 #include "Masking.cuh"
 
 
-__global__ void RotationSeriesKernel(cudaTextureObject_t t_input, tfloat* d_output, uint sidelength, float anglestep);
+__global__ void RotationSeriesKernel(cudaTex t_input, tfloat* d_output, uint sidelength, float anglestep);
 
 
 void d_SimilarityMatrixRow(tfloat* d_images, tcomplex* d_imagesft, int2 dimsimage, int nimages, int anglesteps, int target, tfloat* d_similarity)
@@ -103,10 +103,10 @@ void d_RotationSeries(tfloat* d_image, tfloat* d_series, int2 dimsimage, int ang
 	tfloat* d_prefiltered;
 	cudaMalloc((void**)&d_prefiltered, Elements2(dimsimage) * sizeof(tfloat));
 	cudaMemcpy(d_prefiltered, d_image, Elements2(dimsimage) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-	d_CubicBSplinePrefilter2D(d_prefiltered, dimsimage.x * sizeof(tfloat), dimsimage);
+	d_CubicBSplinePrefilter2D(d_prefiltered, dimsimage);
 
 	cudaArray* a_prefiltered;
-	cudaTextureObject_t t_prefiltered;
+	cudaTex t_prefiltered;
 	d_BindTextureToArray(d_prefiltered, a_prefiltered, t_prefiltered, dimsimage, cudaFilterModeLinear, false);
 
 	RotationSeriesKernel <<<grid, TpB>>> (t_prefiltered, d_series, dimsimage.x, anglestep);
@@ -117,7 +117,7 @@ void d_RotationSeries(tfloat* d_image, tfloat* d_series, int2 dimsimage, int ang
 }
 
 
-__global__ void RotationSeriesKernel(cudaTextureObject_t t_input, tfloat* d_output, uint sidelength, float anglestep)
+__global__ void RotationSeriesKernel(cudaTex t_input, tfloat* d_output, uint sidelength, float anglestep)
 {
 	uint elements = sidelength * sidelength;
 	d_output += elements * blockIdx.x;

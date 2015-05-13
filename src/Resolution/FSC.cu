@@ -32,7 +32,7 @@ void d_FSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d_curv
 	cudaMalloc((void**)&d_volumeft2, ElementsFFT(dimsvolume) * batch * sizeof(tcomplex));
 	d_FFTR2C(d_volume2, d_volumeft2, &localplanforw);
 
-	d_FSC(d_volumeft1, d_volumeft2, dimsvolume, d_curve, maxradius, batch);
+	d_FSC(d_volumeft1, d_volumeft2, dimsvolume, d_curve, maxradius, NULL, NULL, NULL, batch);
 
 	cudaFree(d_volumeft1);
 	cudaFree(d_volumeft2);
@@ -40,7 +40,7 @@ void d_FSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d_curv
 		cufftDestroy(localplanforw);
 }
 
-void d_FSC(tcomplex* d_volumeft1, tcomplex* d_volumeft2, int3 dimsvolume, tfloat* d_curve, int maxradius, int batch)
+void d_FSC(tcomplex* d_volumeft1, tcomplex* d_volumeft2, int3 dimsvolume, tfloat* d_curve, int maxradius, tfloat* d_outnumerators, tfloat* d_outdenominators1, tfloat* d_outdenominators2, int batch)
 {
 	uint TpB = min(256, ElementsFFT(dimsvolume));
 	dim3 grid = dim3(min((ElementsFFT(dimsvolume) + TpB - 1) / TpB, 128), batch);
@@ -64,6 +64,13 @@ void d_FSC(tcomplex* d_volumeft1, tcomplex* d_volumeft2, int3 dimsvolume, tfloat
 	cudaFree(d_denoms2);
 	cudaFree(d_denoms1);
 	cudaFree(d_nums);
+
+	if (d_outnumerators != NULL)
+		cudaMemcpy(d_outnumerators, d_rednums, maxradius * batch * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+	if (d_outdenominators1 != NULL)
+		cudaMemcpy(d_outdenominators1, d_reddenoms1, maxradius * batch * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+	if (d_outdenominators2 != NULL)
+		cudaMemcpy(d_outdenominators2, d_reddenoms2, maxradius * batch * sizeof(tfloat), cudaMemcpyDeviceToDevice);
 
 	d_MultiplyByVector(d_reddenoms1, d_reddenoms2, d_reddenoms1, maxradius * batch);
 	d_Sqrt(d_reddenoms1, d_reddenoms1, maxradius * batch);

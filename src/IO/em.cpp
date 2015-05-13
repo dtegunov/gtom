@@ -1,7 +1,7 @@
 #include "Prerequisites.cuh"
 #include "IO.cuh"
 
-void ReadEM(string path, void** data, EM_DATATYPE datatype, int nframe)
+void ReadEM(string path, void** data, int nframe)
 {
 	FILE* inputfile = fopen(path.c_str(), "rb");
 	_fseeki64(inputfile, 0L, SEEK_SET);

@@ -345,6 +345,14 @@ namespace dlib
 
         // ---------------------------------------
 
+        double length_squared(
+        ) const 
+        { 
+            return (double)(x()*x() + y()*y() + z()*z()); 
+        }
+
+        // ---------------------------------------
+
         typename vc_rebind<double,3>::type normalize (
         ) const 
         {
@@ -697,6 +705,13 @@ namespace dlib
 
         // ---------------------------------------
 
+        double length_squared(
+        ) const 
+        { 
+            return (double)(x()*x() + y()*y()); 
+        }
+
+        // ---------------------------------------
 
         typename vc_rebind<double,2>::type normalize (
         ) const 
@@ -1257,6 +1272,7 @@ namespace dlib
 // ----------------------------------------------------------------------------------------
 
     typedef vector<long,2> point;
+    typedef vector<double,2> dpoint;
 
 // ----------------------------------------------------------------------------------------
 

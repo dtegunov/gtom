@@ -3,6 +3,7 @@
 #include "FFT.cuh"
 #include "Generics.cuh"
 #include "Helper.cuh"
+#include "Masking.cuh"
 #include "Resolution.cuh"
 
 
@@ -10,120 +11,55 @@
 //CUDA kernel declaration//
 ///////////////////////////
 
-template<uint maxshells, uint maxthreads, uint subdivs> __global__ void AnisotropicFSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, int3 dimsvolume, int maxradius, int offset, tfloat3 direction, tfloat coneangle, tfloat falloff, uint elements, uint blockspervolume, tfloat* d_nums, tfloat* d_denoms1, tfloat* d_denoms2);
-template<uint maxshells, uint maxthreads> __global__ void AnisotropicFSC2DKernel(tcomplex* d_volume1, tcomplex* d_volume2, int3 dimsvolume, int maxradius, int offset, tfloat3 direction, tfloat coneangle, tfloat falloff, uint elements, uint blockspervolume, tfloat* d_nums, tfloat* d_denoms1, tfloat* d_denoms2);
+__global__ void AnisotropicFSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, uint sidelength, uint sidelengthft, int maxradius, float3 direction, float coneangle, tfloat* d_nums, tfloat* d_denoms1, tfloat* d_denoms2);
 
 
 /////////////////////////////
 //Fourier Shell Correlation//
 /////////////////////////////
 
-void d_AnisotropicFSC(tcomplex* d_volumeft1, tcomplex* d_volumeft2, int3 dimsvolume, tfloat* d_curve, int maxradius, tfloat3 direction, tfloat coneangle, tfloat falloff, int batch)
+void d_AnisotropicFSC(tcomplex* d_volumeft1, tcomplex* d_volumeft2, int3 dimsvolume, tfloat* d_curve, int maxradius, float3 direction, float coneangle, tfloat* d_outnumerators, tfloat* d_outdenominators1, tfloat* d_outdenominators2, int batch)
 {
 	if(dimsvolume.x != dimsvolume.y || (dimsvolume.z > 1 && dimsvolume.x != dimsvolume.z))
 		throw;
 
-	tcomplex* d_temp;
-	cudaMalloc((void**)&d_temp, ElementsFFT(dimsvolume) * batch * sizeof(tcomplex));
+	uint TpB = min(256, ElementsFFT(dimsvolume));
+	dim3 grid = dim3(min((ElementsFFT(dimsvolume) + TpB - 1) / TpB, 128), batch);
 
-	d_RemapHalfFFT2Half(d_volumeft1, d_temp, dimsvolume, batch);
-	cudaMemcpy(d_volumeft1, d_temp, ElementsFFT(dimsvolume) * batch * sizeof(tcomplex), cudaMemcpyDeviceToDevice);
-	d_RemapHalfFFT2Half(d_volumeft2, d_temp, dimsvolume, batch);
-	cudaMemcpy(d_volumeft2, d_temp, ElementsFFT(dimsvolume) * batch * sizeof(tcomplex), cudaMemcpyDeviceToDevice);
+	tfloat *d_nums, *d_denoms1, *d_denoms2;
+	cudaMalloc((void**)&d_nums, maxradius * grid.x * batch * sizeof(tfloat));
+	cudaMalloc((void**)&d_denoms1, maxradius * grid.x * batch * sizeof(tfloat));
+	cudaMalloc((void**)&d_denoms2, maxradius * grid.x * batch * sizeof(tfloat));
 
-	int maxthreads;
-	if(maxradius <= 16)
-		maxthreads = 32 / 1;
-	else if(maxradius <= 32)
-		maxthreads = 256 / 16;
-	else if(maxradius <= 64)
-		maxthreads = 64 / 8;
-	else if(maxradius <= 128)
-		maxthreads = 64 / 16;
-	else if(maxradius <= 256)
-		maxthreads = 64 / 32;
-	else if(maxradius <= 512)
-		maxthreads = 32 / 8;
-
-	int threadspervolume = maxradius * (maxradius * 2 - 1);
-	int blockspervolume = (threadspervolume + maxthreads - 1) / maxthreads;
-
-	int offset = dimsvolume.x / 2 - maxradius + 1;
-
-	tfloat* d_nums = CudaMallocValueFilled(maxradius * blockspervolume * batch, (tfloat)0);
-	tfloat* d_denoms1 = CudaMallocValueFilled(maxradius * blockspervolume * batch, (tfloat)0);
-	tfloat* d_denoms2 = CudaMallocValueFilled(maxradius * blockspervolume * batch, (tfloat)0);
-
-	cudaDeviceSetCacheConfig(cudaFuncCachePreferShared);
-	dim3 grid = dim3(min(blockspervolume, 32786), (blockspervolume + 32767) / 32768, batch);
-	if(dimsvolume.z > 1)
-	{
-		if(maxradius <= 16)
-			AnisotropicFSCKernel<16, 256, 8> <<<grid, 256>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else if(maxradius <= 32)
-			AnisotropicFSCKernel<32, 256, 16> <<<grid, 256>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else if(maxradius <= 64)
-			AnisotropicFSCKernel<64, 256, 32> <<<grid, 256>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else if(maxradius <= 128)
-			AnisotropicFSCKernel<128, 256, 64> <<<grid, 256>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else if(maxradius <= 256)
-			AnisotropicFSCKernel<256, 256, 128> <<<grid, 256>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else if(maxradius <= 512)
-			AnisotropicFSCKernel<512, 256, 256> <<<grid, 256>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else
-			throw;
-	}
-	else
-	{
-		if(maxradius <= 16)
-			AnisotropicFSC2DKernel<16, 32> <<<grid, 32>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else if(maxradius <= 32)
-			AnisotropicFSC2DKernel<32, 16> <<<grid, 16>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else if(maxradius <= 64)
-			AnisotropicFSC2DKernel<64, 8> <<<grid, 8>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else if(maxradius <= 128)
-			AnisotropicFSC2DKernel<128, 4> <<<grid, 4>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else if(maxradius <= 256)
-			AnisotropicFSC2DKernel<256, 2> <<<grid, 2>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else if(maxradius <= 512)
-			AnisotropicFSC2DKernel<512, 1> <<<grid, 1>>> (d_volumeft1, d_volumeft2, dimsvolume, maxradius, offset, direction, coneangle, falloff, threadspervolume, blockspervolume, d_nums, d_denoms1, d_denoms2);
-		else
-			throw;
-	}
+	AnisotropicFSCKernel << <grid, TpB >> > (d_volumeft1, d_volumeft2, dimsvolume.x, dimsvolume.x / 2 + 1, maxradius, direction, coneangle, d_nums, d_denoms1, d_denoms2);
 
 	tfloat *d_rednums, *d_reddenoms1, *d_reddenoms2;
 	cudaMalloc((void**)&d_rednums, maxradius * batch * sizeof(tfloat));
 	cudaMalloc((void**)&d_reddenoms1, maxradius * batch * sizeof(tfloat));
 	cudaMalloc((void**)&d_reddenoms2, maxradius * batch * sizeof(tfloat));
 
-	d_ReduceAdd(d_nums, d_rednums, maxradius, blockspervolume, batch);
-	d_ReduceAdd(d_denoms1, d_reddenoms1, maxradius, blockspervolume, batch);
-	d_ReduceAdd(d_denoms2, d_reddenoms2, maxradius, blockspervolume, batch);
-
-	//tfloat* h_nums = (tfloat*)MallocFromDeviceArray(d_rednums, maxradius * batch * sizeof(tfloat));
-	//free(h_nums);
-
-	//tfloat* h_reddenoms1 = (tfloat*)MallocFromDeviceArray(d_reddenoms1, maxradius * batch * sizeof(tfloat));
-	//free(h_reddenoms1);
+	d_ReduceAdd(d_nums, d_rednums, maxradius, grid.x, batch);
+	d_ReduceAdd(d_denoms1, d_reddenoms1, maxradius, grid.x, batch);
+	d_ReduceAdd(d_denoms2, d_reddenoms2, maxradius, grid.x, batch);
 
 	cudaFree(d_denoms2);
 	cudaFree(d_denoms1);
 	cudaFree(d_nums);
 
+	if (d_outnumerators != NULL)
+		cudaMemcpy(d_outnumerators, d_rednums, maxradius * batch * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+	if (d_outdenominators1 != NULL)
+		cudaMemcpy(d_outdenominators1, d_reddenoms1, maxradius * batch * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+	if (d_outdenominators2 != NULL)
+		cudaMemcpy(d_outdenominators2, d_reddenoms2, maxradius * batch * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+
 	d_MultiplyByVector(d_reddenoms1, d_reddenoms2, d_reddenoms1, maxradius * batch);
 	d_Sqrt(d_reddenoms1, d_reddenoms1, maxradius * batch);
-	d_AddScalar(d_reddenoms1, d_reddenoms1, maxradius * batch, (tfloat)0.000001);
-	d_DivideByVector(d_rednums, d_reddenoms1, d_curve, maxradius * batch);
+	d_DivideSafeByVector(d_rednums, d_reddenoms1, d_curve, maxradius * batch);
 
 	cudaFree(d_reddenoms2);
 	cudaFree(d_reddenoms1);
 	cudaFree(d_rednums);
-	
-	d_RemapHalf2HalfFFT(d_volumeft1, d_temp, dimsvolume, batch);
-	cudaMemcpy(d_volumeft1, d_temp, ElementsFFT(dimsvolume) * batch * sizeof(tcomplex), cudaMemcpyDeviceToDevice);
-	d_RemapHalf2HalfFFT(d_volumeft2, d_temp, dimsvolume, batch);
-	cudaMemcpy(d_volumeft2, d_temp, ElementsFFT(dimsvolume) * batch * sizeof(tcomplex), cudaMemcpyDeviceToDevice);
-	cudaFree(d_temp);
 }
 
 void d_AnisotropicFSCMap(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, tfloat* d_map, int2 anglesteps, int maxradius, T_FSC_MODE fscmode, tfloat threshold, cufftHandle* plan, int batch)
@@ -140,10 +76,10 @@ void d_AnisotropicFSCMap(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, 
 	cudaMalloc((void**)&d_volumeft2, ElementsFFT(dimsvolume) * batch * sizeof(tcomplex));
 	d_FFTR2C(d_volume2, d_volumeft2, &localplanforw);
 
-	float phistep = (dimsvolume.z == 1 ? ToRad(180.0f) : ToRad(360.0f)) / (float)max(anglesteps.x - 1, 1);
+	float phistep = ToRad(180.0f) / (float)max(anglesteps.x - 1, 1);
 	float thetastep = ToRad(90.0f) / (float)max(anglesteps.y - 1, 1);
 
-	tfloat* d_curve = CudaMallocValueFilled(maxradius * batch * sizeof(tfloat), (tfloat)0);
+	tfloat* d_curve = CudaMallocValueFilled(maxradius * batch, (tfloat)0);
 	tfloat* d_maptemp = CudaMallocValueFilled(batch * sizeof(tfloat), (tfloat)0);
 
 	for (int idtheta = 0; idtheta < anglesteps.y; idtheta++)
@@ -159,25 +95,24 @@ void d_AnisotropicFSCMap(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, 
 			if(dimsvolume.z == 1)
 				x = -cos(phi);
 
-			d_AnisotropicFSC(d_volumeft1, d_volumeft2, dimsvolume, d_curve, maxradius, tfloat3(x, y, z), min(phistep, thetastep), min(phistep, thetastep) * (tfloat)0.5, batch);
-			//tfloat* h_curve = (tfloat*)MallocFromDeviceArray(d_curve, maxradius * sizeof(tfloat));
-			//free(h_curve);
-			if(fscmode == T_FSC_THRESHOLD)
-				d_FirstIndexOf(d_curve, d_maptemp, maxradius, threshold, T_INTERP_LINEAR, batch);
-			else
-				d_FirstMinimum(d_curve, d_map + idtheta * anglesteps.x + idphi, maxradius, T_INTERP_LINEAR, batch);
+			d_AnisotropicFSC(d_volumeft1, d_volumeft2, dimsvolume, d_curve, maxradius, make_float3(x, y, z), min(phistep / 2.0f, thetastep / 2.0f), NULL, NULL, NULL, batch);
+			
+			/*tfloat* d_masktemp = CudaMallocValueFilled(ElementsFFT(dimsvolume), (tfloat)1);
+			d_ConeMaskFT(d_masktemp, d_masktemp, dimsvolume, make_float3(x, y, z), min(phistep / 2.0f, thetastep / 2.0f));
+			d_WriteMRC(d_masktemp, toInt3(dimsvolume.x / 2 + 1, dimsvolume.y, dimsvolume.z), "d_mask.mrc");*/
+			
+			d_FirstIndexOf(d_curve, d_maptemp, maxradius, threshold, T_INTERP_LINEAR, batch);
 
 			CudaMemcpyStrided(d_map + idtheta * anglesteps.x + idphi, d_maptemp, batch, anglesteps.x * anglesteps.y, 1);
 		}
 	}
 
-	//d_AddScalar(d_map, d_map, anglesteps.x * anglesteps.y, (tfloat)3);
-
-	cudaFree(d_volumeft1);
-	cudaFree(d_volumeft2);
-	cufftDestroy(localplanforw);
 	cudaFree(d_maptemp);
 	cudaFree(d_curve);
+	cudaFree(d_volumeft1);
+	cudaFree(d_volumeft2);
+	if (plan == NULL)
+		cufftDestroy(localplanforw);
 }
 
 
@@ -185,273 +120,90 @@ void d_AnisotropicFSCMap(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, 
 //CUDA kernels//
 ////////////////
 
-template<uint maxshells, uint maxthreads, uint subdivs> __global__ void AnisotropicFSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, int3 dimsvolume, int maxradius, int offset, tfloat3 direction, tfloat coneangle, tfloat falloff, uint elements, uint blockspervolume, tfloat* d_nums, tfloat* d_denoms1, tfloat* d_denoms2)
+__global__ void AnisotropicFSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, uint sidelength, uint sidelengthft, int maxradius, float3 direction, float coneangle, tfloat* d_nums, tfloat* d_denoms1, tfloat* d_denoms2)
 {
-	__shared__ tfloat nums[maxshells * maxthreads / subdivs];
-	__shared__ tfloat denoms1[maxshells * maxthreads / subdivs];
-	__shared__ tfloat denoms2[maxshells * maxthreads / subdivs];
+	__shared__ tfloat nums[512];
+	__shared__ tfloat denoms1[512];
+	__shared__ tfloat denoms2[512];
 
-	d_volume1 += ElementsFFT(dimsvolume) * blockIdx.z;
-	d_volume2 += ElementsFFT(dimsvolume) * blockIdx.z;
+	uint elementsslice = sidelengthft * sidelength;
+	uint elementscube = elementsslice * sidelength;
 
-	uint id = (blockIdx.y * gridDim.x + blockIdx.x) * (maxthreads / subdivs) + (threadIdx.x / subdivs);
-
-	if(threadIdx.x % subdivs == 0)
-		for (int i = 0; i < maxradius; i++)
-		{
-			nums[maxshells * (threadIdx.x / subdivs) + i] = 0;
-			denoms1[maxshells * (threadIdx.x / subdivs) + i] = 0;
-			denoms2[maxshells * (threadIdx.x / subdivs) + i] = 0;
-		}
-	__syncthreads();
-
-	int idx = (id % (uint)maxradius) + offset;
-	int idy = (id / (uint)maxradius) + offset;
-
-	int x = idx - dimsvolume.x / 2;
-	int y = idy - dimsvolume.y / 2;
-	int z;
-
-	if(id < elements)
-	{
-		if(x * x + y * y < maxradius * maxradius)
-		{
-			//int zend = min((maxradius) * ((threadIdx.x % subdivs) + 1) / subdivs, dimsvolume.z);
-			int zend = maxradius + (maxradius - 1) * ((threadIdx.x % subdivs) + 1) / subdivs;
-
-			for (int idz = (maxradius) * (threadIdx.x % subdivs) / subdivs; idz < zend; idz++)
-			{
-				size_t address = ((idz + offset) * dimsvolume.y + idy) * (dimsvolume.x / 2 + 1) + idx;
-
-				z = min(idz - dimsvolume.z / 2 + offset, dimsvolume.z - 1);
-
-				tfloat radius = sqrt((tfloat)(x * x + y * y + z * z));
-				tfloat angle = 0.0f;
-
-				if(radius > 3.0f)
-				{
-					if(radius >= maxradius)
-						continue;
-
-					glm::vec3 normdirection((tfloat)x / radius, (tfloat)y / radius, (tfloat)z / radius);
-					angle = acos(abs(direction.x * normdirection.x + direction.y * normdirection.y + direction.z * normdirection.z));
-				}
-				if(angle > coneangle + falloff)
-					continue;
-
-				tfloat angleweight = (tfloat)1;
-				if(angle > coneangle)
-					angleweight = (cos((angle - coneangle) / falloff * (tfloat)PI) + (tfloat)1.0) * (tfloat)0.5;
-
-				int radiuslow = (int)radius;
-				int radiushigh = min(maxradius - 1, radiuslow + 1);
-				tfloat frachigh = radius - (tfloat)radiuslow;
-				tfloat fraclow = (tfloat)1 - frachigh;
-
-				tcomplex val1 = d_volume1[address];
-				val1.x *= angleweight;
-				val1.y *= angleweight;
-				tfloat denomsval = val1.x * val1.x + val1.y * val1.y;
-				atomicAdd(denoms1 + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
-				atomicAdd(denoms1 + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
-				//denoms1[maxshells * (threadIdx.x / subdivs) + radiuslow] += (tfloat)1;
-			
-				tcomplex val2 = d_volume2[address];
-				val2.x *= angleweight;
-				val2.y *= angleweight;
-				denomsval = val2.x * val2.x + val2.y * val2.y;
-				atomicAdd(denoms2 + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
-				atomicAdd(denoms2 + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
-			
-				denomsval = val1.x * val2.x + val1.y * val2.y;
-				atomicAdd(nums + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
-				atomicAdd(nums + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
-			}
-		}
-	}
-	__syncthreads();
-
-	//if(id < elements && dimsvolume.z > 1)
-	//{
-	//	if(x * x + y * y < maxradius * maxradius)
-	//	{
-	//		int zend = maxradius + (maxradius - 1) * ((threadIdx.x % subdivs) + 1) / subdivs;
-
-	//		for (int idz = maxradius + (maxradius - 1) * (threadIdx.x % subdivs) / subdivs; idz < zend; idz++)
-	//		{
-	//			size_t address = ((idz + offset) * dimsvolume.y + idy) * (dimsvolume.x / 2 + 1) + idx;
-
-	//			z = idz - dimsvolume.z / 2 + offset;
-
-	//			tfloat radius = sqrt((tfloat)(x * x + y * y + z * z));
-	//			tfloat angle = 0.0f;
-
-	//			if(radius > 3.0f)
-	//			{
-	//				if(radius >= maxradius)
-	//					continue;
-
-	//				glm::vec3 normdirection((tfloat)x / radius, (tfloat)y / radius, (tfloat)z / radius);
-	//				angle = acos(abs(direction.x * normdirection.x + direction.y * normdirection.y + direction.z * normdirection.z));
-	//			}
-	//			if(angle > coneangle + falloff)
-	//				continue;
-
-	//			tfloat angleweight = (tfloat)1;
-	//			if(angle > coneangle)
-	//				angleweight = (cos((angle - coneangle) / falloff * (tfloat)PI) + (tfloat)1.0) * (tfloat)0.5;
-
-	//			int radiuslow = (int)radius;
-	//			int radiushigh = min(maxradius - 1, radiuslow + 1);
-	//			tfloat frachigh = radius - (tfloat)radiuslow;
-	//			tfloat fraclow = (tfloat)1 - frachigh;
-
-	//			tcomplex val1 = d_volume1[address];
-	//			val1.x *= angleweight;
-	//			val1.y *= angleweight;
-	//			tfloat denomsval = val1.x * val1.x + val1.y * val1.y;
-	//			atomicAdd(denoms1 + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
-	//			atomicAdd(denoms1 + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
-	//			//denoms1[maxshells * (threadIdx.x / subdivs) + radiuslow] += (tfloat)1;
-	//		
-	//			tcomplex val2 = d_volume2[address];
-	//			val2.x *= angleweight;
-	//			val2.y *= angleweight;
-	//			denomsval = val2.x * val2.x + val2.y * val2.y;
-	//			atomicAdd(denoms2 + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
-	//			atomicAdd(denoms2 + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
-	//		
-	//			denomsval = val1.x * val2.x + val1.y * val2.y;
-	//			atomicAdd(nums + maxshells * (threadIdx.x / subdivs) + radiuslow, denomsval * fraclow);
-	//			atomicAdd(nums + maxshells * (threadIdx.x / subdivs) + radiushigh, denomsval * frachigh);
-	//		}
-	//	}
-	//}
-	//__syncthreads();
+	d_volume1 += elementscube * blockIdx.y;
+	d_volume2 += elementscube * blockIdx.y;
 
 	for (int i = threadIdx.x; i < maxradius; i += blockDim.x)
 	{
-		for (int t = 1; t < maxthreads / subdivs; t++)
+		if (i == 0)
 		{
-			nums[i] += nums[t * maxshells + i];
-			denoms1[i] += denoms1[t * maxshells + i];
-			denoms2[i] += denoms2[t * maxshells + i];
+			nums[i] = 1;
+			denoms1[i] = 1;
+			denoms2[i] = 1;
+		}
+		else
+		{
+			nums[i] = 0;
+			denoms1[i] = 0;
+			denoms2[i] = 0;
 		}
 	}
 	__syncthreads();
 
-	if(blockIdx.y * gridDim.x + blockIdx.x >= blockspervolume)
-		return;
+	int maxradius2 = maxradius * maxradius;
+	uint halfminusone = sidelength / 2 - 1;
 
-	d_nums += maxradius * (blockspervolume * blockIdx.z + (blockIdx.y * gridDim.x + blockIdx.x));
-	d_denoms1 += maxradius * (blockspervolume * blockIdx.z + (blockIdx.y * gridDim.x + blockIdx.x));
-	d_denoms2 += maxradius * (blockspervolume * blockIdx.z + (blockIdx.y * gridDim.x + blockIdx.x));
-
-	for (int i = threadIdx.x; i < maxradius; i += blockDim.x)
+	for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < elementscube; id += gridDim.x * blockDim.x)
 	{
-		d_nums[i] += nums[i];
-		d_denoms1[i] += denoms1[i];
-		d_denoms2[i] += denoms2[i];
-	}
-}
+		uint idz = id / elementsslice;
+		uint idy = (id - idz * elementsslice) / sidelengthft;
+		uint idx = id % sidelengthft;
 
-template<uint maxshells, uint maxthreads> __global__ void AnisotropicFSC2DKernel(tcomplex* d_volume1, tcomplex* d_volume2, int3 dimsvolume, int maxradius, int offset, tfloat3 direction, tfloat coneangle, tfloat falloff, uint elements, uint blockspervolume, tfloat* d_nums, tfloat* d_denoms1, tfloat* d_denoms2)
-{
-	__shared__ tfloat nums[maxshells * maxthreads];
-	__shared__ tfloat denoms1[maxshells * maxthreads];
-	__shared__ tfloat denoms2[maxshells * maxthreads];
+		int rx = FFTShift((int)idx, sidelength) - sidelength / 2;
+		int ry = FFTShift((int)idy, sidelength) - sidelength / 2;
+		int rz = FFTShift((int)idz, sidelength) - sidelength / 2;
+		int radius2 = rx * rx + ry * ry + rz * rz;
+		if (radius2 >= maxradius2 || radius2 == 0)
+			continue;
 
-	d_volume1 += ElementsFFT(dimsvolume) * blockIdx.z;
-	d_volume2 += ElementsFFT(dimsvolume) * blockIdx.z;
+		float dotprod = dotp(make_float3(rx, ry, rz), direction);
+		float3 posondir = make_float3(direction.x * dotprod, direction.y * dotprod, direction.z * dotprod);
+		float conewidth = tan(coneangle) * abs(dotprod);
+		float3 postocone = make_float3(posondir.x - rx, posondir.y - ry, posondir.z - rz);
+		float fractionofcone = sqrt(dotp(postocone, postocone)) / max(1.0f, conewidth) / 1.2f;
+		float weight = max(0.0f, min(1.0f, fractionofcone));
+		weight = (cos(weight * PI) + 1.0f) / 2.0f;
 
-	uint id = (blockIdx.y * gridDim.x + blockIdx.x) * maxthreads + threadIdx.x;
+		tfloat radius = sqrt((tfloat)radius2);
 
-	for (int i = 0; i < maxradius; i++)
-	{
-		nums[maxshells * threadIdx.x + i] = 0;
-		denoms1[maxshells * threadIdx.x + i] = 0;
-		denoms2[maxshells * threadIdx.x + i] = 0;
-	}
-	__syncthreads();
+		int radiuslow = (int)radius;
+		int radiushigh = min(maxradius - 1, radiuslow + 1);
+		tfloat frachigh = radius - (tfloat)radiuslow;
+		tfloat fraclow = (tfloat)1 - frachigh;
 
-	int idx = (id % (uint)maxradius) + offset;
-	int idy = (id / (uint)maxradius) + offset;
+		tcomplex val1 = d_volume1[id] * weight;
+		tfloat denomsval = val1.x * val1.x + val1.y * val1.y;
+		atomicAdd(denoms1 + radiuslow, denomsval * fraclow);
+		atomicAdd(denoms1 + radiushigh, denomsval * frachigh);
 
-	int x = idx - dimsvolume.x / 2;
-	int y = idy - dimsvolume.y / 2;
+		tcomplex val2 = d_volume2[id] * weight;
+		denomsval = val2.x * val2.x + val2.y * val2.y;
+		atomicAdd(denoms2 + radiuslow, denomsval * fraclow);
+		atomicAdd(denoms2 + radiushigh, denomsval * frachigh);
 
-	if(id < elements)
-	{
-		if(x * x + y * y < maxradius * maxradius)
-		{
-			bool pass = false;
-			tfloat angle = 0;
-			tfloat radius = sqrt((tfloat)(x * x + y * y));
-			if(radius == 0.0f)
-				pass = true;
-			else
-			{
-				glm::vec3 normdirection((tfloat)x / radius, (tfloat)y / radius, 0.0f);
-				angle = acos(abs(direction.x * normdirection.x + direction.y * normdirection.y));
-				if(angle <= coneangle + falloff)
-					pass = true;
-			}
-
-			if(pass)
-			{
-				tfloat angleweight = (tfloat)1;
-				if(radius > 0.0f && angle > coneangle)
-					angleweight = (cos((angle - coneangle) / falloff * (tfloat)PI) + (tfloat)1.0) * (tfloat)0.5;
-
-				int radiuslow = (int)radius;
-				int radiushigh = min(maxradius - 1, radiuslow + 1);
-				tfloat frachigh = radius - (tfloat)radiuslow;
-				tfloat fraclow = (tfloat)1 - frachigh;
-
-				tcomplex val1 = d_volume1[idy * (dimsvolume.x / 2 + 1) + idx];
-				val1.x *= angleweight;
-				val1.y *= angleweight;
-				tfloat denomsval = val1.x * val1.x + val1.y * val1.y;
-				atomicAdd(denoms1 + maxshells * threadIdx.x + radiuslow, denomsval * fraclow);
-				atomicAdd(denoms1 + maxshells * threadIdx.x + radiushigh, denomsval * frachigh);
-			
-				tcomplex val2 = d_volume2[idy * (dimsvolume.x / 2 + 1) + idx];
-				val2.x *= angleweight;
-				val2.y *= angleweight;
-				denomsval = val2.x * val2.x + val2.y * val2.y;
-				atomicAdd(denoms2 + maxshells * threadIdx.x + radiuslow, denomsval * fraclow);
-				atomicAdd(denoms2 + maxshells * threadIdx.x + radiushigh, denomsval * frachigh);
-			
-				denomsval = val1.x * val2.x + val1.y * val2.y;
-				atomicAdd(nums + maxshells * threadIdx.x + radiuslow, denomsval * fraclow);
-				atomicAdd(nums + maxshells * threadIdx.x + radiushigh, denomsval * frachigh);
-			}
-		}
+		denomsval = val1.x * val2.x + val1.y * val2.y;
+		atomicAdd(nums + radiuslow, denomsval * fraclow);
+		atomicAdd(nums + radiushigh, denomsval * frachigh);
 	}
 	__syncthreads();
 
-	for (int i = threadIdx.x; i < maxradius; i += blockDim.x)
-	{
-		for (int t = 1; t < maxthreads; t++)
-		{
-			nums[i] += nums[t * maxshells + i];
-			denoms1[i] += denoms1[t * maxshells + i];
-			denoms2[i] += denoms2[t * maxshells + i];
-		}
-	}
-	__syncthreads();
-
-	if(blockIdx.y * gridDim.x + blockIdx.x >= blockspervolume)
-		return;
-
-	d_nums += maxradius * (blockspervolume * blockIdx.z + (blockIdx.y * gridDim.x + blockIdx.x));
-	d_denoms1 += maxradius * (blockspervolume * blockIdx.z + (blockIdx.y * gridDim.x + blockIdx.x));
-	d_denoms2 += maxradius * (blockspervolume * blockIdx.z + (blockIdx.y * gridDim.x + blockIdx.x));
+	d_nums += maxradius * (blockIdx.y * gridDim.x + blockIdx.x);
+	d_denoms1 += maxradius * (blockIdx.y * gridDim.x + blockIdx.x);
+	d_denoms2 += maxradius * (blockIdx.y * gridDim.x + blockIdx.x);
 
 	for (int i = threadIdx.x; i < maxradius; i += blockDim.x)
 	{
-		d_nums[i] += nums[i];
-		d_denoms1[i] += denoms1[i];
-		d_denoms2[i] += denoms2[i];
+		d_nums[i] = nums[i];
+		d_denoms1[i] = denoms1[i];
+		d_denoms2[i] = denoms2[i];
 	}
 }

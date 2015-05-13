@@ -32,7 +32,7 @@ TEST(Reconstruction, RecSIRT)
 			h_images[Elements2(dimsimage) * n + dimsimage.y / 2 * dimsimage.x + dimsimage.x / 2 + 1] = 1.0f;
 		cudaMemcpy(d_images, h_images, Elements2(dimsimage) * nimages * sizeof(tfloat), cudaMemcpyHostToDevice);
 
-		d_RecSIRT(d_volume, NULL, dimsvolume, volumeoffset, d_images, dimsimage, nimages, h_angles, h_translations, h_scales, T_INTERP_LINEAR, 2, 100, true);
+		d_RecSIRT(d_volume, NULL, dimsvolume, volumeoffset, d_images, dimsimage, nimages, h_angles, h_translations, h_scales, NULL, T_INTERP_LINEAR, 2, 100, true);
 
 		CudaWriteToBinaryFile("d_images.bin", d_images, Elements2(dimsimage) * nimages * sizeof(tfloat));
 		CudaWriteToBinaryFile("d_volume.bin", d_volume, Elements(dimsvolume) * sizeof(tfloat));

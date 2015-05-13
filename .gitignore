@@ -48,6 +48,9 @@ build/
 *.bin
 *.asv
 *.mexw64
+*.mrc
+*.em
+*.st
 
 # Visual C++ cache files
 ipch/

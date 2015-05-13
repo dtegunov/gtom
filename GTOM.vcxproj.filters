@@ -61,6 +61,9 @@
     <Filter Include="PCA">
       <UniqueIdentifier>{12706eb5-abad-4971-930f-7c0546d0007f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Optimization\Polynomials">
+      <UniqueIdentifier>{a103b920-458b-4691-bf20-0714c45a077b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Alignment.cuh">
@@ -119,6 +122,12 @@
     </ClInclude>
     <ClInclude Include="include\PCA.cuh">
       <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Optimization\polynomials\Polynomial.h">
+      <Filter>Optimization\Polynomials</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Optimization\polynomials\PolynomialRootFinder.h">
+      <Filter>Optimization\Polynomials</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -313,9 +322,6 @@
     <CudaCompile Include="src\Reconstruction\RecFourier.cu">
       <Filter>Reconstruction</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\Tomography\InterpolateSingleAxis.cu">
-      <Filter>Tomography</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\Resolution\LocalAnisotropicFSC.cu">
       <Filter>Resolution</Filter>
     </CudaCompile>
@@ -327,9 +333,6 @@
     </CudaCompile>
     <CudaCompile Include="src\Helpers\TextureObject.cu">
       <Filter>Helpers</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\Projection\Weighting.cu">
-      <Filter>Projection</Filter>
     </CudaCompile>
     <CudaCompile Include="src\Transformation\Combined.cu">
       <Filter>Transformation</Filter>
@@ -382,6 +385,51 @@
     <CudaCompile Include="src\Transformation\FFTLines.cu">
       <Filter>Transformation</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\Optimization\OptimizeSPAParams.cu">
+      <Filter>Optimization</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\CommonPSF.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Optimization\OptimizeTomoParams.cu">
+      <Filter>Optimization</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Optimization\OptimizeTomoParamsWBP.cu">
+      <Filter>Optimization</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Projection\Weighting.cu">
+      <Filter>Reconstruction</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\LocalMinMax.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\PCA\Filter.cu">
+      <Filter>PCA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\AliasingCutoff.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Helpers\InterpolateIrregular.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Helpers\GridSpacing.cu">
+      <Filter>Helpers</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\RotationalAverage.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CTF\TiltCorrect.cu">
+      <Filter>CTF</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Transformation\Warp2D.cu">
+      <Filter>Transformation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Optimization\OptimizeStackWarp2D.cu">
+      <Filter>Optimization</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Masking\ConeMask.cu">
+      <Filter>Masking</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\IO\em.cpp">
@@ -395,6 +443,15 @@
     </ClCompile>
     <ClCompile Include="src\Optimization\dlib\all\source.cpp">
       <Filter>Optimization</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Helpers\KaiserBessel.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Optimization\polynomials\Polynomial.cpp">
+      <Filter>Optimization\Polynomials</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Optimization\polynomials\PolynomialRootFinder.cpp">
+      <Filter>Optimization\Polynomials</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

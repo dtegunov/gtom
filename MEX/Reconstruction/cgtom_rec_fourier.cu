@@ -9,13 +9,16 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
     mxInitGPU();
 
-	if (nrhs < 5)
+	if (nrhs < 4)
         mexErrMsgIdAndTxt(errId, "Wrong parameter count (4 expected).");
 
 	mxArrayAdapter proj(prhs[0]);
-	int ndims = mxGetNumberOfDimensions(proj.underlyingarray);
-	int3 dimsproj = MWDimsToInt3(ndims, mxGetDimensions(proj.underlyingarray));
+	int3 dimsproj = MWDimsToInt3(mxGetNumberOfDimensions(proj.underlyingarray), mxGetDimensions(proj.underlyingarray));
+	int3 dimsvolume = toInt3(dimsproj.x, dimsproj.x, dimsproj.x);
+	int nimages = dimsproj.z;
+	dimsproj.z = 1;
 	tfloat* d_proj = proj.GetAsManagedDeviceTFloat();
+	d_RemapFull2FullFFT(d_proj, d_proj, dimsproj, nimages);
 
 	mxArrayAdapter weights(prhs[1]);
 	int3 dimsweights = MWDimsToInt3(mxGetNumberOfDimensions(weights.underlyingarray), mxGetDimensions(weights.underlyingarray));
@@ -23,33 +26,44 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	if (ElementsFFT(dimsweights) > 1)
 		d_weights = weights.GetAsManagedDeviceTFloat();
 
-	mxArrayAdapter ctf(prhs[2]);
-	int3 dimsctf = MWDimsToInt3(mxGetNumberOfDimensions(ctf.underlyingarray), mxGetDimensions(ctf.underlyingarray));
-	CTFParams* h_ctf = NULL;
-	if (ElementsFFT(dimsctf) > 1)
-		h_ctf = (CTFParams*)ctf.GetAsManagedTFloat();
-
-	mxArrayAdapter angles(prhs[3]);
-	ndims = mxGetNumberOfDimensions(angles.underlyingarray);
-	int3 dimsangles = MWDimsToInt3(ndims, mxGetDimensions(angles.underlyingarray));
+	mxArrayAdapter angles(prhs[2]);
+	int3 dimsangles = MWDimsToInt3(mxGetNumberOfDimensions(angles.underlyingarray), mxGetDimensions(angles.underlyingarray));
 	if (dimsangles.x != 3)
-		mexErrMsgIdAndTxt(errId, "Angles must contain 3 values per column.");
+		mexErrMsgIdAndTxt(errId, "Angles must be a 3 x n sized matrix.");
 	tfloat3* h_angles = (tfloat3*)angles.GetAsManagedTFloat();
 
-	int3 dimsvolume = toInt3((int)(((double*)mxGetData(prhs[4]))[0] + 0.5), (int)(((double*)mxGetData(prhs[4]))[1] + 0.5), (int)(((double*)mxGetData(prhs[4]))[2] + 0.5));
-	tfloat* d_volume = CudaMallocValueFilled(Elements(dimsvolume), (tfloat)0);
+	mxArrayAdapter shifts(prhs[3]);
+	int3 dimsshifts = MWDimsToInt3(mxGetNumberOfDimensions(shifts.underlyingarray), mxGetDimensions(shifts.underlyingarray));
+	if (dimsshifts.x != 2)
+		mexErrMsgIdAndTxt(errId, "Shifts must be a 2 x n sized matrix.");
+	tfloat2* h_shifts = (tfloat2*)shifts.GetAsManagedTFloat();
 
-	d_ReconstructFourier(d_proj, d_weights, h_ctf, dimsproj, d_volume, dimsvolume, h_angles);
+	tfloat* d_volume = CudaMallocValueFilled(Elements(dimsvolume), (tfloat)0);
+	tfloat* d_volumepsf = CudaMallocValueFilled(ElementsFFT(dimsvolume), (tfloat)0);
+
+	d_ReconstructFourierPrecise(d_proj, d_weights, d_volume, d_volumepsf, dimsvolume, h_angles, h_shifts, nimages, false);
 	
 	mwSize outputdims[3];
 	outputdims[0] = dimsvolume.x;
 	outputdims[1] = dimsvolume.y;
 	outputdims[2] = dimsvolume.z;
-	mxArrayAdapter B(mxCreateNumericArray(3,
+	mxArrayAdapter A(mxCreateNumericArray(3,
 					 outputdims,
 					 mxGetClassID(proj.underlyingarray),
 					 mxREAL));
-	B.SetFromDeviceTFloat(d_volume);
+	A.SetFromDeviceTFloat(d_volume);
 	cudaFree(d_volume);
-	plhs[0] = B.underlyingarray;
+	plhs[0] = A.underlyingarray;
+
+	outputdims[0] = dimsvolume.x / 2 + 1;
+	outputdims[1] = dimsvolume.y;
+	outputdims[2] = dimsvolume.z;
+	mxArrayAdapter B(mxCreateNumericArray(3,
+		outputdims,
+		mxGetClassID(proj.underlyingarray),
+		mxREAL));
+	B.SetFromDeviceTFloat(d_volumepsf);
+	cudaFree(d_volumepsf);
+	plhs[1] = B.underlyingarray;
+
 }

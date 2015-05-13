@@ -51,64 +51,52 @@ following papers:
 //--------------------------------------------------------------------------
 // Global CUDA procedures
 //--------------------------------------------------------------------------
-template<class floatN>
-__global__ void SamplesToCoefficients3DX(
-	floatN* volume,		// in-place processing
-	uint pitch,			// width in bytes
-	uint width,			// width of the volume
-	uint height,		// height of the volume
-	uint depth)			// depth of the volume
+template<class T> __global__ void SamplesToCoefficients3DX(T* d_volume, uint3 dims)
 {
+	d_volume += Elements(dims) * blockIdx.z;
+
 	// process lines in x-direction
 	const uint y = blockIdx.x * blockDim.x + threadIdx.x;
+	if (y >= dims.y)
+		return;
 	const uint z = blockIdx.y * blockDim.y + threadIdx.y;
-	const uint startIdx = (z * height + y) * pitch;
+	if (z >= dims.z)
+		return;
+	const uint startIdx = (z * dims.y + y) * dims.x;
 
-	floatN* ptr = (floatN*)((char*)volume + startIdx);
-	ConvertToInterpolationCoefficients(ptr, width, sizeof(floatN));
+	ConvertToInterpolationCoefficients(d_volume + startIdx, dims.x, 1);
 }
 
-template<class floatN>
-__global__ void SamplesToCoefficients3DY(
-	floatN* volume,		// in-place processing
-	uint pitch,			// width in bytes
-	uint width,			// width of the volume
-	uint height,		// height of the volume
-	uint depth)			// depth of the volume
+template<class T> __global__ void SamplesToCoefficients3DY(T* d_volume, uint3 dims)
 {
+	d_volume += Elements(dims) * blockIdx.z;
+
 	// process lines in y-direction
 	const uint x = blockIdx.x * blockDim.x + threadIdx.x;
+	if (x >= dims.x)
+		return;
 	const uint z = blockIdx.y * blockDim.y + threadIdx.y;
-	const uint startIdx = z * height * pitch;
+	if (z >= dims.z)
+		return;
+	const uint startIdx = z * dims.y * dims.x + x;
 
-	floatN* ptr = (floatN*)((char*)volume + startIdx);
-	ConvertToInterpolationCoefficients(ptr + x, height, pitch);
+	ConvertToInterpolationCoefficients(d_volume + startIdx, dims.y, dims.x);
 }
 
-template<class floatN>
-__global__ void SamplesToCoefficients3DZ(
-	floatN* volume,		// in-place processing
-	uint pitch,			// width in bytes
-	uint width,			// width of the volume
-	uint height,		// height of the volume
-	uint depth)			// depth of the volume
+template<class T> __global__ void SamplesToCoefficients3DZ(T* d_volume, uint3 dims)
 {
+	d_volume += Elements(dims) * blockIdx.z;
+
 	// process lines in z-direction
 	const uint x = blockIdx.x * blockDim.x + threadIdx.x;
+	if (x >= dims.x)
+		return;
 	const uint y = blockIdx.y * blockDim.y + threadIdx.y;
-	const uint startIdx = y * pitch;
-	const uint slice = height * pitch;
+	if (y >= dims.y)
+		return;
+	const uint startIdx = y * dims.x + x;
 
-	floatN* ptr = (floatN*)((char*)volume + startIdx);
-	ConvertToInterpolationCoefficients(ptr + x, depth, slice);
-}
-
-inline __device__ __host__ uint PowTwoDivider(uint n)
-{
-	if (n == 0) return 0;
-	uint divider = 1;
-	while ((n & divider) == 0) divider <<= 1; 
-	return divider;
+	ConvertToInterpolationCoefficients(d_volume + startIdx, dims.z, dims.x * dims.y);
 }
 
 //--------------------------------------------------------------------------
@@ -121,23 +109,20 @@ inline __device__ __host__ uint PowTwoDivider(uint n)
 //! @param width   volume width in number of voxels
 //! @param height  volume height in number of voxels
 //! @param depth   volume depth in number of voxels
-template<class floatN> void d_CubicBSplinePrefilter3D(floatN* volume, int pitch, int3 dims)
+template<class T> void d_CubicBSplinePrefilter3D(T* volume, int3 dims, int batch)
 {
-	// Try to determine the optimal block dimensions
-	uint dimX = min(min(PowTwoDivider(dims.x), PowTwoDivider(dims.y)), 64);
-	uint dimY = min(min(PowTwoDivider(dims.z), PowTwoDivider(dims.y)), 512/dimX);
-	dim3 dimBlock(dimX, dimY);
+	dim3 TpB(16, 16);
 
 	// Replace the voxel values by the b-spline coefficients
-	dim3 dimGridX(dims.y / dimBlock.x, dims.z / dimBlock.y);
-	SamplesToCoefficients3DX<floatN><<<dimGridX, dimBlock>>>(volume, pitch, dims.x, dims.y, dims.z);
+	dim3 dimGridX((dims.y + 15) / 16, (dims.z + 15) / 16, batch);
+	SamplesToCoefficients3DX<T> << <dimGridX, TpB >> >(volume, make_uint3(dims.x, dims.y, dims.z));
 
-	dim3 dimGridY(dims.x / dimBlock.x, dims.z / dimBlock.y);
-	SamplesToCoefficients3DY<floatN> << <dimGridY, dimBlock >> >(volume, pitch, dims.x, dims.y, dims.z);
+	dim3 dimGridY((dims.x + 15) / 16, (dims.z + 15) / 16, batch);
+	SamplesToCoefficients3DY<T> << <dimGridY, TpB >> >(volume, make_uint3(dims.x, dims.y, dims.z));
 
-	dim3 dimGridZ(dims.x / dimBlock.x, dims.y / dimBlock.y);
-	SamplesToCoefficients3DZ<floatN> << <dimGridZ, dimBlock >> >(volume, pitch, dims.x, dims.y, dims.z);
+	dim3 dimGridZ((dims.x + 15) / 16, (dims.y + 15) / 16, batch);
+	SamplesToCoefficients3DZ<T> << <dimGridZ, TpB >> >(volume, make_uint3(dims.x, dims.y, dims.z));
 }
-template void d_CubicBSplinePrefilter3D<float>(float* volume, int pitch, int3 dims);
+template void d_CubicBSplinePrefilter3D<float>(float* volume, int3 dims, int batch);
 
 #endif  //_3D_CUBIC_BSPLINE_PREFILTER_H_

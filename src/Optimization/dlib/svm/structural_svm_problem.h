@@ -1,7 +1,7 @@
 // Copyright (C) 2011  Davis E. King (davis@dlib.net)
 // License: Boost Software License   See LICENSE.txt for the full license.
-#ifndef DLIB_STRUCTURAL_SVM_PRObLEM_H__
-#define DLIB_STRUCTURAL_SVM_PRObLEM_H__
+#ifndef DLIB_STRUCTURAL_SVM_PRObLEM_Hh_
+#define DLIB_STRUCTURAL_SVM_PRObLEM_Hh_
 
 #include "structural_svm_problem_abstract.h"
 #include "../algs.h"
@@ -75,6 +75,12 @@ namespace dlib
                 psi = true_psi;
             else
                 prob->get_truth_joint_feature_vector(sample_idx, psi);
+
+            if (is_matrix<feature_vector_type>::value)
+            {
+                DLIB_CASSERT((long)psi.size() == prob->get_num_dimensions(),
+                    "The dimensionality of your PSI vector doesn't match get_num_dimensions()");
+            }
         }
 
         void separation_oracle_cached (
@@ -128,6 +134,11 @@ namespace dlib
 
 
             prob->separation_oracle(sample_idx, current_solution, out_loss, out_psi);
+            if (is_matrix<feature_vector_type>::value)
+            {
+                DLIB_CASSERT((long)out_psi.size() == prob->get_num_dimensions(),
+                    "The dimensionality of your PSI vector doesn't match get_num_dimensions()");
+            }
 
             if (!cache_enabled)
                 return;
@@ -566,14 +577,12 @@ namespace dlib
                 f = matrix_cast<double>(reshape(rowm(m, range(idx, idx+size-1)), nr, nc));
                 svd3(f, u,w,v);
 
-                w = round_zeros(w, std::max(1e-9,max(w)*1e-7)); 
 
                 const double norm = sum(w);
                 obj += strength*norm;
                 nuclear_norm_part += strength*norm/C;
 
-                w = w>0;
-                f = u*diagm(w)*trans(v);
+                f = u*trans(v);
 
                 set_rowm(grad, range(idx, idx+size-1)) = matrix_cast<double>(strength*reshape_to_column_vector(f));
             }
@@ -620,5 +629,5 @@ namespace dlib
 
 }
 
-#endif // DLIB_STRUCTURAL_SVM_PRObLEM_H__
+#endif // DLIB_STRUCTURAL_SVM_PRObLEM_Hh_
 

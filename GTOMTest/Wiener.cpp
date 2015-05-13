@@ -19,7 +19,7 @@ TEST(CTF, Wiener)
 		tcomplex* d_corrected = CudaMallocValueFilled(ElementsFFT(dimsinput), make_cuComplex(3.14, 3.14));
 		tfloat* d_correctedweights = CudaMallocValueFilled(ElementsFFT(dimsinput), (tfloat)2.72);
 
-		d_WienerPerFreq(d_inputctf, dimsinput, d_inputfsc, params, d_corrected, d_correctedweights);
+		d_CTFWiener(d_inputctf, dimsinput, d_inputfsc, &params, d_corrected, d_correctedweights);
 
 		tfloat* h_corrected = (tfloat*)MallocFromDeviceArray(d_corrected, ElementsFFT(dimsinput) * sizeof(tfloat));
 		free(h_corrected);
