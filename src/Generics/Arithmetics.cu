@@ -58,8 +58,8 @@ template <class T> __global__ void MinOpKernel(T* d_input1, T input2, T* d_outpu
 
 template <class T> void d_MultiplyByVector(T* d_input, T* d_multiplicators, T* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	MultiplyByVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 	cudaStreamQuery(0);
@@ -69,8 +69,8 @@ template void d_MultiplyByVector<int>(int* d_input, int* d_multiplicators, int* 
 
 template <class T> void d_MultiplyByScalar(T* d_input, T* d_output, size_t elements, T multiplicator)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	MultiplyByScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements, multiplicator);
 	cudaStreamQuery(0);
@@ -81,8 +81,8 @@ template void d_MultiplyByScalar<int>(int* d_input, int* d_output, size_t elemen
 
 template <class T> void d_MultiplyByScalar(T* d_input, T* d_multiplicators, T* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	MultiplyByScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 	cudaStreamQuery(0);
@@ -131,69 +131,69 @@ template <class T> __global__ void MultiplyByScalarKernel(T* d_input, T* d_multi
 
 void d_ComplexMultiplyByVector(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768), batch);
+	size_t TpB = min((size_t)256, elements);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, (size_t)32768), batch);
 	ComplexMultiplyByVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 }
 
 void d_ComplexMultiplyByVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, NextMultipleOf(elements, 32));
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768), batch);
+	size_t TpB = min((size_t)256, NextMultipleOf(elements, 32));
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, (size_t)32768), batch);
 	ComplexMultiplyByVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 }
 
 void d_ComplexMultiplyByConjVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, NextMultipleOf(elements, 32));
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768), batch);
+	size_t TpB = min((size_t)256, NextMultipleOf(elements, 32));
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, (size_t)32768), batch);
 	ComplexMultiplyByConjVectorKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tfloat multiplicator)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_output, elements, multiplicator);
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_output, elements, multiplicator);
 }
 
 void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_output, size_t elements, tcomplex multiplicator)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	ComplexMultiplyByConjScalarKernel <<<grid, (uint)TpB>>> (d_input, d_output, elements, cconj(multiplicator));
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tfloat* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 }
 
 void d_ComplexMultiplyByScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	ComplexMultiplyByScalarKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 }
 
 void d_ComplexMultiplyByConjScalar(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	ComplexMultiplyByConjScalarKernel <<<grid, (uint)TpB>>> (d_input, d_multiplicators, d_output, elements);
 }
@@ -312,8 +312,8 @@ __global__ void ComplexMultiplyByConjScalarKernel(tcomplex* d_input, tcomplex* d
 
 template <class T> void d_DivideByVector(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	DivideByVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_divisors, d_output, elements, batch);
 	cudaStreamQuery(0);
@@ -323,8 +323,8 @@ template void d_DivideByVector<int>(int* d_input, int* d_divisors, int* d_output
 
 template <class T> void d_DivideSafeByVector(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	DivideSafeByVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_divisors, d_output, elements, batch);
 	cudaStreamQuery(0);
@@ -334,8 +334,8 @@ template void d_DivideSafeByVector<int>(int* d_input, int* d_divisors, int* d_ou
 
 template <class T> void d_DivideByScalar(T* d_input, T* d_output, size_t elements, T divisor)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	DivideByScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements, divisor);
 	cudaStreamQuery(0);
@@ -346,8 +346,8 @@ template void d_DivideByScalar<int>(int* d_input, int* d_output, size_t elements
 
 template <class T> void d_DivideByScalar(T* d_input, T* d_divisors, T* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	DivideByScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_divisors, d_output, elements);
 	cudaStreamQuery(0);
@@ -413,8 +413,8 @@ template <class T> __global__ void DivideByScalarKernel(T* d_input, T* d_divisor
 
 template <class T> void d_AddVector(T* d_input, T* d_summands, T* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	AddVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_summands, d_output, elements, batch);
 }
@@ -423,8 +423,8 @@ template void d_AddVector<int>(int* d_input, int* d_summands, int* d_output, siz
 
 template <class T> void d_AddScalar(T* d_input, T* d_output, size_t elements, T summand)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	AddScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements, summand);
 }
@@ -433,8 +433,8 @@ template void d_AddScalar<int>(int* d_input, int* d_output, size_t elements, int
 
 template <class T> void d_AddScalar(T* d_input, T* d_summands, T* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	AddScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_summands, d_output, elements);
 }
@@ -483,8 +483,8 @@ template <class T> __global__ void AddScalarKernel(T* d_input, T* d_summands, T*
 
 template <class T> void d_SubtractVector(T* d_input, T* d_subtrahends, T* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	SubtractVectorKernel<T> <<<grid, (uint)TpB>>> (d_input, d_subtrahends, d_output, elements, batch);
 }
@@ -493,8 +493,8 @@ template void d_SubtractVector<int>(int* d_input, int* d_subtrahends, int* d_out
 
 template <class T> void d_SubtractScalar(T* d_input, T* d_output, size_t elements, T subtrahend)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	SubtractScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements, subtrahend);
 }
@@ -503,8 +503,8 @@ template void d_SubtractScalar<int>(int* d_input, int* d_output, size_t elements
 
 template <class T> void d_SubtractScalar(T* d_input, T* d_subtrahends, T* d_output, size_t elements, int batch)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 	SubtractScalarKernel<T> <<<grid, (uint)TpB>>> (d_input, d_subtrahends, d_output, elements);
 }
@@ -554,8 +554,8 @@ template <class T> __global__ void SubtractScalarKernel(T* d_input, T* d_subtrah
 
 template <class T> void d_Square(T* d_input, T* d_output, size_t elements)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	SquareKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements);
 }
@@ -582,8 +582,8 @@ template <class T> __global__ void SquareKernel(T* d_input, T* d_output, size_t 
 
 template <class T> void d_Sqrt(T* d_input, T* d_output, size_t elements)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	SqrtKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements);
 }
@@ -605,8 +605,8 @@ template <class T> __global__ void SqrtKernel(T* d_input, T* d_output, size_t el
 
 template <class T> void d_Pow(T* d_input, T* d_output, size_t elements, T exponent)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	PowKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements, exponent);
 }
@@ -627,8 +627,8 @@ template <class T> __global__ void PowKernel(T* d_input, T* d_output, size_t ele
 
 template <class T> void d_Abs(T* d_input, T* d_output, size_t elements)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	AbsKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements);
 }
@@ -636,8 +636,8 @@ template void d_Abs<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements);
 
 void d_Abs(tcomplex* d_input, tfloat* d_output, size_t elements)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	AbsKernel << <grid, (uint)TpB >> > (d_input, d_output, elements);
 }
@@ -669,8 +669,8 @@ __global__ void AbsKernel(tcomplex* d_input, tfloat* d_output, size_t elements)
 
 template <class T> void d_Inv(T* d_input, T* d_output, size_t elements)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	InvKernel<T> <<<grid, (uint)TpB>>> (d_input, d_output, elements);
 }
@@ -693,8 +693,8 @@ template <class T> __global__ void InvKernel(T* d_input, T* d_output, size_t ele
 
 template <class T> void d_Log(T* d_input, T* d_output, size_t elements)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	LogKernel<T> << <grid, (uint)TpB >> > (d_input, d_output, elements);
 }
@@ -716,8 +716,8 @@ template <class T> __global__ void LogKernel(T* d_input, T* d_output, size_t ele
 
 void d_ComplexPolarToCart(tcomplex* d_polar, tcomplex* d_cart, size_t elements)
 {
-	int TpB = min(256, elements);
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 8192));
+	int TpB = min((size_t)256, elements);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, (size_t)8192));
 	ComplexPolarToCartKernel <<<grid, TpB>>> (d_polar, d_cart, elements);
 }
 
@@ -735,8 +735,8 @@ __global__ void ComplexPolarToCartKernel(tcomplex* d_polar, tcomplex* d_cart, si
 
 void d_ComplexCartToPolar(tcomplex* d_cart, tcomplex* d_polar, size_t elements)
 {
-	int TpB = min(256, elements);
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 8192));
+	int TpB = min((size_t)256, elements);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, (size_t)8192));
 	ComplexCartToPolarKernel <<<grid, TpB>>> (d_cart, d_polar, elements);
 }
 
@@ -759,8 +759,8 @@ __global__ void ComplexCartToPolarKernel(tcomplex* d_cart, tcomplex* d_polar, si
 
 template <class T> void d_MaxOp(T* d_input1, T* d_input2, T* d_output, size_t elements)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	MaxOpKernel<T> <<<grid, (uint)TpB>>> (d_input1, d_input2, d_output, elements);
 }
@@ -770,8 +770,8 @@ template void d_MaxOp<double>(double* d_input1, double* d_input2, double* d_outp
 
 template <class T> void d_MaxOp(T* d_input1, T input2, T* d_output, size_t elements)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	MaxOpKernel<T> << <grid, (uint)TpB >> > (d_input1, input2, d_output, elements);
 }
@@ -781,8 +781,8 @@ template void d_MaxOp<double>(double* d_input1, double input2, double* d_output,
 
 template <class T> void d_MinOp(T* d_input1, T* d_input2, T* d_output, size_t elements)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	MinOpKernel<T> <<<grid, (uint)TpB>>> (d_input1, d_input2, d_output, elements);
 }
@@ -792,8 +792,8 @@ template void d_MinOp<double>(double* d_input1, double* d_input2, double* d_outp
 
 template <class T> void d_MinOp(T* d_input1, T input2, T* d_output, size_t elements)
 {
-	size_t TpB = min(256, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)256, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	MinOpKernel<T> << <grid, (uint)TpB >> > (d_input1,  input2, d_output, elements);
 }

@@ -70,7 +70,7 @@ uint GetCart2PolarNonredundantSize(int2 dims, int maskinner, int maskouter)
 {
 	uint samples = 0;
 	for (int r = maskinner; r < maskouter; r++)
-		samples += max(1, ceil(PI2 * (tfloat)r));
+		samples += max(1.0f, ceil(PI2 * (tfloat)r));
 
 	return samples;
 }

@@ -226,9 +226,9 @@ void d_CTFDecay(tfloat* d_input, tfloat* d_output, int2 dims, int degree, int st
 void d_CTFFitCreateTarget2D(tfloat* d_image, int2 dimsimage, CTFParams params, CTFFitParams fp, float overlapfraction, tfloat* d_ps2dpolar, float2* d_ps2dcoords);
 void d_CTFFitCreateTarget2D(tfloat* d_image, int2 dimsimage, int3* d_origins, CTFParams* h_params, int norigins, CTFFitParams fp, tfloat* d_ps2dpolar, float2* d_ps2dcoords, bool sumtoone = false, tfloat* d_outps1dmin = NULL, tfloat* d_outps1dmax = NULL);
 void d_CTFFitCreateTarget1D(tfloat* d_ps2dpolar, float2* d_ps2dcoords, int2 dimspolar, CTFParams* h_params, int norigins, CTFFitParams fp, tfloat* d_ps1d, float2* d_ps1dcoords);
-void d_CTFFit(tfloat* d_target, float2* d_targetcoords, int2 dimstarget, CTFParams* h_startparams, uint ntargets, CTFFitParams p, int refinements, vector<pair<tfloat, CTFParams>> &fits, tfloat &score, tfloat &mean, tfloat &stddev);
+void d_CTFFit(tfloat* d_target, float2* d_targetcoords, int2 dimstarget, CTFParams* h_startparams, uint ntargets, CTFFitParams p, int refinements, vector<pair<tfloat, CTFParams> > &fits, tfloat &score, tfloat &mean, tfloat &stddev);
 void d_CTFFit(tfloat* d_image, int2 dimsimage, float overlapfraction, CTFParams startparams, CTFFitParams fp, int refinements, CTFParams &fit, tfloat &score, tfloat &mean, tfloat &stddev);
-void AddCTFParamsRange(vector<pair<tfloat, CTFParams>> &v_params, CTFFitParams p);
+void AddCTFParamsRange(vector<pair<tfloat, CTFParams> > &v_params, CTFFitParams p);
 void h_CTFFitEnvelope(tfloat* h_input, uint diminput, tfloat* h_envelopemin, tfloat* h_envelopemax, char peakextent, uint outputstart, uint outputend, uint batch);
 
 //InterpolateIrregular.cu:

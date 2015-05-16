@@ -14,8 +14,8 @@ template <class T> __global__ void BinarizeKernel(tfloat* d_input, T* d_output, 
 
 template <class T> void d_Binarize(tfloat* d_input, T* d_output, size_t elements, tfloat threshold, int batch)
 {
-	size_t TpB = min(192, NextMultipleOf(elements, 32));
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768));
+	size_t TpB = min((size_t)192, NextMultipleOf(elements, 32));
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, (size_t)32768));
 	BinarizeKernel <<<grid, TpB>>> (d_input, d_output, elements, threshold);
 }
 template void d_Binarize<char>(tfloat* d_input, char* d_output, size_t elements, tfloat threshold, int batch);

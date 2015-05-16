@@ -19,7 +19,7 @@ template<bool cubicinterp> __global__ void RemapInterpolated2DKernel(cudaTex t_i
 template <class T> void d_Remap(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch)
 {
 	size_t TpB = 192;
-	size_t totalblocks = min((elementsmapped + TpB - 1) / TpB, 32768);
+	size_t totalblocks = min((elementsmapped + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	RemapKernel<T> <<<grid, (uint)TpB>>> (d_input, d_map, d_output, elementsmapped, elementsoriginal, defvalue, batch);
 }
@@ -29,7 +29,7 @@ template void d_Remap<int>(int* d_input, intptr_t* d_map, int* d_output, size_t 
 template <class T> void d_RemapReverse(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsdestination, T defvalue, int batch)
 {
 	size_t TpB = 192;
-	size_t totalblocks = min((elementsmapped + TpB - 1) / TpB, 32768);
+	size_t totalblocks = min((elementsmapped + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks);
 	RemapReverseKernel<T> <<<grid, (uint)TpB>>> (d_input, d_map, d_output, elementsmapped, elementsdestination, defvalue, batch);
 }

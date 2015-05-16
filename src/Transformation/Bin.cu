@@ -28,8 +28,8 @@ void d_Bin(tfloat* d_input, tfloat* d_output, int3 dims, int bincount, int batch
 
 		if(dims.z <= 1 && dims.y <= 1)	//1D
 		{
-			size_t TpB = min(192, dims.x / (1<<bincount));
-			size_t totalblocks = min((dims.x / (1<<bincount) + TpB - 1) / TpB, 32768);
+			int TpB = min(192, dims.x / (1<<bincount));
+			int totalblocks = min((dims.x / (1<<bincount) + TpB - 1) / TpB, 32768);
 			dim3 grid = dim3((uint)totalblocks);
 
 			size_t elements = dims.x;
@@ -59,8 +59,8 @@ void d_Bin(tfloat* d_input, tfloat* d_output, int3 dims, int bincount, int batch
 								  dims.y / (1<<i), 
 								  dims.x / (1<<i) * sizeof(tfloat));
 
-				size_t TpB = min(256, dims.x / (2<<i));
-				size_t totalblocks = min((dims.x / (2<<i) + TpB - 1) / TpB, 32768);
+				int TpB = min(256, dims.x / (2<<i));
+				int totalblocks = min((dims.x / (2<<i) + TpB - 1) / TpB, 32768);
 				dim3 grid = dim3((uint)totalblocks, dims.y / (2<<i));
 
 				tfloat* d_result;
@@ -82,8 +82,8 @@ void d_Bin(tfloat* d_input, tfloat* d_output, int3 dims, int bincount, int batch
 		}
 		else							//3D
 		{
-			size_t TpB = min(192, dims.x / (1<<bincount));
-			size_t totalblocks = min((dims.x / (1<<bincount) + TpB - 1) / TpB, 32768);
+			int TpB = min(192, dims.x / (1<<bincount));
+			int totalblocks = min((dims.x / (1<<bincount) + TpB - 1) / TpB, 32768);
 			dim3 grid = dim3((uint)totalblocks, dims.y / (1<<bincount), dims.z / (1<<bincount));
 
 			size_t elements = dims.x * dims.y * dims.z;

@@ -19,7 +19,7 @@ __global__ void LocalPeaksKernel(tfloat* d_input, char* d_output, int3 dims, int
 void d_LocalPeaks(tfloat* d_input, int3** h_peaks, int* h_peaksnum, int3 dims, int localextent, tfloat threshold, int batch)
 {
 	size_t TpB = min(32, dims.x);
-	size_t blocksx = min((dims.x + TpB - 1) / TpB, 32768);
+	size_t blocksx = min((dims.x + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)blocksx, dims.y, dims.z);
 
 	char* h_output;

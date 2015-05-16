@@ -33,8 +33,8 @@ template <class Tmask> void d_Norm(tfloat* d_input, tfloat* d_output, size_t ele
 
 	imgstats5* h_imagestats = (imgstats5*)MallocFromDeviceArray(d_imagestats, batch * sizeof(imgstats5));
 
-	size_t TpB = min(192, NextMultipleOf(elements, 32));
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
+	size_t TpB = min((size_t)192, NextMultipleOf(elements, 32));
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 
 	if(mode == T_NORM_PHASE)

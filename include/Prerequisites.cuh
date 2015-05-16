@@ -198,8 +198,8 @@ template <class T1, class T2> struct tuple2
 #define dotp(a, b) ((a).x * (b).x + (a).y * (b).y + (a).z * (b).z)
 #define dotp2(a, b) ((a).x * (b).x + (a).y * (b).y)
 
-#define min(x, y) ((x) > (y) ? (y) : (x))
-#define max(x, y) ((x) < (y) ? (y) : (x))
+template <class T> __host__ __device__ inline T min(T x, T y) { return x > y ? y : x; }
+template <class T> __host__ __device__ inline T max(T x, T y) { return x < y ? y : x; }
 
 enum T_INTERP_MODE 
 { 

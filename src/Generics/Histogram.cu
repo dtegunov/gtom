@@ -15,8 +15,8 @@ template<class T, int maxbins, int subdivs> __global__ void HistogramKernel(T* d
 
 template<class T> void d_Histogram(T* d_input, uint* d_histogram, size_t elements, int nbins, T minval, T maxval, int batch)
 {	
-	int TpB = min(160, NextMultipleOf(elements, 32));
-	int totalblocks = min((elements + TpB - 1) / TpB, 2048);
+	int TpB = min((size_t)160, NextMultipleOf(elements, 32));
+	int totalblocks = min((elements + TpB - 1) / TpB, (size_t)2048);
 	dim3 grid = dim3(min(totalblocks, 2048), 1, batch);
 
 	uint* d_temp = CudaMallocValueFilled(totalblocks * nbins * batch, (uint)0);

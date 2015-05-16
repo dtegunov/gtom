@@ -27,7 +27,7 @@ void MinMaxGetNumBlocksAndThreads(size_t n, int &blocks, int &threads, int maxbl
     size_t maxthreads = 512;
     threads = (int)((n < maxthreads * 2) ? NextPow2((n + 1)/ 2) : maxthreads);
     size_t totalblocks = (n + (threads * 2 - 1)) / (threads * 2);
-    totalblocks = min(maxblocks, totalblocks);
+	totalblocks = min((size_t)maxblocks, totalblocks);
 	blocks = (int)totalblocks;
 }
 

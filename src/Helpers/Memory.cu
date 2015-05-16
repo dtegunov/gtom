@@ -131,8 +131,8 @@ void WriteToBinaryFile(string path, void* data, size_t bytes)
 
 template<class T> void CudaMemcpyMulti(T* dst, T* src, uint elements, uint copies, uint batch)
 {
-	size_t TpB = min(256, elements);
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 8192), batch);
+	size_t TpB = min((uint)256, elements);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, (size_t)8192), batch);
 	MemcpyMultiKernel <<<grid, TpB>>> (dst, src, elements, copies);
 }
 template void CudaMemcpyMulti<char>(char* dst, char* src, uint elements, uint copies, uint batch);
@@ -146,8 +146,8 @@ template void CudaMemcpyMulti<double2>(double2* dst, double2* src, uint elements
 
 template<class T> void CudaMemcpyStrided(T* dst, T* src, size_t elements, int stridedst, int stridesrc)
 {
-	size_t TpB = min(256, elements);
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 8192));
+	size_t TpB = min((size_t)256, elements);
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, (size_t)8192));
 	MemcpyStridedKernel <<<grid, TpB>>> (dst, src, elements, stridedst, stridesrc);
 }
 template void CudaMemcpyStrided<char>(char* dst, char* src, size_t elements, int stridedst, int stridesrc);
@@ -209,8 +209,8 @@ template <class T1, class T2> void CudaMemcpyFromHostArrayConverted(T1* h_array,
 {
 	T1* d_input = (T1*)CudaMallocFromHostArray(h_array, elements * sizeof(T1));
 
-	size_t TpB = min(768, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)768, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	TypeConversionKernel<T1, T2> <<<grid, (uint)TpB>>> (d_input, d_output, elements);
 	cudaStreamQuery(0);
@@ -228,8 +228,8 @@ template <class T1, class T2> void CudaMallocFromHostArrayConverted(T1* h_array,
 	T1* d_input = (T1*)CudaMallocFromHostArray(h_array, elements * sizeof(T1));
 	cudaMalloc((void**)d_output, elements * sizeof(T2));
 
-	size_t TpB = min(768, elements);
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t TpB = min((size_t)768, elements);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	TypeConversionKernel<T1, T2> <<<grid, (uint)TpB>>> (d_input, *d_output, elements);
 	cudaStreamQuery(0);
@@ -273,7 +273,7 @@ template tfloat4* CudaMallocValueFilled<tfloat4>(size_t elements, tfloat4 value)
 template <class T> void d_ValueFill(T* d_array, size_t elements, T value)
 {
 	size_t TpB = 256;
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	ValueFillKernel<T> <<<grid, (uint)TpB>>> (d_array, elements, value);
 	cudaStreamQuery(0);
@@ -285,7 +285,7 @@ template <class T, int fieldcount> T* d_JoinInterleaved(T** d_fields, size_t ele
 	cudaMalloc((void**)&d_output, elements * fieldcount * sizeof(T));
 
 	size_t TpB = 256;
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	JoinInterleavedKernel<T, fieldcount> <<<grid, (uint)TpB>>> (d_fields, d_output, elements);
 	cudaStreamQuery(0);
@@ -306,7 +306,7 @@ template int* d_JoinInterleaved<int, 6>(int** d_fields, size_t elements);
 template <class T, int fieldcount> void d_JoinInterleaved(T** d_fields, T* d_output, size_t elements)
 {
 	size_t TpB = 256;
-	size_t totalblocks = min((elements + TpB - 1) / TpB, 8192);
+	size_t totalblocks = min((elements + TpB - 1) / TpB, (size_t)8192);
 	dim3 grid = dim3((uint)totalblocks);
 	JoinInterleavedKernel<T, fieldcount> <<<grid, (uint)TpB>>> (d_fields, d_output, elements);
 	cudaStreamQuery(0);

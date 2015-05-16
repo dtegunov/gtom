@@ -390,7 +390,7 @@ void d_Align3D(tfloat* d_volumes, tfloat* d_volumespsf,
 
 	int numangles = 0;
 	tfloat3* h_angles = GetEqualAngularSpacing(phirange, thetarange, psirange, angularspacing, numangles);
-	vector<vector<Align3DParams>> v_params;
+	vector<vector<Align3DParams> > v_params;
 	for (int i = 0; i < nvolumes; i++)
 		v_params.push_back(vector<Align3DParams>());
 

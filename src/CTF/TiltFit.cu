@@ -288,7 +288,7 @@ void d_CTFTiltFit(tfloat* d_image, int2 dimsimage, float overlapfraction, CTFTil
 		for (int a = 0; a < v_angles.size(); a++)
 		{
 			CTFFitParams anglefp = fp;
-			vector<pair<tfloat, CTFParams>> v_params;
+			vector<pair<tfloat, CTFParams> > v_params;
 			AddCTFParamsRange(v_params, anglefp);
 
 			// Calculate defocus offsets across grid
@@ -352,7 +352,7 @@ void d_CTFTiltFit(tfloat* d_image, int2 dimsimage, float overlapfraction, CTFTil
 
 				if (d < defocusrefinements)
 				{
-					vector<pair<tfloat, CTFParams>> v_newparams;
+					vector<pair<tfloat, CTFParams> > v_newparams;
 					anglefp.defocus.z /= 4.0;
 					for (uint f = 0; f < 5; f++)
 					{

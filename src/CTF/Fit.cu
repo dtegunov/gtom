@@ -195,7 +195,7 @@ void d_CTFFitCreateTarget1D(tfloat* d_ps2dpolar, float2* d_ps2dcoords, int2 dims
 	free(h_ps1dcoords);
 }
 
-void d_CTFFit(tfloat* d_target, float2* d_targetcoords, int2 dimstarget, CTFParams* h_startparams, uint ntargets, CTFFitParams p, int refinements, vector<pair<tfloat, CTFParams>> &fits, tfloat &score, tfloat &mean, tfloat &stddev)
+void d_CTFFit(tfloat* d_target, float2* d_targetcoords, int2 dimstarget, CTFParams* h_startparams, uint ntargets, CTFFitParams p, int refinements, vector<pair<tfloat, CTFParams> > &fits, tfloat &score, tfloat &mean, tfloat &stddev)
 {
 	uint targetlength = Elements2(dimstarget);
 
@@ -209,7 +209,7 @@ void d_CTFFit(tfloat* d_target, float2* d_targetcoords, int2 dimstarget, CTFPara
 	CTFParams bestfit;
 	tfloat bestscore = 0.0f;
 	vector<tfloat> scores;
-	vector<pair<tfloat, CTFParams>> v_params;
+	vector<pair<tfloat, CTFParams> > v_params;
 
 	AddCTFParamsRange(v_params, p);
 
@@ -331,7 +331,7 @@ void d_CTFFit(tfloat* d_target, float2* d_targetcoords, int2 dimstarget, CTFPara
 				h_p[j].z /= 4.0;
 
 		// Create CTFParams around the 5 best matches of this iteration, to be explored in the next one
-		vector<pair<tfloat, CTFParams>> v_paramsNew;
+		vector<pair<tfloat, CTFParams> > v_paramsNew;
 		for (int i = 0; i < min(5, (int)v_params.size()); i++)
 		{
 			CTFParams fit = v_params[i].second;
@@ -378,13 +378,13 @@ void d_CTFFit(tfloat* d_image, int2 dimsimage, float overlapfraction, CTFParams 
 
 	d_CTFFitCreateTarget2D(d_image, dimsimage, startparams, fp, overlapfraction, d_ps2dpolar, d_ps2dcoords);
 
-	vector<pair<tfloat, CTFParams>> fits;
+	vector<pair<tfloat, CTFParams> > fits;
 	d_CTFFit(d_ps2dpolar, d_ps2dcoords, polardims, &startparams, 1, fp, refinements, fits, score, mean, stddev);
 
 	fit = fits[0].second;
 }
 
-void AddCTFParamsRange(vector<pair<tfloat, CTFParams>> &v_params, CTFFitParams p)
+void AddCTFParamsRange(vector<pair<tfloat, CTFParams> > &v_params, CTFFitParams p)
 {
 	for (tfloat pixelsize = p.pixelsize.x; pixelsize <= p.pixelsize.y; pixelsize += max(1e-30, p.pixelsize.z))
 		for (tfloat cs = p.Cs.x; cs <= p.Cs.y; cs += max(1e-30, p.Cs.z))

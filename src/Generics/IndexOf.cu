@@ -22,7 +22,7 @@ void d_FirstIndexOf(tfloat* d_input, tfloat* d_output, size_t elements, tfloat v
 {
 	if(mode == T_INTERP_LINEAR)
 	{
-		int TpB = min(NextMultipleOf(elements, 32), 256);
+		int TpB = min(NextMultipleOf(elements, 32), (size_t)256);
 		dim3 grid = dim3(batch);
 		FirstIndexOfLinearKernel <<<grid, TpB>>> (d_input, d_output, elements, value);
 	}
@@ -64,7 +64,7 @@ __global__ void FirstIndexOfLinearKernel(tfloat* d_input, tfloat* d_output, size
 
 		if((value <= current && value >= next) || (value >= current && value <= next))
 		{
-			index = (tfloat)n + max(min((value - current) / (next - current + (tfloat)0.00001), 1), 0);
+			index = (tfloat)n + max(min((value - current) / (next - current + (tfloat)0.00001), 1.0f), 0.0f);
 			found = true;
 			break;
 		}
@@ -76,11 +76,11 @@ __global__ void FirstIndexOfLinearKernel(tfloat* d_input, tfloat* d_output, size
 
 	if(threadIdx.x == 0)
 	{
-		for (int t = 1; t < min(elements, blockDim.x); t++)
+		for (int t = 1; t < min(elements, (size_t)blockDim.x); t++)
 			index = min(index, indices[t]);
 
 		if(found)
-			d_output[blockIdx.x] = max(index, 1);
+			d_output[blockIdx.x] = max(index, 1.0f);
 		else if(anybigger)
 			d_output[blockIdx.x] = (tfloat)elements;
 		else if(nan)
@@ -96,7 +96,7 @@ __global__ void FirstIndexOfLinearKernel(tfloat* d_input, tfloat* d_output, size
 
 void d_IntersectHalfBitFSC(tfloat* d_input, tfloat* d_output, size_t elements, tfloat* d_structurefraction, int batch)
 {
-	int TpB = min(NextMultipleOf(elements, 32), 256);
+	int TpB = min(NextMultipleOf(elements, 32), (size_t)256);
 	dim3 grid = dim3(batch);
 	HalfBitFSCKernel <<<grid, TpB>>> (d_input, d_output, elements);
 }
@@ -155,11 +155,11 @@ __global__ void HalfBitFSCKernel(tfloat* d_input, tfloat* d_output, size_t eleme
 
 	if (threadIdx.x == 0)
 	{
-		for (int t = 1; t < min(elements, blockDim.x); t++)
+		for (int t = 1; t < min(elements, (size_t)blockDim.x); t++)
 			index = min(index, indices[t]);
 
 		if (found)
-			d_output[blockIdx.x] = max(index, 0);
+			d_output[blockIdx.x] = max(index, 0.0f);
 		else if (anybigger)
 			d_output[blockIdx.x] = (tfloat)elements;
 		else if (nan)
@@ -177,7 +177,7 @@ void d_FirstMinimum(tfloat* d_input, tfloat* d_output, size_t elements, T_INTERP
 {
 	if(mode == T_INTERP_LINEAR)
 	{
-		int TpB = min(NextMultipleOf(elements, 32), 256);
+		int TpB = min(NextMultipleOf(elements, 32), (size_t)256);
 		dim3 grid = dim3(batch);
 		FirstMinimumLinearKernel <<<grid, TpB>>> (d_input, d_output, elements);
 	}
@@ -227,11 +227,11 @@ __global__ void FirstMinimumLinearKernel(tfloat* d_input, tfloat* d_output, size
 
 	if(threadIdx.x == 0)
 	{
-		for (int t = 1; t < min(elements, blockDim.x); t++)
+		for (int t = 1; t < min(elements, (size_t)blockDim.x); t++)
 			index = min(index, indices[t]);
 
 		if(found)
-			d_output[blockIdx.x] = max(index, 0);
+			d_output[blockIdx.x] = max(index, 0.0f);
 		else
 			d_output[blockIdx.x] = (tfloat)-1;
 	}
@@ -244,8 +244,8 @@ __global__ void FirstMinimumLinearKernel(tfloat* d_input, tfloat* d_output, size
 
 template<class T> void d_BiggerThan(tfloat* d_input, T* d_output, size_t elements, tfloat value)
 {
-	int TpB = min(256, NextMultipleOf(elements, 32));
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768));
+	int TpB = min((size_t)256, NextMultipleOf(elements, 32));
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, (size_t)32768));
 	BiggerThanKernel <<<grid, TpB>>> (d_input, d_output, elements, value);
 }
 template void d_BiggerThan<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat value);
@@ -264,8 +264,8 @@ template<class T> __global__ void BiggerThanKernel(tfloat* d_input, T* d_output,
 
 template<class T> void d_SmallerThan(tfloat* d_input, T* d_output, size_t elements, tfloat value)
 {
-	int TpB = min(256, NextMultipleOf(elements, 32));
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768));
+	int TpB = min((size_t)256, NextMultipleOf(elements, 32));
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, (size_t)32768));
 	SmallerThanKernel <<<grid, TpB>>> (d_input, d_output, elements, value);
 }
 template void d_SmallerThan<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat value);
@@ -284,8 +284,8 @@ template<class T> __global__ void SmallerThanKernel(tfloat* d_input, T* d_output
 
 template<class T> void d_IsBetween(tfloat* d_input, T* d_output, size_t elements, tfloat minval, tfloat maxval)
 {
-	int TpB = min(256, NextMultipleOf(elements, 32));
-	dim3 grid = dim3(min((elements + TpB - 1) / TpB, 32768));
+	int TpB = min((size_t)256, NextMultipleOf(elements, 32));
+	dim3 grid = dim3(min((elements + TpB - 1) / TpB, (size_t)32768));
 	IsBetweenKernel <<<grid, TpB>>> (d_input, d_output, elements, minval, maxval);
 }
 template void d_IsBetween<tfloat>(tfloat* d_input, tfloat* d_output, size_t elements, tfloat minval, tfloat maxval);
