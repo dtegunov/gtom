@@ -64,23 +64,23 @@ tfloat* MixedToHostTfloat(void* h_input, EM_DATATYPE datatype, size_t elements)
 	tfloat* h_output;
 	cudaMallocHost((void**)&h_output, elements * sizeof(tfloat));
 
-	if(datatype == EM_DATATYPE::EM_BYTE)
+	if(datatype == EM_BYTE)
 		#pragma omp parallel for schedule(dynamic, 1024)
 		for(intptr_t i = 0; i < elements; i++)
 			h_output[i] = (tfloat)((unsigned char*)h_input)[i];
-	else if(datatype == EM_DATATYPE::EM_SHORT)
+	else if(datatype == EM_SHORT)
 		#pragma omp parallel for schedule(dynamic, 1024)
 		for(intptr_t i = 0; i < elements; i++)
 			h_output[i] = (tfloat)((short*)h_input)[i];
-	else if(datatype == EM_DATATYPE::EM_LONG)
+	else if(datatype == EM_LONG)
 		#pragma omp parallel for schedule(dynamic, 1024)
 		for(intptr_t i = 0; i < elements; i++)
 			h_output[i] = (tfloat)((int*)h_input)[i];
-	else if(datatype == EM_DATATYPE::EM_SINGLE)
+	else if(datatype == EM_SINGLE)
 		#pragma omp parallel for schedule(dynamic, 1024)
 		for(intptr_t i = 0; i < elements; i++)
 			h_output[i] = (tfloat)((float*)h_input)[i];
-	else if(datatype == EM_DATATYPE::EM_DOUBLE)
+	else if(datatype == EM_DOUBLE)
 		#pragma omp parallel for schedule(dynamic, 1024)
 		for(intptr_t i = 0; i < elements; i++)
 			h_output[i] = (tfloat)((double*)h_input)[i];
@@ -95,19 +95,19 @@ tfloat* MixedToHostTfloat(void* h_input, MRC_DATATYPE datatype, size_t elements)
 	tfloat* h_output;
 	cudaMallocHost((void**)&h_output, elements * sizeof(tfloat));
 
-	if (datatype == MRC_DATATYPE::MRC_BYTE)
+	if (datatype == MRC_BYTE)
 #pragma omp parallel for schedule(dynamic, 1024)
 		for (intptr_t i = 0; i < elements; i++)
 			h_output[i] = (tfloat)((unsigned char*)h_input)[i];
-	else if (datatype == MRC_DATATYPE::MRC_SHORT)
+	else if (datatype == MRC_SHORT)
 #pragma omp parallel for schedule(dynamic, 1024)
 		for (intptr_t i = 0; i < elements; i++)
 			h_output[i] = (tfloat)((short*)h_input)[i];
-	else if (datatype == MRC_DATATYPE::MRC_UNSIGNEDSHORT)
+	else if (datatype == MRC_UNSIGNEDSHORT)
 #pragma omp parallel for schedule(dynamic, 1024)
 		for (intptr_t i = 0; i < elements; i++)
 			h_output[i] = (tfloat)((unsigned short*)h_input)[i];
-	else if (datatype == MRC_DATATYPE::MRC_FLOAT)
+	else if (datatype == MRC_FLOAT)
 #pragma omp parallel for schedule(dynamic, 1024)
 		for (intptr_t i = 0; i < elements; i++)
 			h_output[i] = (tfloat)((float*)h_input)[i];
@@ -325,15 +325,15 @@ template void d_JoinInterleaved<int, 6>(int** d_fields, int* d_output, size_t el
 
 void MixedToDeviceTfloat(void* h_input, tfloat* d_output, EM_DATATYPE datatype, size_t elements)
 {
-	if(datatype == EM_DATATYPE::EM_BYTE)
+	if(datatype == EM_BYTE)
 		CudaMemcpyFromHostArrayConverted<unsigned char, tfloat>((unsigned char*)h_input, d_output, elements);
-	else if(datatype == EM_DATATYPE::EM_SHORT)
+	else if(datatype == EM_SHORT)
 		CudaMemcpyFromHostArrayConverted<short, tfloat>((short*)h_input, d_output, elements);
-	else if(datatype == EM_DATATYPE::EM_LONG)
+	else if(datatype == EM_LONG)
 		CudaMemcpyFromHostArrayConverted<int, tfloat>((int*)h_input, d_output, elements);
-	else if(datatype == EM_DATATYPE::EM_SINGLE)
+	else if(datatype == EM_SINGLE)
 		cudaMemcpy(d_output, h_input, elements * sizeof(tfloat), cudaMemcpyHostToDevice);
-	else if(datatype == EM_DATATYPE::EM_DOUBLE)
+	else if(datatype == EM_DOUBLE)
 		CudaMemcpyFromHostArrayConverted<double, tfloat>((double*)h_input, d_output, elements);
 	else
 		throw;
@@ -341,13 +341,13 @@ void MixedToDeviceTfloat(void* h_input, tfloat* d_output, EM_DATATYPE datatype, 
 
 void MixedToDeviceTfloat(void* h_input, tfloat* d_output, MRC_DATATYPE datatype, size_t elements)
 {
-	if (datatype == MRC_DATATYPE::MRC_BYTE)
+	if (datatype == MRC_BYTE)
 		CudaMemcpyFromHostArrayConverted<unsigned char, tfloat>((unsigned char*)h_input, d_output, elements);
-	else if (datatype == MRC_DATATYPE::MRC_SHORT)
+	else if (datatype == MRC_SHORT)
 		CudaMemcpyFromHostArrayConverted<short, tfloat>((short*)h_input, d_output, elements);
-	else if (datatype == MRC_DATATYPE::MRC_UNSIGNEDSHORT)
+	else if (datatype == MRC_UNSIGNEDSHORT)
 		CudaMemcpyFromHostArrayConverted<unsigned short, tfloat>((unsigned short*)h_input, d_output, elements);
-	else if (datatype == MRC_DATATYPE::MRC_FLOAT)
+	else if (datatype == MRC_FLOAT)
 		cudaMemcpy(d_output, h_input, elements * sizeof(tfloat), cudaMemcpyHostToDevice);
 	else
 		throw;
@@ -357,18 +357,18 @@ tfloat* MixedToDeviceTfloat(void* h_input, EM_DATATYPE datatype, size_t elements
 {
 	tfloat* d_output;
 
-	if(datatype == EM_DATATYPE::EM_BYTE)
+	if(datatype == EM_BYTE)
 		CudaMallocFromHostArrayConverted<unsigned char, tfloat>((unsigned char*)h_input, &d_output, elements);
-	else if(datatype == EM_DATATYPE::EM_SHORT)
+	else if(datatype == EM_SHORT)
 		CudaMallocFromHostArrayConverted<short, tfloat>((short*)h_input, &d_output, elements);
-	else if(datatype == EM_DATATYPE::EM_LONG)
+	else if(datatype == EM_LONG)
 		CudaMallocFromHostArrayConverted<int, tfloat>((int*)h_input, &d_output, elements);
-	else if(datatype == EM_DATATYPE::EM_SINGLE)
+	else if(datatype == EM_SINGLE)
 	{
 		cudaMalloc((void**)&d_output, elements * sizeof(tfloat));
 		cudaMemcpy(d_output, h_input, elements * sizeof(tfloat), cudaMemcpyHostToDevice);
 	}
-	else if(datatype == EM_DATATYPE::EM_DOUBLE)
+	else if(datatype == EM_DOUBLE)
 		CudaMallocFromHostArrayConverted<double, tfloat>((double*)h_input, &d_output, elements);
 	else
 		throw;
@@ -380,13 +380,13 @@ tfloat* MixedToDeviceTfloat(void* h_input, MRC_DATATYPE datatype, size_t element
 {
 	tfloat* d_output;
 
-	if (datatype == MRC_DATATYPE::MRC_BYTE)
+	if (datatype == MRC_BYTE)
 		CudaMallocFromHostArrayConverted<unsigned char, tfloat>((unsigned char*)h_input, &d_output, elements);
-	else if (datatype == MRC_DATATYPE::MRC_SHORT)
+	else if (datatype == MRC_SHORT)
 		CudaMallocFromHostArrayConverted<short, tfloat>((short*)h_input, &d_output, elements);
-	else if (datatype == MRC_DATATYPE::MRC_UNSIGNEDSHORT)
+	else if (datatype == MRC_UNSIGNEDSHORT)
 		CudaMallocFromHostArrayConverted<unsigned short, tfloat>((unsigned short*)h_input, &d_output, elements);
-	else if (datatype == MRC_DATATYPE::MRC_FLOAT)
+	else if (datatype == MRC_FLOAT)
 	{
 		cudaMalloc((void**)&d_output, elements * sizeof(tfloat));
 		cudaMemcpy(d_output, h_input, elements * sizeof(tfloat), cudaMemcpyHostToDevice);

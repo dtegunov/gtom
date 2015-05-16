@@ -44,12 +44,12 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 		h_positions[b] = tfloat3((tfloat)index, (tfloat)y, (tfloat)z);
 		h_values[b] = h_integerindices[b].t1;
 	}
-	if(mode == T_PEAK_MODE::T_PEAK_INTEGER)
+	if(mode == T_PEAK_INTEGER)
 	{
 		cudaMemcpy(d_positions, h_positions, batch * sizeof(tfloat3), cudaMemcpyHostToDevice);
 		cudaMemcpy(d_values, h_values, batch * sizeof(tfloat), cudaMemcpyHostToDevice);
 	}
-	else if(mode == T_PEAK_MODE::T_PEAK_SUBCOARSE)
+	else if(mode == T_PEAK_SUBCOARSE)
 	{
 		int ndims = DimensionCount(dims);
 		int nsamples = min(ndims == 3 ? 10 : 20, NextMultipleOf(dims.x, 2));
@@ -149,7 +149,7 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 		cudaMemcpy(d_positions, h_positions, batch * sizeof(tfloat3), cudaMemcpyHostToDevice);
 		cudaMemcpy(d_values, h_values, batch * sizeof(tfloat), cudaMemcpyHostToDevice);
 	}
-	else if(mode == T_PEAK_MODE::T_PEAK_SUBFINE)
+	else if(mode == T_PEAK_SUBFINE)
 	{
 		int samples = DimensionCount(dims) < 3 ? 9 : 5;	//Region around the peak to be extracted
 		for (int i = 0; i < DimensionCount(dims); i++)	//Samples shouldn't be bigger than smallest relevant dimension
@@ -175,7 +175,7 @@ void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, 
 					d_interpolated, 
 					toInt3(samples, min(dims.y, samples), min(dims.z, samples)), 
 					toInt3(samples * subdivisions, dims.y == 1 ? 1 : samples * subdivisions, dims.z == 1 ? 1 : samples * subdivisions), 
-					T_INTERP_MODE::T_INTERP_FOURIER,
+					T_INTERP_FOURIER,
 					planforw,
 					planback);
 			d_Max(d_interpolated, d_maxtuple, pow(samples * subdivisions, DimensionCount(dims)));

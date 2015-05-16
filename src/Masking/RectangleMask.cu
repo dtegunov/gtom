@@ -5,7 +5,7 @@
 //CUDA kernel declarations//
 ////////////////////////////
 
-template <class T> __global__ void RectangleMaskKernel(T* d_input, T* d_output, int3 size, tfloat radius, tfloat sigma, tfloat3 center);
+template <class T, int ndims> __global__ void RectangleMaskKernel(T* d_input, T* d_output, int3 dims, int3 dimsbox, int3 center);
 
 
 ////////////////

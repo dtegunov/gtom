@@ -100,14 +100,22 @@ __global__ void FSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, uint sidelen
 
 	for (int i = threadIdx.x; i < maxradius; i += blockDim.x)
 	{
-		nums[i] = 0;
-		denoms1[i] = 0;
-		denoms2[i] = 0;
+		if (i > 0)
+		{
+			nums[i] = 0;
+			denoms1[i] = 0;
+			denoms2[i] = 0;
+		}
+		else
+		{
+			nums[i] = 1;
+			denoms1[i] = 1;
+			denoms2[i] = 1;
+		}
 	}
 	__syncthreads();
 
 	int maxradius2 = maxradius * maxradius;
-	uint halfminusone = sidelength / 2 - 1;
 
 	for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < elementscube; id += gridDim.x * blockDim.x)
 	{
@@ -115,11 +123,11 @@ __global__ void FSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, uint sidelen
 		uint idy = (id - idz * elementsslice) / sidelengthft;
 		uint idx = id % sidelengthft;
 
-		int rx = idx;
-		int ry = (int)halfminusone - (int)((idy + halfminusone) % sidelength);
-		int rz = (int)halfminusone - (int)((idz + halfminusone) % sidelength);
+		int rx = FFTShift((int)idx, sidelength) - sidelength / 2;
+		int ry = FFTShift((int)idy, sidelength) - sidelength / 2;
+		int rz = FFTShift((int)idz, sidelength) - sidelength / 2;
 		int radius2 = rx * rx + ry * ry + rz * rz;
-		if (radius2 >= maxradius2)
+		if (radius2 >= maxradius2 || radius2 == 0)
 			continue;
 
 		tfloat radius = sqrt((tfloat)radius2);

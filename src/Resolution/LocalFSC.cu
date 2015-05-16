@@ -104,7 +104,8 @@ void d_LocalFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, uint nvol
 			// Multiply by Hann mask
 			d_MultiplyByVector(d_extracts1, d_mask, d_extracts1, elementswindow, curbatch);
 			d_MultiplyByVector(d_extracts2, d_mask, d_extracts2, elementswindow, curbatch);
-			//d_WriteMRC(d_extracts1, toInt3(dimswindow.x, dimswindow.y, dimswindow.z * 10), "d_extracts1.mrc");
+			//d_WriteMRC(d_extracts1, toInt3(dimswindow.x, dimswindow.y, dimswindow.z), "d_extracts1.mrc");
+			//d_WriteMRC(d_extracts2, toInt3(dimswindow.x, dimswindow.y, dimswindow.z), "d_extracts2.mrc");
 
 			// FFT
 			d_FFTR2C(d_extracts1, d_extractsft1, &planforw);
@@ -130,7 +131,7 @@ void d_LocalFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, uint nvol
 		// Calculate FSC curves
 		d_MultiplyByVector(d_fscdenoms1, d_fscdenoms2, d_fscdenoms1, maxradius * curbatch);
 		d_Sqrt(d_fscdenoms1, d_fscdenoms1, maxradius * curbatch);
-		d_DivideByVector(d_fscnums, d_fscdenoms1, d_resvalues, maxradius * curbatch);
+		d_DivideSafeByVector(d_fscnums, d_fscdenoms1, d_resvalues, maxradius * curbatch);
 
 		//d_WriteMRC(d_resvalues, toInt3(maxradius, curbatch, 1), "d_resvalues.mrc");
 

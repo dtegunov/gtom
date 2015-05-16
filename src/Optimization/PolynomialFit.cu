@@ -9,7 +9,8 @@ class d_poly_model
 {
 
 public:
-	typedef ::column_vector column_vector;
+	typedef 
+		column_vector column_vector;
 	typedef matrix<double> general_matrix;
 
 	tfloat* d_x;

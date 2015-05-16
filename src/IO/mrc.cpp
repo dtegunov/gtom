@@ -67,7 +67,7 @@ void WriteMRC(tfloat* data, int3 dims, string path)
 #ifdef GTOM_DOUBLE
 	throw;	// MRC can't do double!
 #else
-	header.mode = MRC_DATATYPE::MRC_FLOAT;
+	header.mode = MRC_FLOAT;
 #endif
 
 	float minval = 1e30f, maxval = -1e30f;

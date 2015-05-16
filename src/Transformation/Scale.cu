@@ -31,7 +31,7 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 	if(biggerdims != 0 && biggerdims != ndims)
 		throw;
 
-	if(mode == T_INTERP_MODE::T_INTERP_LINEAR || mode == T_INTERP_MODE::T_INTERP_CUBIC)
+	if(mode == T_INTERP_LINEAR || mode == T_INTERP_CUBIC)
 	{
 		cudaArray* a_image;
 		cudaTex t_image;
@@ -93,7 +93,7 @@ void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_IN
 
 		cudaFree(d_temp);
 	}
-	else if(mode == T_INTERP_MODE::T_INTERP_FOURIER)
+	else if(mode == T_INTERP_FOURIER)
 	{
 		tcomplex* d_inputFFT;
 		cudaMalloc((void**)&d_inputFFT, ElementsFFT(olddims) * batch * sizeof(tcomplex));

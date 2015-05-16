@@ -66,7 +66,7 @@ struct HeaderMRC
 
 	HeaderMRC():
 		dimensions(toInt3(1, 1, 1)),
-		mode(MRC_DATATYPE::MRC_FLOAT),
+		mode(MRC_FLOAT),
 		startsubimage(toInt3(0, 0, 0)),
 		griddimensions(toInt3(1, 1, 1)),
 		pixelsize(make_float3(1.0f, 1.0f, 1.0f)),

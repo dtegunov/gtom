@@ -57,6 +57,9 @@ void d_AnisotropicFSC(tcomplex* d_volumeft1, tcomplex* d_volumeft2, int3 dimsvol
 	d_Sqrt(d_reddenoms1, d_reddenoms1, maxradius * batch);
 	d_DivideSafeByVector(d_rednums, d_reddenoms1, d_curve, maxradius * batch);
 
+	tfloat* h_curve = (tfloat*)MallocFromDeviceArray(d_curve, maxradius * sizeof(tfloat));
+	free(h_curve);
+
 	cudaFree(d_reddenoms2);
 	cudaFree(d_reddenoms1);
 	cudaFree(d_rednums);
@@ -76,8 +79,8 @@ void d_AnisotropicFSCMap(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, 
 	cudaMalloc((void**)&d_volumeft2, ElementsFFT(dimsvolume) * batch * sizeof(tcomplex));
 	d_FFTR2C(d_volume2, d_volumeft2, &localplanforw);
 
-	float phistep = ToRad(180.0f) / (float)max(anglesteps.x - 1, 1);
-	float thetastep = ToRad(90.0f) / (float)max(anglesteps.y - 1, 1);
+	float phistep = PI2 / (float)max(anglesteps.x - 1, 1);
+	float thetastep = PIHALF / (float)max(anglesteps.y - 1, 1);
 
 	tfloat* d_curve = CudaMallocValueFilled(maxradius * batch, (tfloat)0);
 	tfloat* d_maptemp = CudaMallocValueFilled(batch * sizeof(tfloat), (tfloat)0);
@@ -95,7 +98,7 @@ void d_AnisotropicFSCMap(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, 
 			if(dimsvolume.z == 1)
 				x = -cos(phi);
 
-			d_AnisotropicFSC(d_volumeft1, d_volumeft2, dimsvolume, d_curve, maxradius, make_float3(x, y, z), min(phistep / 2.0f, thetastep / 2.0f), NULL, NULL, NULL, batch);
+			d_AnisotropicFSC(d_volumeft1, d_volumeft2, dimsvolume, d_curve, maxradius, make_float3(x, y, z), min(ToRad(85.0f), min(phistep * 2.0f, thetastep * 2.0f)), NULL, NULL, NULL, batch);
 			
 			/*tfloat* d_masktemp = CudaMallocValueFilled(ElementsFFT(dimsvolume), (tfloat)1);
 			d_ConeMaskFT(d_masktemp, d_masktemp, dimsvolume, make_float3(x, y, z), min(phistep / 2.0f, thetastep / 2.0f));
@@ -169,7 +172,7 @@ __global__ void AnisotropicFSCKernel(tcomplex* d_volume1, tcomplex* d_volume2, u
 		float3 posondir = make_float3(direction.x * dotprod, direction.y * dotprod, direction.z * dotprod);
 		float conewidth = tan(coneangle) * abs(dotprod);
 		float3 postocone = make_float3(posondir.x - rx, posondir.y - ry, posondir.z - rz);
-		float fractionofcone = sqrt(dotp(postocone, postocone)) / max(1.0f, conewidth) / 1.2f;
+		float fractionofcone = sqrt(dotp(postocone, postocone)) / max(10.0f, conewidth) / 1.2f;
 		float weight = max(0.0f, min(1.0f, fractionofcone));
 		weight = (cos(weight * PI) + 1.0f) / 2.0f;
 

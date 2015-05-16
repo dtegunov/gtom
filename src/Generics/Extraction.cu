@@ -92,9 +92,9 @@ void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int2 dimsinput, i
 	dim3 TpB = dim3(16, 16);
 	dim3 grid = dim3((dimsregion.x + 15) / 16, (dimsregion.y + 15) / 16, batch);
 	
-	if(mode == T_INTERP_MODE::T_INTERP_LINEAR)
+	if(mode == T_INTERP_LINEAR)
 		Extract2DTransformedKernel<false> << <grid, TpB >> > (t_input, d_output, dimsinput, dimsregion, d_transforms);
-	else if(mode == T_INTERP_MODE::T_INTERP_CUBIC)
+	else if(mode == T_INTERP_CUBIC)
 		Extract2DTransformedKernel<true> << <grid, TpB >> > (t_input, d_output, dimsinput, dimsregion, d_transforms);
 
 	cudaFree(d_transforms);

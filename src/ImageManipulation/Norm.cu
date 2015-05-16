@@ -37,24 +37,24 @@ template <class Tmask> void d_Norm(tfloat* d_input, tfloat* d_output, size_t ele
 	size_t totalblocks = min((elements + TpB - 1) / TpB, 32768);
 	dim3 grid = dim3((uint)totalblocks, batch);
 
-	if(mode == T_NORM_MODE::T_NORM_PHASE)
+	if(mode == T_NORM_PHASE)
 		NormPhaseKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements);
-	else if(mode == T_NORM_MODE::T_NORM_STD1)
+	else if(mode == T_NORM_STD1)
 		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)1);
-	else if(mode == T_NORM_MODE::T_NORM_STD2)
+	else if(mode == T_NORM_STD2)
 		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)2);
-	else if(mode == T_NORM_MODE::T_NORM_STD3)
+	else if(mode == T_NORM_STD3)
 		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)3);
-	else if(mode == T_NORM_MODE::T_NORM_MEAN01STD)
+	else if(mode == T_NORM_MEAN01STD)
 		NormMeanStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements);
-	else if(mode == T_NORM_MODE::T_NORM_OSCAR)
+	else if(mode == T_NORM_OSCAR)
 	{
 		NormStdDevKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, (tfloat)3);
 		d_AddScalar(d_output, d_output, elements * batch, (tfloat)100);
 		d_Dev(d_output, d_imagestats, elements, d_mask, batch);
 		NormPhaseKernel <<<grid, (uint)TpB>>> (d_output, d_output, d_imagestats, elements);
 	}
-	else if(mode == T_NORM_MODE::T_NORM_CUSTOM)
+	else if(mode == T_NORM_CUSTOM)
 		NormCustomScfKernel <<<grid, (uint)TpB>>> (d_input, d_output, d_imagestats, elements, scf);
 
 	free(h_imagestats);

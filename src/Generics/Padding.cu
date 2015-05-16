@@ -26,11 +26,11 @@ template <class T> void d_Pad(T* d_input, T* d_output, int3 inputdims, int3 outp
 	int3 offset = toInt3(inputcenter.x - outputcenter.x, inputcenter.y - outputcenter.y, inputcenter.z - outputcenter.z);
 
 	for (int b = 0; b < batch; b++)
-		if(mode == T_PAD_MODE::T_PAD_VALUE)
+		if(mode == T_PAD_VALUE)
 			PadValueKernel <<<grid, (int)TpB>>> (d_input + Elements(inputdims) * b, d_output + Elements(outputdims) * b, inputdims, outputdims, offset, value);
-		else if(mode == T_PAD_MODE::T_PAD_MIRROR)
+		else if(mode == T_PAD_MIRROR)
 			PadMirrorKernel <<<grid, (int)TpB>>> (d_input + Elements(inputdims) * b, d_output + Elements(outputdims) * b, inputdims, outputdims, offset);
-		else if(mode == T_PAD_MODE::T_PAD_TILE)
+		else if(mode == T_PAD_TILE)
 			PadTileKernel <<<grid, (int)TpB>>> (d_input + Elements(inputdims) * b, d_output + Elements(outputdims) * b, inputdims, outputdims, offset);
 	cudaStreamQuery(0);
 }

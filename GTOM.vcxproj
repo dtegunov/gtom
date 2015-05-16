@@ -26,7 +26,7 @@
     <ClInclude Include="include\Correlation.cuh" />
     <ClInclude Include="include\CTF.cuh" />
     <ClInclude Include="include\CubicInterp.cuh" />
-    <ClInclude Include="include\cutil_math_bugfixes.h" />
+    <ClInclude Include="include\cutil_math_bugfixes.cuh" />
     <ClInclude Include="include\FFT.cuh" />
     <ClInclude Include="include\Generics.cuh" />
     <ClInclude Include="include\Helper.cuh" />

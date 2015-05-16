@@ -111,12 +111,12 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 
 	cufftHandle planforwTrans, planbackTrans;
 	cufftHandle planforwRot, planbackRot;
-	if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
+	if(mode & T_ALIGN_ROT)
 	{
 		planforwRot = d_FFTR2CGetPlan(2, polardims, batch);
 		planbackRot = d_IFFTC2RGetPlan(2, polardims, batch);
 	}
-	if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
+	if(mode & T_ALIGN_ROT)
 	{
 		planforwTrans = d_FFTR2CGetPlan(2, effdims, batch);
 		planbackTrans = d_IFFTC2RGetPlan(2, effdims, batch);
@@ -169,7 +169,7 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 	{
 		for (int iteration = 0; iteration < iterations; iteration++)
 		{
-			if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
+			if(mode & T_ALIGN_ROT)
 			{
 				for (int t = 0; t < numtargets; t++)
 				{
@@ -209,7 +209,7 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 				}
 			}
 
-			if(mode & T_ALIGN_MODE::T_ALIGN_TRANS)
+			if(mode & T_ALIGN_TRANS)
 			{
 				for (int t = 0; t < numtargets; t++)
 				{
@@ -282,12 +282,12 @@ void d_Align2D(tfloat* d_input, tfloat* d_targets, int3 dims, int numtargets, tf
 	free(h_scorestrans);
 	free(h_scoresrot);
 	
-	if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
+	if(mode & T_ALIGN_ROT)
 	{
 		cufftDestroy(planforwRot);
 		cufftDestroy(planbackRot);
 	}
-	if(mode & T_ALIGN_MODE::T_ALIGN_ROT)
+	if(mode & T_ALIGN_ROT)
 	{
 		cufftDestroy(planforwTrans);
 		cufftDestroy(planbackTrans);

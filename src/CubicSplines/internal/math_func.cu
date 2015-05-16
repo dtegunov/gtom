@@ -45,7 +45,7 @@ following papers:
 #define _MATH_FUNC_CUDA_H_
 
 #include "version.cu"
-#include "cutil_math_bugfixes.h"
+#include "cutil_math_bugfixes.cuh"
 #include "Prerequisites.cuh"
 
 typedef unsigned int uint;

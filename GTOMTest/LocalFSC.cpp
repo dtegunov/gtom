@@ -6,7 +6,7 @@ TEST(Resolution, LocalFSC)
 
 	//Case 1:
 	{
-		HeaderMRC header = ReadMRCHeader("Data\\Resolution\\half1.mrc");
+		HeaderMRC header = ReadMRCHeader("Data\\Resolution\\half11.mrc");
 		int3 dimsvolume = header.dimensions;
 		uint nvolumes = dimsvolume.z / dimsvolume.x;
 		dimsvolume.z = dimsvolume.x;
@@ -15,8 +15,8 @@ TEST(Resolution, LocalFSC)
 		int shells = windowsize / 2;
 
 		void* h_mrcraw1, *h_mrcraw2;
-		ReadMRC("Data\\Resolution\\half1.mrc", &h_mrcraw1);
-		ReadMRC("Data\\Resolution\\half2.mrc", &h_mrcraw2);
+		ReadMRC("Data\\Resolution\\half11.mrc", &h_mrcraw1);
+		ReadMRC("Data\\Resolution\\half22.mrc", &h_mrcraw2);
 		tfloat* d_input1 = MixedToDeviceTfloat(h_mrcraw1, header.mode, Elements(dimsvolume) * nvolumes);
 		tfloat* d_input2 = MixedToDeviceTfloat(h_mrcraw2, header.mode, Elements(dimsvolume) * nvolumes);
 

@@ -120,16 +120,16 @@ void d_Rotate2DFT(cudaTex t_inputRe, cudaTex t_inputIm, tcomplex* d_output, int3
 
 		if (isoutputzerocentered)
 		{
-			if (mode == T_INTERP_MODE::T_INTERP_LINEAR)
+			if (mode == T_INTERP_LINEAR)
 				Rotate2DFTKernel<false, true> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
-			else if (mode == T_INTERP_MODE::T_INTERP_CUBIC)
+			else if (mode == T_INTERP_CUBIC)
 				Rotate2DFTKernel<true, true> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
 		}
 		else
 		{
-			if (mode == T_INTERP_MODE::T_INTERP_LINEAR)
+			if (mode == T_INTERP_LINEAR)
 				Rotate2DFTKernel<false, false> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
-			else if (mode == T_INTERP_MODE::T_INTERP_CUBIC)
+			else if (mode == T_INTERP_CUBIC)
 				Rotate2DFTKernel<true, false> << <grid, TpB >> > (t_inputRe, t_inputIm, d_output, dims, rotation, maxfreq);
 		}
 }
@@ -140,7 +140,7 @@ void d_Rotate2D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* angles, in
 	tcomplex* d_padded;
 	cudaMalloc((void**)&d_padded, ElementsFFT(dimspadded) * batch * sizeof(tcomplex));
 
-	d_Pad(d_input, (tfloat*)d_padded, dims, dimspadded, T_PAD_MODE::T_PAD_VALUE, (tfloat)0, batch);
+	d_Pad(d_input, (tfloat*)d_padded, dims, dimspadded, T_PAD_VALUE, (tfloat)0, batch);
 	d_RemapFull2FullFFT((tfloat*)d_padded, (tfloat*)d_padded, dimspadded, batch);
 	d_FFTR2C((tfloat*)d_padded, d_padded, 2, dimspadded, batch);
 	d_RemapHalfFFT2Half(d_padded, d_padded, dimspadded, batch);
@@ -150,7 +150,7 @@ void d_Rotate2D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* angles, in
 	//d_RemapHalf2HalfFFT(d_padded, d_padded, dimspadded, batch);
 	d_IFFTC2R(d_padded, (tfloat*)d_padded, 2, dimspadded, batch);
 	d_RemapFullFFT2Full((tfloat*)d_padded, (tfloat*)d_padded, dimspadded, batch);
-	d_Pad((tfloat*)d_padded, d_output, dimspadded, dims, T_PAD_MODE::T_PAD_VALUE, (tfloat)0, batch);
+	d_Pad((tfloat*)d_padded, d_output, dimspadded, dims, T_PAD_VALUE, (tfloat)0, batch);
 
 	cudaFree(d_padded);
 }
