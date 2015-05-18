@@ -38,6 +38,7 @@
 #include <math.h>
 #include <assert.h>
 #include <exception>
+#include <cstddef>
 #include "Polynomial.h"
 #include "PolynomialRootFinder.h"
 
@@ -967,7 +968,7 @@ double Polynomial::operator [](int power_index) const
 
     if ((power_index < 0) || (power_index > m_degree))
     {
-        throw std::exception("Polynomial index out of range");
+        throw "Polynomial index out of range";
     }
 
     return m_coefficient_vector_ptr[power_index];
@@ -1003,7 +1004,7 @@ double & Polynomial::operator [](int power_index)
 
     if ((power_index < 0) || (power_index > m_degree))
     {
-        throw std::exception("Polynomial index out of range");
+        throw "Polynomial index out of range";
     }
 
     return m_coefficient_vector_ptr[power_index];

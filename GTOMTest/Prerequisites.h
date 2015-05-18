@@ -4,6 +4,7 @@
 #include "../include/GTOM.cuh"
 
 using namespace std;
+using namespace gtom;
 
 /**
  * \brief Asserts that |expected-actual| is below the specified margin
@@ -74,24 +75,6 @@ template <class T> void ASSERT_ARRAY_EQ(T* actual, T* values, size_t n);
  * \returns	File size in bytes
  */
 int GetFileSize(string path);
-
-/**
- * \brief Creates an array in device memory that is filled with a binary file's content and has the same size.
- * \param[in] path	File path
- * \returns Array pointer in device memory
- */
-void* MallocFromBinaryFile(string path);
-
-void WriteToBinaryFile(string path, void* data, size_t bytes);
-
-/**
- * \brief Creates an array in host memory that is filled with a binary file's content and has the same size.
- * \param[in] path	File path
- * \returns Array pointer in host memory
- */
-void* CudaMallocFromBinaryFile(string path);
-
-void CudaWriteToBinaryFile(string path, void* d_data, size_t elements);
 
 /**
  * \brief Calculates the mean difference between expected and actual values.

@@ -48,52 +48,54 @@ following papers:
 #include "internal/cubicPrefilter_kernel.cu"
 #include "Prerequisites.cuh"
 
-// ***************************************************************************
-// *	Global GPU procedures
-// ***************************************************************************
-template<class T> __global__ void SamplesToCoefficients2DX(T* d_image, uint2 dims)
+namespace gtom
 {
-	d_image += Elements2(dims) * blockIdx.y;
+	// ***************************************************************************
+	// *	Global GPU procedures
+	// ***************************************************************************
+	template<class T> __global__ void SamplesToCoefficients2DX(T* d_image, uint2 dims)
+	{
+		d_image += Elements2(dims) * blockIdx.y;
 
-	// process lines in x-direction
-	const uint y = blockIdx.x * blockDim.x + threadIdx.x;
-	if(y >= dims.y)
-		return;
+		// process lines in x-direction
+		const uint y = blockIdx.x * blockDim.x + threadIdx.x;
+		if (y >= dims.y)
+			return;
 
-	ConvertToInterpolationCoefficients(d_image + y * dims.x, dims.x, 1);
+		ConvertToInterpolationCoefficients(d_image + y * dims.x, dims.x, 1);
+	}
+
+	template<class T> __global__ void SamplesToCoefficients2DY(T* d_image, uint2 dims)
+	{
+		d_image += Elements2(dims) * blockIdx.y;
+
+		// process lines in x-direction
+		const uint x = blockIdx.x * blockDim.x + threadIdx.x;
+		if (x >= dims.x)
+			return;
+
+		ConvertToInterpolationCoefficients(d_image + x, dims.y, dims.x);
+	}
+
+	// ***************************************************************************
+	// *	Exported functions
+	// ***************************************************************************
+
+	//! Convert the pixel values into cubic b-spline coefficients
+	//! @param image  pointer to the image bitmap in GPU (device) memory
+	//! @param pitch   width in bytes (including padding bytes)
+	//! @param width   image width in number of pixels
+	//! @param height  image height in number of pixels
+	template<class T> void d_CubicBSplinePrefilter2D(T* image, int2 dims, int batch)
+	{
+		int TpB = (min(dims.y, 192));
+		dim3 grid((dims.y + TpB - 1) / TpB, batch);
+		SamplesToCoefficients2DX<T> << <grid, TpB >> >(image, make_uint2(dims.x, dims.y));
+
+		TpB = (min(dims.x, 192));
+		grid = dim3((dims.x + TpB - 1) / TpB, batch);
+		SamplesToCoefficients2DY<T> << <grid, TpB >> >(image, make_uint2(dims.x, dims.y));
+	}
+	template void d_CubicBSplinePrefilter2D<tfloat>(tfloat* image, int2 dims, int batch);
 }
-
-template<class T> __global__ void SamplesToCoefficients2DY(T* d_image, uint2 dims)
-{
-	d_image += Elements2(dims) * blockIdx.y;
-
-	// process lines in x-direction
-	const uint x = blockIdx.x * blockDim.x + threadIdx.x;
-	if(x >= dims.x)
-		return;
-
-	ConvertToInterpolationCoefficients(d_image + x, dims.y, dims.x);
-}
-
-// ***************************************************************************
-// *	Exported functions
-// ***************************************************************************
-
-//! Convert the pixel values into cubic b-spline coefficients
-//! @param image  pointer to the image bitmap in GPU (device) memory
-//! @param pitch   width in bytes (including padding bytes)
-//! @param width   image width in number of pixels
-//! @param height  image height in number of pixels
-template<class T> void d_CubicBSplinePrefilter2D(T* image, int2 dims, int batch)
-{
-	int TpB = (min(dims.y, 192));
-	dim3 grid((dims.y + TpB - 1) / TpB, batch);
-	SamplesToCoefficients2DX<T> << <grid, TpB >> >(image, make_uint2(dims.x, dims.y));
-	
-	TpB = (min(dims.x, 192));
-	grid = dim3((dims.x + TpB - 1) / TpB, batch);
-	SamplesToCoefficients2DY<T> << <grid, TpB >> >(image, make_uint2(dims.x, dims.y));
-}
-template void d_CubicBSplinePrefilter2D<tfloat>(tfloat* image, int2 dims, int batch);
-
 #endif  //_2D_CUBIC_BSPLINE_PREFILTER_H_

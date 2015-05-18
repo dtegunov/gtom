@@ -1,4 +1,6 @@
-#pragma once
+#ifndef GTOM_CUH
+#define GTOM_CUH
+
 #include "Prerequisites.cuh"
 
 #include "Angles.cuh"
@@ -18,5 +20,6 @@
 #include "Projection.cuh"
 #include "Reconstruction.cuh"
 #include "Resolution.cuh"
-#include "Tomography.cuh"
 #include "Transformation.cuh"
+
+#endif

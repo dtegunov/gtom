@@ -46,64 +46,67 @@ following papers:
 
 #include "Prerequisites.cuh"
 
-// The code below is based on the work of Philippe Thevenaz.
-// See <http://bigwww.epfl.ch/thevenaz/interpolation/>
+namespace gtom
+{
+	// The code below is based on the work of Philippe Thevenaz.
+	// See <http://bigwww.epfl.ch/thevenaz/interpolation/>
 
 #define Pole (sqrt(3.0f)-2.0f)  //pole for cubic b-spline
- 
-//--------------------------------------------------------------------------
-// Local GPU device procedures
-//--------------------------------------------------------------------------
-template<class T> __host__ __device__ T InitialCausalCoefficient(T* c,			// coefficients
-																uint DataLength,	// number of coefficients
-																uint interleave)			// element interleave in words
-{
-	const int Horizon = min(12, DataLength);
 
-	// this initialization corresponds to clamping boundaries
-	// accelerated loop
-	float zn = Pole;
-	T Sum = *c;
-	for (uint n = 0; n < Horizon; n++) 
+	//--------------------------------------------------------------------------
+	// Local GPU device procedures
+	//--------------------------------------------------------------------------
+	template<class T> __host__ __device__ T InitialCausalCoefficient(T* c,			// coefficients
+		uint DataLength,	// number of coefficients
+		uint interleave)			// element interleave in words
 	{
-		Sum += zn * *c;
-		zn *= Pole;
-		c += interleave;
+		const int Horizon = min(12, DataLength);
+
+		// this initialization corresponds to clamping boundaries
+		// accelerated loop
+		float zn = Pole;
+		T Sum = *c;
+		for (uint n = 0; n < Horizon; n++)
+		{
+			Sum += zn * *c;
+			zn *= Pole;
+			c += interleave;
+		}
+		return(Sum);
 	}
-	return(Sum);
-}
 
-template<class T> __host__ __device__ T InitialAntiCausalCoefficient(T* c)			// last coefficient
-{
-	// this initialization corresponds to clamping boundaries
-	return ((Pole / (Pole - 1.0f)) * *c);
-}
-
-template<class T> __host__ __device__ void ConvertToInterpolationCoefficients(T* coeffs,		// input samples --> output coefficients
-																			  uint DataLength,	// number of samples or coefficients
-																			  uint interleave)			// element interleave in words
-{
-	// compute the overall gain
-	const float Lambda = (1.0f - Pole) * (1.0f - 1.0f / Pole);
-
-	// causal initialization
-	T* c = coeffs;
-	T previous_c;  //cache the previously calculated c rather than look it up again (faster!)
-	*c = previous_c = Lambda * InitialCausalCoefficient(c, DataLength, interleave);
-	// causal recursion
-	for (uint n = 1; n < DataLength; n++) 
+	template<class T> __host__ __device__ T InitialAntiCausalCoefficient(T* c)			// last coefficient
 	{
-		c += interleave;
-		*c = previous_c = Lambda * *c + Pole * previous_c;
+		// this initialization corresponds to clamping boundaries
+		return ((Pole / (Pole - 1.0f)) * *c);
 	}
-	// anticausal initialization
-	*c = previous_c = InitialAntiCausalCoefficient(c);
-	// anticausal recursion
-	for (int n = DataLength - 2; 0 <= n; n--) 
-	{
-		c -= interleave;
-		*c = previous_c = Pole * (previous_c - *c);
-	}
-}
 
+	template<class T> __host__ __device__ void ConvertToInterpolationCoefficients(T* coeffs,		// input samples --> output coefficients
+		uint DataLength,	// number of samples or coefficients
+		uint interleave)			// element interleave in words
+	{
+		// compute the overall gain
+		const float Lambda = (1.0f - Pole) * (1.0f - 1.0f / Pole);
+
+		// causal initialization
+		T* c = coeffs;
+		T previous_c;  //cache the previously calculated c rather than look it up again (faster!)
+		*c = previous_c = Lambda * InitialCausalCoefficient(c, DataLength, interleave);
+		// causal recursion
+		for (uint n = 1; n < DataLength; n++)
+		{
+			c += interleave;
+			*c = previous_c = Lambda * *c + Pole * previous_c;
+		}
+		// anticausal initialization
+		*c = previous_c = InitialAntiCausalCoefficient(c);
+		// anticausal recursion
+		for (int n = DataLength - 2; 0 <= n; n--)
+		{
+			c -= interleave;
+			*c = previous_c = Pole * (previous_c - *c);
+		}
+	}
+
+}
 #endif // _CUBIC_BSPLINE_PREFILTER_KERNEL_H_

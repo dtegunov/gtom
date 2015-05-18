@@ -14,6 +14,8 @@ x64/
 build/
 [Bb]in/
 [Oo]bj/
+[Ll]ib/
+CMakeFiles/
 
 # Enable "build/" folder in the NuGet Packages folder since NuGet packages use it for MSBuild targets
 !packages/*/build/
@@ -51,6 +53,10 @@ build/
 *.mrc
 *.em
 *.st
+*.a
+CMakeCache.txt
+cmake_install.cmake
+Makefile
 
 # Visual C++ cache files
 ipch/

@@ -46,18 +46,18 @@ following papers:
 
 #include "math_func.cu"
 
-// Cubic B-spline function
-// The 3rd order Maximal Order and Minimum Support function, that it is maximally differentiable.
-inline __host__ __device__ float bspline(float t)
+namespace gtom
 {
-	t = fabs(t);
-	const float a = 2.0f - t;
+	// Cubic B-spline function
+	// The 3rd order Maximal Order and Minimum Support function, that it is maximally differentiable.
+	inline __host__ __device__ float bspline(float t)
+	{
+		t = fabs(t);
+		const float a = 2.0f - t;
 
-	if (t < 1.0f) return 2.0f/3.0f - 0.5f*t*t*a;
-	else if (t < 2.0f) return a*a*a / 6.0f;
-	else return 0.0f;
+		if (t < 1.0f) return 2.0f / 3.0f - 0.5f*t*t*a;
+		else if (t < 2.0f) return a*a*a / 6.0f;
+		else return 0.0f;
+	}
 }
-
-
-
 #endif // _CUDA_BSPLINE_H_

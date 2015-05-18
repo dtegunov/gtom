@@ -169,7 +169,7 @@ namespace dlib
             const T old_lambda = lambda;
 
             // figure out which lambda to try next
-            lambda = lambda + std::pow(q_norm/p_norm,2)*(p_norm - radius)/radius;
+            lambda = lambda + std::pow(q_norm/p_norm,2.)*(p_norm - radius)/radius;
 
             // make sure the chosen lambda is within our bracket (but not exactly at either end).
             const T gap = (lambda_max-lambda_min)*0.01;

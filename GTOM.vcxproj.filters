@@ -105,13 +105,7 @@
     <ClInclude Include="include\Resolution.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="include\Tomography.cuh">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="include\Transformation.cuh">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="include\cutil_math_bugfixes.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="include\Optimization.cuh">
@@ -128,6 +122,9 @@
     </ClInclude>
     <ClInclude Include="src\Optimization\polynomials\PolynomialRootFinder.h">
       <Filter>Optimization\Polynomials</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cutil_math_bugfixes.cuh">
+      <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -200,9 +197,6 @@
       <Filter>Cubic Splines</Filter>
     </CudaCompile>
     <CudaCompile Include="src\CubicSplines\cubicPrefilter3D.cu">
-      <Filter>Cubic Splines</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\CubicSplines\memcpy.cu">
       <Filter>Cubic Splines</Filter>
     </CudaCompile>
     <CudaCompile Include="src\CubicSplines\internal\bspline_kernel.cu">

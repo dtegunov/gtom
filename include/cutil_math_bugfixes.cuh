@@ -63,25 +63,20 @@ typedef unsigned short ushort;
 #ifndef __CUDACC__
 #include <math.h>
 
-inline float fminf(float a, float b)
+__host__ __device__ inline float fminf(float a, float b)
 {
   return a < b ? a : b;
 }
 
-inline float fmaxf(float a, float b)
+__host__ __device__ inline float fmaxf(float a, float b)
 {
   return a < b ? a : b;
 }
+#endif
 
-inline int max(int a, int b)
-{
-  return a > b ? a : b;
-}
-
-inline int min(int a, int b)
-{
-  return a < b ? a : b;
-}
+#ifndef tmin
+	#define tmin(a, b) (((a) < (b)) ? (a) : (b))
+	#define tmax(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
 // float functions
@@ -567,13 +562,13 @@ inline __host__ __device__ int3 make_int3(float3 a)
 // min
 inline __host__ __device__ int3 min(int3 a, int3 b)
 {
-    return make_int3(min(a.x,b.x), min(a.y,b.y), min(a.z,b.z));
+    return make_int3(tmin(a.x,b.x), tmin(a.y,b.y), tmin(a.z,b.z));
 }
 
 // max
 inline __host__ __device__ int3 max(int3 a, int3 b)
 {
-    return make_int3(max(a.x,b.x), max(a.y,b.y), max(a.z,b.z));
+    return make_int3(tmax(a.x,b.x), tmax(a.y,b.y), tmax(a.z,b.z));
 }
 
 // addition
@@ -636,7 +631,7 @@ inline __host__ __device__ void operator/=(int3 &a, int s)
 // clamp
 inline __device__ __host__ int clamp(int f, int a, int b)
 {
-    return max(a, min(f, b));
+    return tmax(a, tmin(f, b));
 }
 
 inline __device__ __host__ int3 clamp(int3 v, int a, int b)
@@ -666,13 +661,13 @@ inline __host__ __device__ uint3 make_uint3(float3 a)
 // min
 inline __host__ __device__ uint3 min(uint3 a, uint3 b)
 {
-    return make_uint3(min(a.x,b.x), min(a.y,b.y), min(a.z,b.z));
+    return make_uint3(tmin(a.x,b.x), tmin(a.y,b.y), tmin(a.z,b.z));
 }
 
 // max
 inline __host__ __device__ uint3 max(uint3 a, uint3 b)
 {
-    return make_uint3(max(a.x,b.x), max(a.y,b.y), max(a.z,b.z));
+    return make_uint3(tmax(a.x,b.x), tmax(a.y,b.y), tmax(a.z,b.z));
 }
 
 // addition
@@ -735,7 +730,7 @@ inline __host__ __device__ void operator/=(uint3 &a, uint s)
 // clamp
 inline __device__ __host__ uint clamp(uint f, uint a, uint b)
 {
-    return max(a, min(f, b));
+    return tmax(a, tmin(f, b));
 }
 
 inline __device__ __host__ uint3 clamp(uint3 v, uint a, uint b)

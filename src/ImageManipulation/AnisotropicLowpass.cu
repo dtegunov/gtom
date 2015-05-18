@@ -5,46 +5,49 @@
 #include "Masking.cuh"
 
 
-///////////////////////////////////////////
-//Equivalent of TOM's tom_bandpass method//
-///////////////////////////////////////////
-
-void d_AnisotropicLowpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* d_radiusmap, int2 anglesteps, tfloat smooth, cufftHandle* planforw, cufftHandle* planback, int batch)
+namespace gtom
 {
-	int dimensions = DimensionCount(dims);
+	///////////////////////////////////////////
+	//Equivalent of TOM's tom_bandpass method//
+	///////////////////////////////////////////
 
-	//Prepare mask:
-	
-	tfloat* d_mask = (tfloat*)CudaMallocValueFilled(Elements(dims), (tfloat)1);
+	void d_AnisotropicLowpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* d_radiusmap, int2 anglesteps, tfloat smooth, cufftHandle* planforw, cufftHandle* planback, int batch)
+	{
+		int dimensions = DimensionCount(dims);
 
-	d_IrregularSphereMask(d_mask, d_mask, dims, d_radiusmap, anglesteps, smooth, (tfloat3*)NULL, 1);
+		//Prepare mask:
 
-	tfloat* d_maskFFT;
-	cudaMalloc((void**)&d_maskFFT, ElementsFFT(dims) * sizeof(tfloat));
-	d_RemapFull2HalfFFT(d_mask, d_maskFFT, dims);
-	cudaFree(d_mask);
-	
-	//Forward FFT:
+		tfloat* d_mask = (tfloat*)CudaMallocValueFilled(Elements(dims), (tfloat)1);
 
-	tcomplex* d_inputFFT;
-	cudaMalloc((void**)&d_inputFFT, ElementsFFT(dims) * sizeof(tcomplex));
+		d_IrregularSphereMask(d_mask, d_mask, dims, d_radiusmap, anglesteps, smooth, (tfloat3*)NULL, 1);
 
-	if(planforw == NULL)
-		d_FFTR2C(d_input, d_inputFFT, dimensions, dims, batch);
-	else
-		d_FFTR2C(d_input, d_inputFFT, planforw);
+		tfloat* d_maskFFT;
+		cudaMalloc((void**)&d_maskFFT, ElementsFFT(dims) * sizeof(tfloat));
+		d_RemapFull2HalfFFT(d_mask, d_maskFFT, dims);
+		cudaFree(d_mask);
 
-	//Mask FFT:
+		//Forward FFT:
 
-	d_ComplexMultiplyByVector(d_inputFFT, d_mask, d_inputFFT, ElementsFFT(dims), batch);
+		tcomplex* d_inputFFT;
+		cudaMalloc((void**)&d_inputFFT, ElementsFFT(dims) * sizeof(tcomplex));
 
-	//Inverse FFT:
+		if (planforw == NULL)
+			d_FFTR2C(d_input, d_inputFFT, dimensions, dims, batch);
+		else
+			d_FFTR2C(d_input, d_inputFFT, planforw);
 
-	if(planforw == NULL)
-		d_IFFTC2R(d_inputFFT, d_output, dimensions, dims, batch);
-	else
-		d_IFFTC2R(d_inputFFT, d_output, planback);
+		//Mask FFT:
 
-	cudaFree(d_inputFFT);
-	cudaFree(d_maskFFT);
+		d_ComplexMultiplyByVector(d_inputFFT, d_mask, d_inputFFT, ElementsFFT(dims), batch);
+
+		//Inverse FFT:
+
+		if (planforw == NULL)
+			d_IFFTC2R(d_inputFFT, d_output, dimensions, dims, batch);
+		else
+			d_IFFTC2R(d_inputFFT, d_output, planback);
+
+		cudaFree(d_inputFFT);
+		cudaFree(d_maskFFT);
+	}
 }

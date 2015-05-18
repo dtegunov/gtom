@@ -1,5 +1,8 @@
-#ifndef GTOM_PREREQUISITES_H
-#define GTOM_PREREQUISITES_H
+#ifndef PREREQUISITES_CUH
+#define PREREQUISITES_CUH
+
+#define tmin(a, b) (((a) < (b)) ? (a) : (b))
+#define tmax(a, b) (((a) > (b)) ? (a) : (b))
 
 #include "cutil_math_bugfixes.cuh"
 #include "cuda.h"
@@ -20,155 +23,155 @@
 #include <fstream>
 #include <vector>
 
-using namespace std;
-
+namespace gtom
+{
 #define GTOM_TESTING
-//#define GTOM_DOUBLE
+	//#define GTOM_DOUBLE
 
 #ifdef GTOM_DOUBLE
 	typedef double tfloat;
 	typedef cufftDoubleComplex tcomplex;
-	#define IS_TFLOAT_DOUBLE true
-	#define cmul cuCmul
-	#define cconj cuConj
+#define IS_TFLOAT_DOUBLE true
+#define cmul cuCmul
+#define cconj cuConj
 #else
 	typedef float tfloat;
 	typedef cufftComplex tcomplex;
-	#define IS_TFLOAT_DOUBLE false
-	#define cmul cuCmulf
-	#define cconj cuConjf
+#define IS_TFLOAT_DOUBLE false
+#define cmul cuCmulf
+#define cconj cuConjf
 #endif
 
-typedef unsigned char uchar;
-typedef cudaTextureObject_t cudaTex;
+	typedef unsigned char uchar;
+	typedef cudaTextureObject_t cudaTex;
 
-struct tfloat2
-{	
-	tfloat x;
-	tfloat y;
+	struct tfloat2
+	{
+		tfloat x;
+		tfloat y;
 
-	__host__ __device__ tfloat2() : x((tfloat)0), y((tfloat)0) {}
-	__host__ __device__ tfloat2(tfloat val) : x(val), y(val) {}
-	__host__ __device__ tfloat2(tfloat x, tfloat y) : x(x), y(y) {}
-};
+		__host__ __device__ tfloat2() : x((tfloat)0), y((tfloat)0) {}
+		__host__ __device__ tfloat2(tfloat val) : x(val), y(val) {}
+		__host__ __device__ tfloat2(tfloat x, tfloat y) : x(x), y(y) {}
+	};
 
-struct tfloat3
-{
-	tfloat x;
-	tfloat y;
-	tfloat z;
+	struct tfloat3
+	{
+		tfloat x;
+		tfloat y;
+		tfloat z;
 
-	__host__ __device__ tfloat3() : x((tfloat)0), y((tfloat)0), z((tfloat)0) {}
-	__host__ __device__ tfloat3(tfloat x, tfloat y, tfloat z) : x(x), y(y), z(z) {}
-	__host__ __device__ tfloat3(int x, int y, int z) : x((tfloat)x), y((tfloat)y), z((tfloat)z) {}
-	__host__ __device__ tfloat3(tfloat val) : x(val), y(val), z(val) {}
-};
+		__host__ __device__ tfloat3() : x((tfloat)0), y((tfloat)0), z((tfloat)0) {}
+		__host__ __device__ tfloat3(tfloat x, tfloat y, tfloat z) : x(x), y(y), z(z) {}
+		__host__ __device__ tfloat3(int x, int y, int z) : x((tfloat)x), y((tfloat)y), z((tfloat)z) {}
+		__host__ __device__ tfloat3(tfloat val) : x(val), y(val), z(val) {}
+	};
 
-struct tfloat4
-{
-	tfloat x;
-	tfloat y;
-	tfloat z;
-	tfloat w;
+	struct tfloat4
+	{
+		tfloat x;
+		tfloat y;
+		tfloat z;
+		tfloat w;
 
-	__host__ __device__ tfloat4() : x((tfloat)0), y((tfloat)0), z((tfloat)0), w((tfloat)0) {}
-	__host__ __device__ tfloat4(tfloat val) : x(val), y(val), z(val), w(val) {}
-	__host__ __device__ tfloat4(tfloat x, tfloat y, tfloat z, tfloat w) : x(x), y(y), z(z), w(w) {}
-};
+		__host__ __device__ tfloat4() : x((tfloat)0), y((tfloat)0), z((tfloat)0), w((tfloat)0) {}
+		__host__ __device__ tfloat4(tfloat val) : x(val), y(val), z(val), w(val) {}
+		__host__ __device__ tfloat4(tfloat x, tfloat y, tfloat z, tfloat w) : x(x), y(y), z(z), w(w) {}
+	};
 
-struct tfloat5
-{
-	tfloat x;
-	tfloat y;
-	tfloat z;
-	tfloat w;
-	tfloat v;
+	struct tfloat5
+	{
+		tfloat x;
+		tfloat y;
+		tfloat z;
+		tfloat w;
+		tfloat v;
 
-	__host__ __device__ tfloat5() : x((tfloat)0), y((tfloat)0), z((tfloat)0), w((tfloat)0), v((tfloat)0) {}
-	__host__ __device__ tfloat5(tfloat val) : x(val), y(val), z(val), w(val), v(val) {}
-	__host__ __device__ tfloat5(tfloat x, tfloat y, tfloat z, tfloat w, tfloat v) : x(x), y(y), z(z), w(w), v(v) {}
-};
+		__host__ __device__ tfloat5() : x((tfloat)0), y((tfloat)0), z((tfloat)0), w((tfloat)0), v((tfloat)0) {}
+		__host__ __device__ tfloat5(tfloat val) : x(val), y(val), z(val), w(val), v(val) {}
+		__host__ __device__ tfloat5(tfloat x, tfloat y, tfloat z, tfloat w, tfloat v) : x(x), y(y), z(z), w(w), v(v) {}
+	};
 
-inline int2 toInt2(int x, int y)
-{
-	int2 value = { x, y };
-	return value;
-}
+	inline int2 toInt2(int x, int y)
+	{
+		int2 value = { x, y };
+		return value;
+	}
 
-inline int2 toInt2(int3 dims)
-{
-	int2 value = { dims.x, dims.y };
-	return value;
-}
+	inline int2 toInt2(int3 dims)
+	{
+		int2 value = { dims.x, dims.y };
+		return value;
+	}
 
-inline uint2 toUint2(uint x, uint y)
-{
-	uint2 value = { x, y };
-	return value;
-}
+	inline uint2 toUint2(uint x, uint y)
+	{
+		uint2 value = { x, y };
+		return value;
+	}
 
-inline uint2 toUint2(int2 o)
-{
-	uint2 value = { (uint)o.x, (uint)o.y };
-	return value;
-}
+	inline uint2 toUint2(int2 o)
+	{
+		uint2 value = { (uint)o.x, (uint)o.y };
+		return value;
+	}
 
-inline int3 toInt3(int x, int y, int z)
-{
-	int3 value = { x, y, z };
-	return value;
-}
+	inline int3 toInt3(int x, int y, int z)
+	{
+		int3 value = { x, y, z };
+		return value;
+	}
 
-inline uint3 toUint3(uint x, uint y, uint z)
-{
-	uint3 value = { x, y, z };
-	return value;
-}
+	inline uint3 toUint3(uint x, uint y, uint z)
+	{
+		uint3 value = { x, y, z };
+		return value;
+	}
 
-inline uint3 toUint3(int x, int y, int z)
-{
-	uint3 value = { (uint)x, (uint)y, (uint)z };
-	return value;
-}
+	inline uint3 toUint3(int x, int y, int z)
+	{
+		uint3 value = { (uint)x, (uint)y, (uint)z };
+		return value;
+	}
 
-inline uint3 toUint3(int3 o)
-{
-	uint3 value = { (uint)o.x, (uint)o.y, (uint)o.z };
-	return value;
-}
+	inline uint3 toUint3(int3 o)
+	{
+		uint3 value = { (uint)o.x, (uint)o.y, (uint)o.z };
+		return value;
+	}
 
-inline ushort3 toShort3(int x, int y, int z)
-{
-	ushort3 value = { (ushort)x, (ushort)y, (ushort)z };
-	return value;
-}
+	inline ushort3 toShort3(int x, int y, int z)
+	{
+		ushort3 value = { (ushort)x, (ushort)y, (ushort)z };
+		return value;
+	}
 
-inline int3 toInt3(int2 val)
-{
-	int3 value = { val.x, val.y, 1 };
-	return value;
-}
+	inline int3 toInt3(int2 val)
+	{
+		int3 value = { val.x, val.y, 1 };
+		return value;
+	}
 
-struct imgstats5
-{
-	tfloat mean;
-	tfloat min;
-	tfloat max;
-	tfloat stddev;
-	tfloat var;
+	struct imgstats5
+	{
+		tfloat mean;
+		tfloat min;
+		tfloat max;
+		tfloat stddev;
+		tfloat var;
 
-	imgstats5(tfloat mean, tfloat min, tfloat max, tfloat stddev, tfloat var) : mean(mean), min(min), max(max), stddev(stddev), var(var) {}
-	imgstats5() : mean(0), min(0), max(0), stddev(0), var(0) {}
-};
+		imgstats5(tfloat mean, tfloat min, tfloat max, tfloat stddev, tfloat var) : mean(mean), min(min), max(max), stddev(stddev), var(var) {}
+		imgstats5() : mean(0), min(0), max(0), stddev(0), var(0) {}
+	};
 
-template <class T1, class T2> struct tuple2
-{
-	T1 t1;
-	T2 t2;
+	template <class T1, class T2> struct tuple2
+	{
+		T1 t1;
+		T2 t2;
 
-	__host__ __device__ tuple2(T1 t1, T2 t2) : t1(t1), t2(t2) {}
-	__host__ __device__ tuple2() {}
-};
+		__host__ __device__ tuple2(T1 t1, T2 t2) : t1(t1), t2(t2) {}
+		__host__ __device__ tuple2() {}
+	};
 
 #ifdef GTOM_DOUBLE
 #define PI 3.1415926535897932384626433832795
@@ -198,48 +201,22 @@ template <class T1, class T2> struct tuple2
 #define dotp(a, b) ((a).x * (b).x + (a).y * (b).y + (a).z * (b).z)
 #define dotp2(a, b) ((a).x * (b).x + (a).y * (b).y)
 
-template <class T> __host__ __device__ inline T min(T x, T y) { return x > y ? y : x; }
-template <class T> __host__ __device__ inline T max(T x, T y) { return x < y ? y : x; }
 
-enum T_INTERP_MODE 
-{ 
-	T_INTERP_LINEAR = 1,
-	T_INTERP_CUBIC = 2,
-	T_INTERP_FOURIER = 3,
-	T_INTERP_SINC = 4
-};
+	enum T_INTERP_MODE
+	{
+		T_INTERP_LINEAR = 1,
+		T_INTERP_CUBIC = 2,
+		T_INTERP_FOURIER = 3,
+		T_INTERP_SINC = 4
+	};
 
-
-// Define this to turn on error checking
-#define CUDA_ERROR_CHECK
-
-#define CudaSafeCall( err ) __cudaSafeCall( err, __FILE__, __LINE__ )
-#define CudaCheckError()    __cudaCheckError( __FILE__, __LINE__ )
-
-inline void __cudaSafeCall( cudaError err, const char *file, const int line )
-{
-#ifdef CUDA_ERROR_CHECK
-	if ( cudaSuccess != err )
-		printf(cudaGetErrorString( err ));
-#endif
-}
-
-inline void __cudaCheckError( const char *file, const int line )
-{
-#ifdef CUDA_ERROR_CHECK
-	cudaError err = cudaGetLastError();
-	if ( cudaSuccess != err )
-		printf(cudaGetErrorString( err ));
-#endif
-}
-
-/**
- * \brief Executes a call and prints the time needed for execution.
- * \param[in] call	The call to be executed
- */
+	/**
+	 * \brief Executes a call and prints the time needed for execution.
+	 * \param[in] call	The call to be executed
+	 */
 #ifdef GTOM_TESTING
-	#define CUDA_MEASURE_TIME(call) \
-			{ \
+#define CUDA_MEASURE_TIME(call) \
+				{ \
 				float time = 0.0f; \
 				cudaEvent_t start, stop; \
 				cudaEventCreate(&start); \
@@ -251,9 +228,10 @@ inline void __cudaCheckError( const char *file, const int line )
 				cudaEventSynchronize(stop); \
 				cudaEventElapsedTime(&time, start, stop); \
 				printf("Kernel in %s executed in %f ms.\n", __FILE__, time); \
-			}
+				}
 #else
-	#define CUDA_MEASURE_TIME(call) call
+#define CUDA_MEASURE_TIME(call) call
 #endif
 
+}
 #endif

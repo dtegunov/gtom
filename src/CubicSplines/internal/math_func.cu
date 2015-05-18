@@ -48,22 +48,25 @@ following papers:
 #include "cutil_math_bugfixes.cuh"
 #include "Prerequisites.cuh"
 
-typedef unsigned int uint;
-typedef unsigned short ushort;
-typedef unsigned char uchar;
-typedef signed char schar;
-
-inline __device__ __host__ uint UMIN(uint a, uint b)
+namespace gtom
 {
-	return a < b ? a : b;
-}
+	typedef unsigned int uint;
+	typedef unsigned short ushort;
+	typedef unsigned char uchar;
+	typedef signed char schar;
 
-inline __device__ __host__ uint PowTwoDivider(uint n)
-{
-	if (n == 0) return 0;
-	uint divider = 1;
-	while ((n & divider) == 0) divider <<= 1; 
-	return divider;
-}
+	inline __device__ __host__ uint UMIN(uint a, uint b)
+	{
+		return a < b ? a : b;
+	}
 
+	inline __device__ __host__ uint PowTwoDivider(uint n)
+	{
+		if (n == 0) return 0;
+		uint divider = 1;
+		while ((n & divider) == 0) divider <<= 1;
+		return divider;
+	}
+
+}
 #endif  //_MATH_FUNC_CUDA_H_

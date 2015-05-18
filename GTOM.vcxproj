@@ -38,7 +38,6 @@
     <ClInclude Include="include\Projection.cuh" />
     <ClInclude Include="include\Reconstruction.cuh" />
     <ClInclude Include="include\Resolution.cuh" />
-    <ClInclude Include="include\Tomography.cuh" />
     <ClInclude Include="include\Transformation.cuh" />
     <ClInclude Include="src\Optimization\polynomials\Polynomial.h" />
     <ClInclude Include="src\Optimization\polynomials\PolynomialRootFinder.h" />
@@ -71,7 +70,6 @@
     <CudaCompile Include="src\CubicSplines\internal\cubicPrefilter_kernel.cu" />
     <CudaCompile Include="src\CubicSplines\internal\math_func.cu" />
     <CudaCompile Include="src\CubicSplines\internal\version.cu" />
-    <CudaCompile Include="src\CubicSplines\memcpy.cu" />
     <CudaCompile Include="src\FFT\FFT.cu" />
     <CudaCompile Include="src\FFT\FFTRemap.cu" />
     <CudaCompile Include="src\FFT\FFTResize.cu" />
