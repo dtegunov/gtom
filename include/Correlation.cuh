@@ -81,5 +81,59 @@ namespace gtom
 	void d_RotationSeries(tfloat* d_image, tfloat* d_series, int2 dimsimage, int anglesteps);
 	void d_SimilarityMatrixRow(tfloat* d_images, tcomplex* d_imagesft, int2 dimsimage, int nimages, int anglesteps, int target, tfloat* d_similarity);
 	void d_LineSimilarityMatrixRow(tcomplex* d_linesft, int2 dimsimage, int nimages, int linewidth, int anglesteps, int target, tfloat* d_similarity);
+
+	//Picker.cu:
+
+	struct Peak
+	{
+		tfloat3 position;
+		uint ref;
+		tfloat3 angles;
+		tfloat fom;
+		tfloat relativefom;
+	};
+
+	class Picker
+	{
+	private:
+		void CalcSolventStatistics(tcomplex* d_imageft, tcomplex* d_image2ft, tcomplex* d_solventmaskft, tfloat solventsamples, tfloat* d_solventmean, tfloat* d_solventstd);
+
+	public:
+		int3 dimsref, dimsimage, dimslowpass;
+		uint ndims;
+		uint nrefs;
+		bool ismaskcircular;
+		bool doctf;
+
+		tfloat* h_masksum, *h_invmasksum;
+
+		tfloat* h_refsRe, *h_refsIm;
+
+		tfloat* h_masks;
+		tcomplex* h_invmasksft;
+
+		cufftHandle planforw, planback;
+
+		tcomplex* d_imageft, *d_image2ft;
+		tfloat* d_ctf;
+
+		tfloat* d_maskpadded, *d_maskcropped, *d_invmask;
+		tcomplex* d_maskft, *d_invmaskft;
+
+		tfloat* d_solventmean, *d_solventstd;
+
+		tcomplex* d_refft, *d_reflowft;
+		tfloat* d_refcropped;
+
+		tfloat* d_buffer1;
+
+		Picker();
+		~Picker();
+		
+		void Initialize(tfloat* _d_refs, int3 _dimsref, uint _nrefs, tfloat* _d_refmasks, bool _ismaskcircular, bool _doctf, int3 _dimsimage, uint _lowpassfreq);
+		std::vector<Peak> PickImage(tfloat* d_image, tfloat* d_ctf, tfloat anglestep, tfloat* d_out_bestccf = NULL, tfloat* d_out_bestpsi = NULL);
+		void SetImage(tfloat* _d_image, tfloat* _d_ctf);
+		void PerformCorrelation(uint n, tfloat anglestep, tfloat* d_bestccf, tfloat3* d_bestangle, int* d_bestref);
+	};
 }
 #endif

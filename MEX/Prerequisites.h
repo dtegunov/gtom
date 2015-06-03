@@ -3,6 +3,9 @@
 #include "../include/GTOM.cuh"
 #include "../include/CubicInterp.cuh"
 
+using namespace gtom;
+using namespace std;
+
 size_t RealToFTComplexDims(int const ndims, mwSize const* dims);
 size_t RealToFTComplexDims(int const ndims, int3 const dims);
 int3 MWDimsToInt3(int const ndims, mwSize const* dims);

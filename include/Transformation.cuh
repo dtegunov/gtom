@@ -36,14 +36,16 @@ namespace gtom
 	void d_FFTLines(tcomplex* d_input, tcomplex* d_output, int2 dims, T_INTERP_MODE mode, int anglesteps, int linewidth, int batch);
 
 	//Rotation.cu:
-	void d_Rotate2D(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* angles, int batch = 1);
-	void d_Rotate3D(tfloat* d_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered);
+	void d_Rotate2D(tfloat* d_input, tfloat* d_output, int2 dims, tfloat* angles, T_INTERP_MODE mode, bool isoutputzerocentered, uint batch = 1);
+	void d_Rotate2D(cudaTex* t_input, tfloat* d_output, int2 dims, tfloat* h_angles, T_INTERP_MODE mode, bool isoutputzerocentered, uint batch = 1);
+	void d_Rotate3D(tfloat* d_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, uint nangles, T_INTERP_MODE mode, bool outputzerocentered);
+	void d_Rotate3D(cudaTex t_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, uint nangles, T_INTERP_MODE mode, bool outputzerocentered);
 	void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat* angles, tfloat maxfreq, T_INTERP_MODE mode, bool isoutputzerocentered, int batch = 1);
 	void d_Rotate2DFT(cudaTex t_inputRe, cudaTex t_inputIm, tcomplex* d_output, int3 dims, tfloat angle, tfloat maxfreq, T_INTERP_MODE mode, bool isoutputzerocentered);
-	void d_Rotate3DFT(tcomplex* d_volume, tcomplex* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered);
-	void d_Rotate3DFT(cudaTex t_Re, cudaTex t_Im, tcomplex* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered);
-	void d_Rotate3DFT(tfloat* d_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered);
-	void d_Rotate3DFT(cudaTex t_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool iszerocentered);
+	void d_Rotate3DFT(tcomplex* d_volume, tcomplex* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool outputzerocentered);
+	void d_Rotate3DFT(cudaTex t_Re, cudaTex t_Im, tcomplex* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool outputzerocentered);
+	void d_Rotate3DFT(tfloat* d_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool outputzerocentered);
+	void d_Rotate3DFT(cudaTex t_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool outputzerocentered);
 
 	//Shift.cu:
 	void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* h_delta, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, tcomplex* d_sharedintermediate = NULL, int batch = 1);

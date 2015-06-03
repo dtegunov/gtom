@@ -12,7 +12,6 @@ TEST(CTF, Wiener)
 
 		CTFParams params;
 		params.pixelsize = 1.35e-10;
-		params.decayspread = 0;
 		params.defocus = -1e-6;
 		params.amplitude = 0.1;
 

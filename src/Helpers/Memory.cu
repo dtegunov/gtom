@@ -10,6 +10,7 @@ namespace gtom
 
 	template <class T> __global__ void MemcpyMultiKernel(T* d_output, T* d_input, size_t elements, int copies);
 	template <class T> __global__ void MemcpyStridedKernel(T* d_output, T* d_input, size_t elements, int stridedst, int stridesrc);
+	template <class T> __global__ void MemcpyBlockStridedKernel(T* d_output, T* d_input, size_t blockelements, int stridedst, int stridesrc, int nblocks);
 	template <class T> __global__ void ValueFillKernel(T* d_output, size_t elements, T value);
 	template <class T, int fieldcount> __global__ void JoinInterleavedKernel(T** d_fields, T* d_output, size_t elements);
 	template <class T1, class T2> __global__ void TypeConversionKernel(T1* d_input, T2* d_output, size_t elements);
@@ -126,6 +127,27 @@ namespace gtom
 		fclose(outputfile);
 	}
 
+	template <class T1, class T2> void MemcpyFromDeviceArrayConverted(T1* d_array, T2* h_output, size_t elements)
+	{
+		T2* d_output;
+		cudaMalloc((void**)&d_output, elements * sizeof(T2));
+
+		size_t TpB = tmin((size_t)768, elements);
+		size_t totalblocks = tmin((elements + TpB - 1) / TpB, (size_t)8192);
+		dim3 grid = dim3((uint)totalblocks);
+		TypeConversionKernel<T1, T2> << <grid, (uint)TpB >> > (d_array, d_output, elements);
+
+		cudaMemcpy(h_output, d_output, elements * sizeof(T2), cudaMemcpyDeviceToHost);
+
+		cudaFree(d_output);
+	}
+	template void MemcpyFromDeviceArrayConverted<tfloat, char>(tfloat* d_array, char* h_output, size_t elements);
+	template void MemcpyFromDeviceArrayConverted<tfloat, short>(tfloat* d_array, short* h_output, size_t elements);
+	template void MemcpyFromDeviceArrayConverted<tfloat, int>(tfloat* d_array, int* h_output, size_t elements);
+	template void MemcpyFromDeviceArrayConverted<tfloat, long>(tfloat* d_array, long* h_output, size_t elements);
+	template void MemcpyFromDeviceArrayConverted<tfloat, float>(tfloat* d_array, float* h_output, size_t elements);
+	template void MemcpyFromDeviceArrayConverted<tfloat, double>(tfloat* d_array, double* h_output, size_t elements);
+
 
 	/////////////////
 	//Device memory//
@@ -160,6 +182,21 @@ namespace gtom
 	template void CudaMemcpyStrided<double>(double* dst, double* src, size_t elements, int stridedst, int stridesrc);
 	template void CudaMemcpyStrided<float2>(float2* dst, float2* src, size_t elements, int stridedst, int stridesrc);
 	template void CudaMemcpyStrided<double2>(double2* dst, double2* src, size_t elements, int stridedst, int stridesrc);
+
+	template<class T> void CudaMemcpyBlockStrided(T* dst, T* src, size_t blockelements, int stridedst, int stridesrc, int nblocks)
+	{
+		int TpB = tmin(256, blockelements);
+		dim3 grid = dim3(tmin((blockelements + TpB - 1) / TpB, 8192), nblocks);
+		MemcpyBlockStridedKernel << <grid, TpB >> > (dst, src, blockelements, stridedst, stridesrc, nblocks);
+	}
+	template void CudaMemcpyBlockStrided<char>(char* dst, char* src, size_t blockelements, int stridedst, int stridesrc, int nblocks);
+	template void CudaMemcpyBlockStrided<short>(short* dst, short* src, size_t blockelements, int stridedst, int stridesrc, int nblocks);
+	template void CudaMemcpyBlockStrided<int>(int* dst, int* src, size_t blockelements, int stridedst, int stridesrc, int nblocks);
+	template void CudaMemcpyBlockStrided<long>(long* dst, long* src, size_t blockelements, int stridedst, int stridesrc, int nblocks);
+	template void CudaMemcpyBlockStrided<float>(float* dst, float* src, size_t blockelements, int stridedst, int stridesrc, int nblocks);
+	template void CudaMemcpyBlockStrided<double>(double* dst, double* src, size_t blockelements, int stridedst, int stridesrc, int nblocks);
+	template void CudaMemcpyBlockStrided<float2>(float2* dst, float2* src, size_t blockelements, int stridedst, int stridesrc, int nblocks);
+	template void CudaMemcpyBlockStrided<double2>(double2* dst, double2* src, size_t blockelements, int stridedst, int stridesrc, int nblocks);
 
 	void* CudaMallocAligned2D(size_t widthbytes, size_t height, int* pitch, int alignment)
 	{
@@ -215,7 +252,6 @@ namespace gtom
 		size_t totalblocks = tmin((elements + TpB - 1) / TpB, (size_t)8192);
 		dim3 grid = dim3((uint)totalblocks);
 		TypeConversionKernel<T1, T2> << <grid, (uint)TpB >> > (d_input, d_output, elements);
-		cudaStreamQuery(0);
 
 		cudaFree(d_input);
 	}
@@ -234,7 +270,6 @@ namespace gtom
 		size_t totalblocks = tmin((elements + TpB - 1) / TpB, (size_t)8192);
 		dim3 grid = dim3((uint)totalblocks);
 		TypeConversionKernel<T1, T2> << <grid, (uint)TpB >> > (d_input, *d_output, elements);
-		cudaStreamQuery(0);
 
 		cudaFree(d_input);
 	}
@@ -279,6 +314,49 @@ namespace gtom
 		dim3 grid = dim3((uint)totalblocks);
 		ValueFillKernel<T> << <grid, (uint)TpB >> > (d_array, elements, value);
 		cudaStreamQuery(0);
+	}
+
+	tfloat* CudaMallocRandomFilled(size_t elements, tfloat mean, tfloat stddev, curandGenerator_t generator)
+	{
+		tfloat* d_array;
+		cudaMalloc((void**)&d_array, elements * sizeof(tfloat));
+		
+		d_RandomFill(d_array, elements, mean, stddev, generator);
+
+		return d_array;
+	}
+
+	tfloat* CudaMallocRandomFilled(size_t elements, tfloat mean, tfloat stddev, unsigned long long seed)
+	{
+		curandGenerator_t generator;
+		curandCreateGenerator(&generator, CURAND_RNG_PSEUDO_DEFAULT);
+		curandSetPseudoRandomGeneratorSeed(generator, seed);
+
+		tfloat* d_array = CudaMallocRandomFilled(elements, mean, stddev, generator);
+
+		curandDestroyGenerator(generator);
+
+		return d_array;
+	}
+
+	void d_RandomFill(tfloat* d_array, size_t elements, tfloat mean, tfloat stddev, curandGenerator_t generator)
+	{
+#ifndef GTOM_DOUBLE
+		curandGenerateNormal(generator, d_array, elements, mean, stddev);
+#else
+		curandGenerateLogNormalDouble(generator, d_array, elements, mean, stddev);
+#endif
+	}
+
+	void d_RandomFill(tfloat* d_array, size_t elements, tfloat mean, tfloat stddev, unsigned long long seed)
+	{
+		curandGenerator_t generator;
+		curandCreateGenerator(&generator, CURAND_RNG_PSEUDO_DEFAULT);
+		curandSetPseudoRandomGeneratorSeed(generator, seed);
+
+		d_RandomFill(d_array, elements, mean, stddev, generator);
+
+		curandDestroyGenerator(generator);
 	}
 
 	template <class T, int fieldcount> T* d_JoinInterleaved(T** d_fields, size_t elements)
@@ -497,6 +575,16 @@ namespace gtom
 			id += blockDim.x * gridDim.x)
 		{
 			d_output[id * stridedst] = d_input[id * stridesrc];
+		}
+	}
+
+	template <class T> __global__ void MemcpyBlockStridedKernel(T* d_output, T* d_input, size_t blockelements, int stridedst, int stridesrc, int nblocks)
+	{
+		for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+			id < blockelements;
+			id += blockDim.x * gridDim.x)
+		{
+			d_output[blockIdx.y * stridedst + id] = d_input[blockIdx.y * stridesrc + id];
 		}
 	}
 

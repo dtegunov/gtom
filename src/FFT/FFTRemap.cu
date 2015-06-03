@@ -150,30 +150,30 @@ namespace gtom
 
 	template <class T> __global__ void RemapFullFFT2FullKernel(T* d_input, T* d_output, uint3 dims, uint elements)
 	{
-		uint ry = ((blockIdx.x + dims.y / 2) % dims.y);
-		uint rz = ((blockIdx.y + dims.z / 2) % dims.z);
+		uint ry = FFTShift(blockIdx.x, dims.x);
+		uint rz = FFTShift(blockIdx.y, dims.z);
 
 		d_output += elements * blockIdx.z + (rz * dims.y + ry) * dims.x;
 		d_input += elements * blockIdx.z + (blockIdx.y * dims.y + blockIdx.x) * dims.x;
 
 		for (uint x = threadIdx.x; x < dims.x; x += blockDim.x)
 		{
-			uint rx = ((x + dims.x / 2) % dims.x);
+			uint rx = FFTShift(x, dims.x);
 			d_output[rx] = d_input[x];
 		}
 	}
 
 	template <class T> __global__ void RemapFull2FullFFTKernel(T* d_input, T* d_output, uint3 dims, uint elements)
 	{
-		uint ry = ((blockIdx.x + (dims.y + 1) / 2) % dims.y);
-		uint rz = ((blockIdx.y + (dims.z + 1) / 2) % dims.z);
+		uint ry = IFFTShift(blockIdx.x, dims.y);
+		uint rz = IFFTShift(blockIdx.y, dims.z);
 
 		d_output += elements * blockIdx.z + (rz * dims.y + ry) * dims.x;
 		d_input += elements * blockIdx.z + (blockIdx.y * dims.y + blockIdx.x) * dims.x;
 
 		for (uint x = threadIdx.x; x < dims.x; x += blockDim.x)
 		{
-			uint rx = ((x + (dims.x + 1) / 2) % dims.x);
+			uint rx = IFFTShift(x, dims.x);
 			d_output[rx] = d_input[x];
 		}
 	}

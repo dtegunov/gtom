@@ -11,43 +11,40 @@ namespace gtom
 	{
 		tfloat pixelsize;
 		tfloat Cs;
-		tfloat Cc;
 		tfloat voltage;
 		tfloat defocus;
 		tfloat astigmatismangle;
 		tfloat defocusdelta;
 		tfloat amplitude;
 		tfloat Bfactor;
-		tfloat decayCohIll;
-		tfloat decayspread;
+		tfloat scale;
+		tfloat phaseshift;
 
 		CTFParams() :
 			pixelsize(1e-10),
 			Cs(2e-3),
-			Cc(2.2e-3),
 			voltage(300e3),
 			defocus(-3e-6),
 			astigmatismangle(0),
 			defocusdelta(0),
 			amplitude(0.07),
 			Bfactor(0),
-			decayCohIll(0.0),
-			decayspread(0.8) {}
+			scale(1.0),
+			phaseshift(0) {}
 	};
 
 	struct CTFFitParams
 	{
 		tfloat3 pixelsize;
 		tfloat3 Cs;
-		tfloat3 Cc;
 		tfloat3 voltage;
 		tfloat3 defocus;
 		tfloat3 astigmatismangle;
 		tfloat3 defocusdelta;
 		tfloat3 amplitude;
 		tfloat3 Bfactor;
-		tfloat3 decayCohIll;
-		tfloat3 decayspread;
+		tfloat3 scale;
+		tfloat3 phaseshift;
 
 		int2 dimsperiodogram;
 		int maskinnerradius;
@@ -56,15 +53,14 @@ namespace gtom
 		CTFFitParams() :
 			pixelsize(0),
 			Cs(0),
-			Cc(0),
 			voltage(0),
 			defocus(0),
 			astigmatismangle(0),
 			defocusdelta(0),
 			amplitude(0),
 			Bfactor(0),
-			decayCohIll(0),
-			decayspread(0),
+			scale(0),
+			phaseshift(0),
 			dimsperiodogram(toInt2(512, 512)),
 			maskinnerradius(1),
 			maskouterradius(128) {}
@@ -72,15 +68,14 @@ namespace gtom
 		CTFFitParams(CTFParams p) :
 			pixelsize(p.pixelsize),
 			Cs(p.Cs),
-			Cc(p.Cc),
 			voltage(p.voltage),
 			defocus(p.defocus),
 			astigmatismangle(p.astigmatismangle),
 			defocusdelta(p.defocusdelta),
 			amplitude(p.amplitude),
 			Bfactor(p.Bfactor),
-			decayCohIll(p.decayCohIll),
-			decayspread(p.decayspread),
+			scale(p.scale),
+			phaseshift(p.phaseshift),
 			dimsperiodogram(toInt2(512, 512)),
 			maskinnerradius(1),
 			maskouterradius(128) {}
@@ -90,32 +85,29 @@ namespace gtom
 	{
 		double ny;
 		double lambda;
-		double lambda3;
-		double Cs;
-		double ccvoltage;
 		double defocus;
 		double astigmatismangle;
 		double defocusdelta;
+		double Cs;
 		double amplitude;
-		double Bfactor;
-		double decayCohIll;
-		double decayspread;
-		double q0;
+		double scale;
+		double phaseshift;
+		double K1, K2, K3, K4;
 
 		CTFParamsLean(CTFParams p) :
 			ny(0.5f / (p.pixelsize * 1e10)),
 			lambda(sqrt(150.4 / (p.voltage * (1.0 + p.voltage / 1022000.0)))),
-			lambda3(lambda * lambda * lambda),
-			Cs(p.Cs * 1e10),
-			ccvoltage(p.Cc * 1e10 / p.voltage),
 			defocus(p.defocus * 1e10),
 			astigmatismangle(p.astigmatismangle),
 			defocusdelta(p.defocusdelta * 0.5e10),
+			Cs(p.Cs * 1e10),
 			amplitude(p.amplitude),
-			Bfactor(-p.Bfactor * 0.25),
-			decayCohIll(p.decayCohIll),
-			decayspread(p.decayspread),
-			q0(p.decayCohIll / (pow((double)p.Cs * 1e10 * pow((double)lambda, 3.0), 0.25))){}
+			scale(p.scale),
+			phaseshift(p.phaseshift),
+			K1(PI * lambda),
+			K2(PIHALF * Cs * lambda * lambda * lambda),
+			K3(sqrt(1 - p.amplitude * p.amplitude)),
+			K4(-p.Bfactor * 0.25) {}
 	};
 
 	class CTFTiltParams
@@ -177,41 +169,23 @@ namespace gtom
 		}
 	};
 
-	template<bool ampsquared> __device__ double d_GetCTF(double k, double angle, CTFParamsLean p)
+	template<bool ampsquared> __device__ double d_GetCTF(double r, double angle, CTFParamsLean p)
 	{
-		double k2 = k * k;
-		double term1 = p.lambda3 * p.Cs * (k2 * k2);
-		if (p.Bfactor == 0.0f)
-			p.Bfactor = 1.0f;
-		else
-			p.Bfactor = exp(p.Bfactor * k2);
+		double r2 = r * r;
+		double r4 = r2 * r2;
+				
+		double deltaf = p.defocus + p.defocusdelta * cos(2.0 * (angle - p.astigmatismangle));
+		double argument = -p.K1 * deltaf * r2 + p.K2 * r4 + p.phaseshift;
+		double retval = p.K3 * sin(argument) + p.amplitude * cos(argument);
 
-		double e_i_k = 1.0f;
-		if (p.decayCohIll != 0.0f)
-		{
-			e_i_k = exp(-(PI * PI) * (p.q0 * p.q0) * pow((double)p.Cs * p.lambda3 * pow(k, 3.0) - p.defocus * p.lambda * k, 2.0));
-		}
+		if (p.K4 != 0)
+			retval *= exp(p.K4 * r2);
 
-		double e_e_k = 1.0;
-		if (p.decayspread != 0.0)
-		{
-			double delta_z = p.ccvoltage * p.decayspread;
-			e_e_k = exp(-(PI * delta_z * p.lambda * 2.0 * k2));
-		}
+		if (ampsquared)
+			retval = retval * retval;
 
-		double w = PIHALF * (term1 - p.lambda * 2.0 * (p.defocus + p.defocusdelta * sin(2.0 * (angle - p.astigmatismangle))) * k2);
-		double amplitude = cos(w);
-		double phase = sin(w);
-
-		if (!ampsquared)
-			amplitude = e_e_k * e_i_k * p.Bfactor * (sqrt(1 - p.amplitude * p.amplitude) * phase + p.amplitude * amplitude);
-		else
-		{
-			amplitude = (sqrt(1 - p.amplitude * p.amplitude) * phase + p.amplitude * amplitude);
-			amplitude = e_e_k * e_i_k * p.Bfactor * amplitude * amplitude;
-		}
-
-		return amplitude;
+		return p.scale * retval;
+		//return argument;
 	}
 
 	//AliasingCutoff.cu:

@@ -38,7 +38,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	tfloat* d_proj;
 	cudaMalloc((void**)&d_proj, Elements2(dimsproj) * dimsangles.y * sizeof(tfloat));
 
-	d_ProjForwardRaytrace(d_volume, dimsvolume, d_proj, dimsproj, h_angles, h_shifts, h_scales, T_INTERP_CUBIC, 1, batch);
+	d_ProjForwardRaytrace(d_volume, dimsvolume, tfloat3(0), d_proj, dimsproj, h_angles, h_shifts, h_scales, T_INTERP_CUBIC, 1, batch);
 
 	mwSize outputdims[3];
 	outputdims[0] = dimsproj.x;

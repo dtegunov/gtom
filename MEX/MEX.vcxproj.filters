@@ -102,9 +102,6 @@
     <None Include="CTF\cgtom_wiener_correct.cu">
       <Filter>Source Files\CTF</Filter>
     </None>
-    <None Include="CTF\cgtom_ctf_fit_correct.cu">
-      <Filter>Source Files\CTF</Filter>
-    </None>
     <None Include="Alignment\cgtom_align3d.cu">
       <Filter>Source Files\Alignment</Filter>
     </None>
@@ -137,6 +134,9 @@
     </None>
     <None Include="Transformation\cgtom_warp2d.cu">
       <Filter>Source Files\Transformation</Filter>
+    </None>
+    <None Include="CTF\cgtom_ctf_fit.cu">
+      <Filter>Source Files\CTF</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

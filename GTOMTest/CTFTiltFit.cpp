@@ -2,7 +2,7 @@
 
 TEST(CTF, TiltFit)
 {
-	/*cudaDeviceReset();
+	cudaDeviceReset();
 
 	//Spectra accumulation:
 	{
@@ -30,7 +30,7 @@ TEST(CTF, TiltFit)
 		d_AccumulateSpectra(d_input, d_defoci, nspectra, d_accumulated, accumulateddefocus, d_defocusoffsets, p, fp);
 
 		CudaWriteToBinaryFile("d_accumulated.bin", d_accumulated, relevantlength * sizeof(tfloat));
-	}*/
+	}
 
 	cudaDeviceReset();
 

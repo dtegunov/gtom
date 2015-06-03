@@ -1,5 +1,3 @@
-#pragma once
-#include "cufft.h"
 #include "Prerequisites.cuh"
 
 #ifndef BINARY_CUH

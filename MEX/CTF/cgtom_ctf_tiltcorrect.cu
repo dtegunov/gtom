@@ -1,5 +1,5 @@
 #include "..\Prerequisites.h"
-
+using namespace gtom;
 
 void mexFunction(int nlhs, mxArray *plhs[],
 	int nrhs, mxArray const *prhs[])
@@ -34,23 +34,22 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
 	mxArrayAdapter params(prhs[3]);
 	int3 dimsparams = MWDimsToInt3(mxGetNumberOfDimensions(params.underlyingarray), mxGetDimensions(params.underlyingarray));
-	if (dimsparams.x != 11 || dimsparams.y != nimages)
-		mexErrMsgIdAndTxt(errId, "Start parameters should be a matrix with 11x[nimages] elements.");
+	if (dimsparams.x != 10 || dimsparams.y != nimages)
+		mexErrMsgIdAndTxt(errId, "Start parameters should be a matrix with 10x[nimages] elements.");
 	tfloat* h_params = params.GetAsManagedTFloat();
-	for (uint n = 0; n < nimages; n++, h_params += 11)
+	for (uint n = 0; n < nimages; n++, h_params += 10)
 	{
 		CTFParams p;
 		p.pixelsize = h_params[0];
 		p.Cs = h_params[1];
-		p.Cc = h_params[2];
-		p.voltage = h_params[3];
-		p.defocus = h_params[4];
-		p.astigmatismangle = h_params[5];
-		p.defocusdelta = h_params[6];
-		p.amplitude = h_params[7];
-		p.Bfactor = h_params[8];
-		p.decayCohIll = h_params[9];
-		p.decayspread = h_params[10];
+		p.voltage = h_params[2];
+		p.defocus = h_params[3];
+		p.astigmatismangle = h_params[4];
+		p.defocusdelta = h_params[5];
+		p.amplitude = h_params[6];
+		p.Bfactor = h_params[7];
+		p.scale = h_params[8];
+		p.phaseshift = h_params[9];
 		v_tiltparams[n].centerparams = p;
 	}
 

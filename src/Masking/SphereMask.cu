@@ -73,7 +73,7 @@ namespace gtom
 				//Smooth border
 				if (sigma > (tfloat)0)
 				{
-					maskvalue = exp(-((length - radius) * (length - radius) / (sigma * sigma)));
+					maskvalue = (cos(tmin(1.0f, (length - radius) / sigma) * PI) + 1.0f) * 0.5f;
 					if (maskvalue < (tfloat)0.1353)
 						maskvalue = 0;
 				}
@@ -123,7 +123,7 @@ namespace gtom
 				//Smooth border
 				if (sigma > (tfloat)0)
 				{
-					maskvalue = exp(-((length - radius) * (length - radius) / (sigma * sigma)));
+					maskvalue = (cos(tmin(1.0f, (length - radius) / sigma) * PI) + 1.0f) * 0.5f;
 					if (maskvalue < (tfloat)0.1353)
 						maskvalue = 0;
 				}

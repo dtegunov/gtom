@@ -51,7 +51,7 @@ namespace gtom
 		CTFParamsLean lean = CTFParamsLean(p);
 		double pxfactor = lean.ny / (double)length;
 
-		dim3 TpB = dim3(min(128, NextMultipleOf(relevantlength, 32)));
+		dim3 TpB = dim3(tmin(128, NextMultipleOf(relevantlength, 32)));
 		dim3 grid = dim3((relevantlength + TpB.x - 1) / TpB.x, batch);
 
 		AccumulateSpectraKernel << <grid, TpB >> > (d_ps1d, d_defoci, nspectra, length, d_accumulated, accumulateddefocus, d_perbatchoffsets, fp.maskinnerradius, relevantlength, lean.Cs, lean.lambda, pxfactor);
@@ -79,7 +79,7 @@ namespace gtom
 			double d = (d_defoci[n] + defocusoffset) * 1e10;
 			if (d < 0 != D < 0)		// Combining defoci with different signs won't work
 				continue;
-			double k = sqrt(abs(abs(d) - sqrt(cs2 * K4 * lambda4 - 2.0 * cs * D * K2 * lambda2 + d * d)) / (cs * lambda2));
+			double k = sqrt(abs(abs(d) - sqrt(cs2 * K4 * lambda4 + 2.0 * cs * D * K2 * lambda2 + d * d)) / (cs * lambda2));
 			k /= pxfactor;
 			if (ceil(k) >= length)	// Out of range
 				continue;

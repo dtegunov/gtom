@@ -77,25 +77,4 @@ namespace gtom
 		if (d_mask == NULL)
 			cudaFree(d_localmask);
 	}
-
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	//Same as d_Bandpass, but mirror-pads the input to double size to avoid artefacts at the borders//
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-
-	void d_BandpassNeat(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, int batch)
-	{
-		int dimensions = DimensionCount(dims);
-		int3 paddeddims = toInt3(NextPow2(dims.x * 2), dimensions > 1 ? NextPow2(dims.y * 2) : 1, dimensions > 2 ? NextPow2(dims.z * 2) : 1);
-		tfloat scalefactor = max((tfloat)paddeddims.x / (tfloat)dims.x, max((tfloat)paddeddims.y / (tfloat)dims.y, (tfloat)paddeddims.z / (tfloat)dims.z));
-
-		tfloat* d_paddedinput;
-		cudaMalloc((void**)&d_paddedinput, Elements(paddeddims) * batch * sizeof(tfloat));
-
-		d_Pad(d_input, d_paddedinput, dims, paddeddims, T_PAD_MIRROR, (tfloat)0, batch);
-		d_Bandpass(d_paddedinput, d_paddedinput, paddeddims, low * scalefactor, high * scalefactor, smooth * scalefactor, NULL, NULL, NULL, batch);
-		d_Pad(d_paddedinput, d_input, paddeddims, dims, T_PAD_TILE, (tfloat)0, batch);
-
-		cudaFree(d_paddedinput);
-	}
 }

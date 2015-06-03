@@ -56,7 +56,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 		mexErrMsgIdAndTxt(errId, "2 values per column expected for scales.");
 	tfloat2* h_scales = (tfloat2*)scales.GetAsManagedTFloat();
 
-	d_ProjBackward(d_volume, dimsvolume, offset, d_images, dimsimage, h_angles, h_offsets, h_scales, T_INTERP_SINC, true, nimages);
+	d_ProjBackward(d_volume, dimsvolume, offset, d_images, toInt2(dimsimage), h_angles, h_offsets, h_scales, T_INTERP_SINC, true, nimages);
 
 	mwSize outputdims[3];
 	outputdims[0] = dimsvolume.x;

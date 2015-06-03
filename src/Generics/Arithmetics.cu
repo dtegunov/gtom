@@ -44,6 +44,8 @@ namespace gtom
 	__global__ void AbsKernel(tcomplex* d_input, tfloat* d_output, size_t elements);
 	template <class T> __global__ void InvKernel(T* d_input, T* d_output, size_t elements);
 	template <class T> __global__ void LogKernel(T* d_input, T* d_output, size_t elements);
+	template <class T> __global__ void ExpKernel(T* d_input, T* d_output, size_t elements);
+	template <class T> __global__ void OneMinusKernel(T* d_input, T* d_output, size_t elements);
 
 	__global__ void ComplexPolarToCartKernel(tcomplex* d_polar, tcomplex* d_cart, size_t elements);
 	__global__ void ComplexCartToPolarKernel(tcomplex* d_cart, tcomplex* d_polar, size_t elements);
@@ -709,6 +711,55 @@ namespace gtom
 			id < elements;
 			id += blockDim.x * gridDim.x)
 			d_output[id] = log(d_input[id]);
+	}
+
+
+	////////////
+	//Exponent//
+	////////////
+
+	template <class T> void d_Exp(T* d_input, T* d_output, size_t elements)
+	{
+		size_t TpB = tmin((size_t)256, elements);
+		size_t totalblocks = tmin((elements + TpB - 1) / TpB, (size_t)8192);
+		dim3 grid = dim3((uint)totalblocks);
+		ExpKernel<T> << <grid, (uint)TpB >> > (d_input, d_output, elements);
+	}
+	template void d_Exp<float>(float* d_input, float* d_output, size_t elements);
+	template void d_Exp<double>(double* d_input, double* d_output, size_t elements);
+
+	template <class T> __global__ void ExpKernel(T* d_input, T* d_output, size_t elements)
+	{
+		for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+			id < elements;
+			id += blockDim.x * gridDim.x)
+			d_output[id] = exp(d_input[id]);
+	}
+
+
+	/////////
+	//1 - x//
+	/////////
+
+	template <class T> void d_OneMinus(T* d_input, T* d_output, size_t elements)
+	{
+		size_t TpB = tmin((size_t)256, elements);
+		size_t totalblocks = tmin((elements + TpB - 1) / TpB, (size_t)8192);
+		dim3 grid = dim3((uint)totalblocks);
+		OneMinusKernel<T> << <grid, (uint)TpB >> > (d_input, d_output, elements);
+	}
+	template void d_OneMinus<float>(float* d_input, float* d_output, size_t elements);
+	template void d_OneMinus<double>(double* d_input, double* d_output, size_t elements);
+	template void d_OneMinus<int>(int* d_input, int* d_output, size_t elements);
+	template void d_OneMinus<short>(short* d_input, short* d_output, size_t elements);
+	template void d_OneMinus<char>(char* d_input, char* d_output, size_t elements);
+
+	template <class T> __global__ void OneMinusKernel(T* d_input, T* d_output, size_t elements)
+	{
+		for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+			id < elements;
+			id += blockDim.x * gridDim.x)
+			d_output[id] = (T)1 - d_input[id];
 	}
 
 

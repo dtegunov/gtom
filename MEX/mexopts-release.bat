@@ -48,7 +48,7 @@ rem ********************************************************************
 rem Link with the standard mex libraries and gpu.lib.
 set LIBLOC=%MATLAB%\extern\lib\win64\microsoft
 set LINKER=link
-set LINKFLAGS=/dll /export:%ENTRYPOINT% /LIBPATH:"%LIBLOC%" libmx.lib libmex.lib libmat.lib gpu.lib cudart.lib cufft.lib cublas.lib "..\x64\Release\GTOM.lib" /MACHINE:X64 /nologo /manifest /incremental:NO /implib:"%LIB_NAME%.x" /MAP:"%OUTDIR%%MEX_NAME%%MEX_EXT%.map"
+set LINKFLAGS=/dll /export:%ENTRYPOINT% /LIBPATH:"%LIBLOC%" libmx.lib libmex.lib libmat.lib gpu.lib cudart.lib cufft.lib cublas.lib curand.lib "..\x64\Release\GTOM.lib" /MACHINE:X64 /nologo /manifest /incremental:NO /implib:"%LIB_NAME%.x" /MAP:"%OUTDIR%%MEX_NAME%%MEX_EXT%.map"
 set LINKOPTIMFLAGS=
 set LINKDEBUGFLAGS=
 set LINK_FILE=

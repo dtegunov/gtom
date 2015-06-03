@@ -36,7 +36,7 @@ SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-cudart=static")
 
 CUDA_ADD_LIBRARY(gtom STATIC ${SOURCES})
 
-TARGET_LINK_LIBRARIES(gtom libcudart.so libcufft.so libcublas.so ${CMAKE_THREAD_LIBS_INIT})
+TARGET_LINK_LIBRARIES(gtom libcudart.so libcufft.so libcublas.so libcurand.so ${CMAKE_THREAD_LIBS_INIT})
 
 
 #Google Test

@@ -1,4 +1,5 @@
 #include "..\Prerequisites.h"
+using namespace gtom;
 
 
 void mexFunction(int nlhs, mxArray *plhs[],
@@ -19,8 +20,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
 
 	mxArrayAdapter params(prhs[1]);
 	int3 dimsparams = MWDimsToInt3(mxGetNumberOfDimensions(params.underlyingarray), mxGetDimensions(params.underlyingarray));
-	if (dimsparams.x % 11 != 0)
-		mexErrMsgIdAndTxt(errId, "CTF parameters should have 11 elements per image.");
+	if (dimsparams.x % 10 != 0)
+		mexErrMsgIdAndTxt(errId, "CTF parameters should have 10 elements per image.");
 	CTFParams* h_params = (CTFParams*)params.GetAsManagedTFloat();
 
 	mxArrayAdapter fsc(prhs[2]);

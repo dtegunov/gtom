@@ -1,4 +1,3 @@
-#pragma once
 #include "Prerequisites.cuh"
 
 #ifndef ALIGNMENT_CUH

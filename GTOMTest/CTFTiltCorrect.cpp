@@ -47,7 +47,6 @@ TEST(CTF, TiltCorrect)
 		params.defocus = -5.6382164e-06;
 		params.astigmatismangle = 0;
 		params.defocusdelta = 0;
-		params.decayspread = 0;
 
 		CTFTiltParams tp(0.0f, tfloat2(-1.6915f, -7.8530e-05f), tfloat2(3.9924f, 0.1124f), params);
 

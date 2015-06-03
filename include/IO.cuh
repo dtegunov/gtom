@@ -21,7 +21,7 @@ namespace gtom
 		MRC_RGB = 16
 	};
 
-	const size_t MRC_DATATYPE_SIZE[17] = { 1, 2, 4, 4, 8, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3 };
+	const size_t MRC_DATATYPE_SIZE[17] = { 1, 2, 4, 4, 8, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3 };
 
 	struct HeaderMRC
 	{

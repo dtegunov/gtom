@@ -53,6 +53,7 @@ namespace gtom
 		__host__ __device__ tfloat2() : x((tfloat)0), y((tfloat)0) {}
 		__host__ __device__ tfloat2(tfloat val) : x(val), y(val) {}
 		__host__ __device__ tfloat2(tfloat x, tfloat y) : x(x), y(y) {}
+		__host__ __device__ tfloat2(float2 val) : x(val.x), y(val.y) {}
 	};
 
 	struct tfloat3
@@ -65,6 +66,7 @@ namespace gtom
 		__host__ __device__ tfloat3(tfloat x, tfloat y, tfloat z) : x(x), y(y), z(z) {}
 		__host__ __device__ tfloat3(int x, int y, int z) : x((tfloat)x), y((tfloat)y), z((tfloat)z) {}
 		__host__ __device__ tfloat3(tfloat val) : x(val), y(val), z(val) {}
+		__host__ __device__ tfloat3(float3 val) : x(val.x), y(val.y), z(val.z) {}
 	};
 
 	struct tfloat4
@@ -104,6 +106,18 @@ namespace gtom
 		return value;
 	}
 
+	inline int2 toInt2FFT(int2 val)
+	{
+		int2 value = { val.x / 2 + 1, val.y };
+		return value;
+	}
+
+	inline int2 toInt2FFT(int3 val)
+	{
+		int2 value = { val.x / 2 + 1, val.y };
+		return value;
+	}
+
 	inline uint2 toUint2(uint x, uint y)
 	{
 		uint2 value = { x, y };
@@ -119,6 +133,18 @@ namespace gtom
 	inline int3 toInt3(int x, int y, int z)
 	{
 		int3 value = { x, y, z };
+		return value;
+	}
+
+	inline int3 toInt3FFT(int3 val)
+	{
+		int3 value = { val.x / 2 + 1, val.y, val.z };
+		return value;
+	}
+
+	inline int3 toInt3FFT(int2 val)
+	{
+		int3 value = { val.x / 2 + 1, val.y, 1 };
 		return value;
 	}
 
@@ -187,7 +213,7 @@ namespace gtom
 
 #define getOffset(x, y, stride) ((y) * (stride) + (x))
 #define getOffset3(x, y, z, stridex, stridey) (((z) * (stridey) + (y)) * (stridex) + (x))
-#define DimensionCount(dims) (3 - max(2 - max((dims).z, 1), 0) - max(2 - max((dims).y, 1), 0) - max(2 - max((dims).x, 1), 0))
+#define DimensionCount(dims) (3 - tmax(2 - tmax((dims).z, 1), 0) - tmax(2 - tmax((dims).y, 1), 0) - tmax(2 - tmax((dims).x, 1), 0))
 #define NextMultipleOf(value, base) (((value) + (base) - 1) / (base) * (base))
 #define ElementsFFT1(dims) ((dims) / 2 + 1)
 #define Elements2(dims) ((dims).x * (dims).y)

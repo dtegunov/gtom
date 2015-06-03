@@ -1,4 +1,5 @@
 #include "cufft.h"
+#include "curand.h"
 #include "IO.cuh"
 #include "Prerequisites.cuh"
 
@@ -237,6 +238,14 @@ namespace gtom
 	void WriteToBinaryFile(std::string path, void* data, size_t bytes);
 
 	/**
+	* \brief Converts a device array to the specified format and copies it to host memory.
+	* \param[in] d_array	Array in device memory to be converted
+	* \param[in] h_output	Array in host memory to copy the data to
+	* \param[in] elements		Number of elements
+	*/
+	template <class T1, class T2> void MemcpyFromDeviceArrayConverted(T1* d_array, T2* h_output, size_t elements);
+
+	/**
 	 * \brief Allocates an array in device memory with an alignment constraint (useful for odd-sized 2D textures).
 	 * \param[in] widthbytes	Array width in bytes
 	 * \param[in] height		Array height
@@ -321,7 +330,7 @@ namespace gtom
 
 	/**
 	 * \brief Copies elements from source to destination using strided access for both pointers.
-	 * \param[in] dst	Destination start address
+	 * \param[in] dst	Destination address
 	 * \param[in] src	Source address
 	 * \param[in] elements	Number of elements
 	 * \param[in] stridedst	Stride in number of elements for destination pointer (1 = no stride)
@@ -331,12 +340,62 @@ namespace gtom
 	template<class T> void CudaMemcpyStrided(T* dst, T* src, size_t elements, int stridedst, int stridesrc);
 
 	/**
+	* \brief Copies blocks of elements from source to destination using strided access for both pointers.
+	* \param[in] dst	Destination address
+	* \param[in] src	Source address
+	* \param[in] blockelements	Number of elements in a block
+	* \param[in] stridedst	Block stride for destination pointer (blockelements = no stride)
+	* \param[in] stridesrc	Block stride for source pointer (blockelements = no stride)
+	* \param[in] nblocks	Number of blocks
+	* \returns Array pointer in device memory
+	*/
+	template<class T> void CudaMemcpyBlockStrided(T* dst, T* src, size_t blockelements, int stridedst, int stridesrc, int nblocks);
+
+	/**
 	 * \brief Creates an array of T initialized to value in device memory with the specified element count.
 	 * \param[in] elements	Element count
 	 * \param[in] value		Initial value
 	 * \returns Array pointer in device memory
 	 */
 	template <class T> T* CudaMallocValueFilled(size_t elements, T value);
+
+	/**
+	* \brief Creates an array initialized to random values drawn from a normal distribution using the curandGenerator provided.
+	* \param[in] elements	Element count
+	* \param[in] mean		Mean value of the distribution
+	* \param[in] stddev		StdDev value of the distribution
+	* \param[in] generator	curandGenerator used to generate the values
+	* \returns Array pointer in device memory
+	*/
+	tfloat* CudaMallocRandomFilled(size_t elements, tfloat mean, tfloat stddev, curandGenerator_t generator);
+	
+	/**
+	* \brief Creates an array initialized to random values drawn from a normal distribution using a CURAND_RNG_PSEUDO_DEFAULT generator initialized with the provided seed.
+	* \param[in] elements	Element count
+	* \param[in] mean		Mean value of the distribution
+	* \param[in] stddev		StdDev value of the distribution
+	* \param[in] seed		Seed to initialize the curandGenerator with
+	* \returns Array pointer in device memory
+	*/
+	tfloat* CudaMallocRandomFilled(size_t elements, tfloat mean, tfloat stddev, unsigned long long seed);
+
+	/**
+	* \brief Fills an array with random values drawn from a normal distribution using the curandGenerator provided.
+	* \param[in] elements	Element count
+	* \param[in] mean		Mean value of the distribution
+	* \param[in] stddev		StdDev value of the distribution
+	* \param[in] generator	curandGenerator used to generate the values
+	*/
+	void d_RandomFill(tfloat* d_array, size_t elements, tfloat mean, tfloat stddev, curandGenerator_t generator);
+
+	/**
+	* \brief Fills an array with random values drawn from a normal distribution using a CURAND_RNG_PSEUDO_DEFAULT generator initialized with the provided seed.
+	* \param[in] elements	Element count
+	* \param[in] mean		Mean value of the distribution
+	* \param[in] stddev		StdDev value of the distribution
+	* \param[in] seed		Seed to initialize the curandGenerator with
+	*/
+	void d_RandomFill(tfloat* d_array, size_t elements, tfloat mean, tfloat stddev, unsigned long long seed);
 
 	/**
 	 * \brief Initializes every field of an array with the same value
@@ -420,6 +479,31 @@ namespace gtom
 	 * \returns base^exponent
 	 */
 	//int pow(int base, int exponent);
+
+	/**
+	* \brief Generates random numbers that follow a normal distribution with mean = 0 and std = 1.
+	* \returns Gaussian-distributed random number
+	*/
+	tfloat gaussrand();
+
+	/**
+	* \brief Fits a line to the given points.
+	* \param[in] h_x	X coordinates of points
+	* \param[in] h_y	Y coordinates of points
+	* \param[in] n	Number of points
+	* \param[in] a	Fitted line's offset
+	* \param[in] b	Fitted line's slope
+	*/
+	void linearfit(tfloat* h_x, tfloat* h_y, uint n, tfloat &a, tfloat &b);
+
+	/**
+	* \brief Returns the value of a linear function defined by 2 points p0 and p1, at interpolantx.
+	* \param[in] p0	First point
+	* \param[in] p1	Second point
+	* \param[in] interpolantx	X coordinate of the interpolant
+	 * \returns Interpolant
+	*/
+	tfloat linearinterpolate(tfloat2 p0, tfloat2 p1, tfloat interpolantx);
 
 	//TextureObject.cu:
 

@@ -424,6 +424,9 @@
     <CudaCompile Include="src\Masking\ConeMask.cu">
       <Filter>Masking</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\Correlation\Picker.cu">
+      <Filter>Correlation</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\IO\em.cpp">

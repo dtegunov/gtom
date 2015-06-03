@@ -70,7 +70,7 @@ TEST(Transformation, Rotation)
 
 		cudaMemcpy(d_output, d_input, Elements(dims) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
 		for (int i = 0; i < 360; i++)
-			d_Rotate2D(d_output, d_output, dims, &angle, 1);
+			d_Rotate2D(d_output, d_output, toInt2(dims), &angle, T_INTERP_CUBIC, true, 1);
 
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_output, Elements(dims) * sizeof(tfloat));
 		CudaWriteToBinaryFile("Data\\Transformation\\Output_Rotate2D_512x512_float.bin", d_output, Elements(dims) * sizeof(tfloat));

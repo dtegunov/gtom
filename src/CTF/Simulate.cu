@@ -25,7 +25,7 @@ namespace gtom
 		CTFParamsLean* d_lean = (CTFParamsLean*)CudaMallocFromHostArray(h_lean, batch * sizeof(CTFParamsLean));
 		cudaFreeHost(h_lean);
 
-		int TpB = min(256, NextMultipleOf(n, 32));
+		int TpB = tmin(256, NextMultipleOf(n, 32));
 		dim3 grid = dim3(NextMultipleOf(n, TpB), batch);
 		if (amplitudesquared)
 			CTFSimulateKernel<true> << <grid, TpB >> > (d_output, d_addresses, n, d_lean);

@@ -1,5 +1,3 @@
-#pragma once
-#include "cufft.h"
 #include "Prerequisites.cuh"
 
 #ifndef GENERICS_CUH
@@ -289,6 +287,22 @@ namespace gtom
 	* \param[in] elements	Number of elements
 	*/
 	template <class T> void d_Log(T* d_input, T* d_output, size_t elements);
+
+	/**
+	* \brief Computes the exponent function of every input element
+	* \param[in] d_input	Array with input values
+	* \param[in] d_output	Array that will contain the result; d_output == d_input is valid
+	* \param[in] elements	Number of elements
+	*/
+	template <class T> void d_Exp(T* d_input, T* d_output, size_t elements);
+
+	/**
+	* \brief Computes (1 - x) for every input element x
+	* \param[in] d_input	Array with input values
+	* \param[in] d_output	Array that will contain the result; d_output == d_input is valid
+	* \param[in] elements	Number of elements
+	*/
+	template <class T> void d_OneMinus(T* d_input, T* d_output, size_t elements);
 
 	/**
 	 * \brief Transforms every complex input element from polar to cartesian form
@@ -670,7 +684,9 @@ namespace gtom
 		/**Pad by repeating mirrored data*/
 		T_PAD_MIRROR = 2,
 		/**Pad by repeating data*/
-		T_PAD_TILE = 3
+		T_PAD_TILE = 3,
+		/**Leave memory contents unchanged within pad*/
+		T_PAD_NOTHING = 4
 	};
 
 	/**

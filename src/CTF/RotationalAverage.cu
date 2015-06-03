@@ -48,7 +48,7 @@ namespace gtom
 		CTFParamsLean* d_lean = (CTFParamsLean*)CudaMallocFromHostArray(h_lean, batch * sizeof(CTFParamsLean));
 
 		dim3 TpB = dim3(192);
-		dim3 grid = dim3(min(32, (inputlength + TpB.x - 1) / TpB.x), batch);
+		dim3 grid = dim3(tmin(32, (inputlength + TpB.x - 1) / TpB.x), batch);
 
 		tfloat* d_tempbins, *d_tempweights;
 		cudaMalloc((void**)&d_tempbins, numbins * grid.x * grid.y * sizeof(tfloat));
@@ -108,15 +108,13 @@ namespace gtom
 			double radius2 = radius * radius;
 			double radius4 = radius2 * radius2;
 
-			double term = p.defocus + p.defocusdelta * sin(2.0f * (angle - (float)p.astigmatismangle));
-			term = 2.0 * p.Cs * lambda2 * radius2 * term;
-			term = sqrt(defocus2 + cs2 * lambda4 * radius4 - term);
-			term = sqrt(p.Cs * abs(abs(p.defocus) - term)) / (p.Cs * p.lambda);
-			term /= p.ny * 2.0 / (double)sidelength;
+			double astdefocus = p.defocus - p.defocusdelta * cos(2.0f * (angle + (float)p.astigmatismangle));
+			double originalradius = sqrt(abs(abs(p.defocus) - sqrt(cs2 * radius4 * lambda4 + 2.0 * p.Cs * astdefocus * radius2 * lambda2 + defocus2)) / (p.Cs * lambda2));
+			originalradius /= p.ny * 2.0 / (double)sidelength;
 
 			tfloat val = d_input[id];
-			short lowbin = floor(term), highbin = lowbin + 1;
-			tfloat lowweight = (tfloat)(1 + lowbin) - term, highweight = (tfloat)1 - lowweight;
+			short lowbin = floor(originalradius), highbin = lowbin + 1;
+			tfloat lowweight = (tfloat)(1 + lowbin) - originalradius, highweight = (tfloat)1 - lowweight;
 			if (lowbin >= freqlow && lowbin < freqhigh)
 			{
 				lowbin -= freqlow;

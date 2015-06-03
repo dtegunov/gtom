@@ -3,8 +3,8 @@
 
 #include "Prerequisites.cuh"
 
-#include "Angles.cuh"
 #include "Alignment.cuh"
+#include "Angles.cuh"
 #include "Binary.cuh"
 #include "Correlation.cuh"
 #include "CTF.cuh"
@@ -16,7 +16,6 @@
 #include "Masking.cuh"
 #include "Optimization.cuh"
 #include "PCA.cuh"
-#include "Prerequisites.cuh"
 #include "Projection.cuh"
 #include "Reconstruction.cuh"
 #include "Resolution.cuh"
