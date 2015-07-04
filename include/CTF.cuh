@@ -96,7 +96,7 @@ namespace gtom
 
 		CTFParamsLean(CTFParams p) :
 			ny(0.5f / (p.pixelsize * 1e10)),
-			lambda(sqrt(150.4 / (p.voltage * (1.0 + p.voltage / 1022000.0)))),
+			lambda(12.2643247 / sqrt(p.voltage * (1.0 + p.voltage * 0.978466e-6))),
 			defocus(p.defocus * 1e10),
 			astigmatismangle(p.astigmatismangle),
 			defocusdelta(p.defocusdelta * 0.5e10),

@@ -58,6 +58,9 @@
     <Filter Include="Source Files\Helpers">
       <UniqueIdentifier>{95fcf15b-125f-4629-91dc-fb2bbc1ccf6a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Relion">
+      <UniqueIdentifier>{7fc473de-a77f-40aa-b9a3-3229eab182bf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Helper.cpp">
@@ -239,6 +242,15 @@
     </ClCompile>
     <ClCompile Include="CTFSimulation.cpp">
       <Filter>Source Files\CTF</Filter>
+    </ClCompile>
+    <ClCompile Include="RelionProject.cpp">
+      <Filter>Source Files\Relion</Filter>
+    </ClCompile>
+    <ClCompile Include="RelionSquaredDiff.cpp">
+      <Filter>Source Files\Relion</Filter>
+    </ClCompile>
+    <ClCompile Include="BeamTilt.cpp">
+      <Filter>Source Files\Image Manipulation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

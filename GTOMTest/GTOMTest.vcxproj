@@ -132,7 +132,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy "$(ProjectDir)Data" "$(TargetDir)Data" /e /d /y</Command>
@@ -145,6 +145,7 @@
     <ClCompile Include="Align2D.cpp" />
     <ClCompile Include="Align3D.cpp" />
     <ClCompile Include="AnisotropicFSC.cpp" />
+    <ClCompile Include="BeamTilt.cpp" />
     <ClCompile Include="ConeMask.cpp" />
     <ClCompile Include="CTFCorrect.cpp" />
     <ClCompile Include="CTFFit.cpp" />
@@ -163,6 +164,8 @@
     <ClCompile Include="Periodogram.cpp" />
     <ClCompile Include="Picker.cpp" />
     <ClCompile Include="PolynomialFit.cpp" />
+    <ClCompile Include="RelionProject.cpp" />
+    <ClCompile Include="RelionSquaredDiff.cpp" />
     <ClCompile Include="RotationalAverage.cpp" />
     <ClCompile Include="RecCompare.cpp" />
     <ClCompile Include="RecSIRT.cpp" />

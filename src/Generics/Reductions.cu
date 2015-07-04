@@ -10,6 +10,7 @@ namespace gtom
 	template<class T> __global__ void ReduceAddKernel(T* d_input, T* d_output, int nvectors, int vectorlength);
 	template<class T> __global__ void ReduceMeanKernel(T* d_input, T* d_output, int nvectors, int vectorlength);
 	template<class T> __global__ void ReduceMeanWeightedKernel(T* d_input, tfloat* d_inputweights, T* d_output, int nvectors, int vectorlength);
+	template<class T> __global__ void ReduceOrKernel(T* d_input, T* d_output, uint nvectors, uint vectorlength, uint batch);
 
 
 	////////////
@@ -112,6 +113,44 @@ namespace gtom
 			}
 
 			d_output[blockIdx.y * vectorlength + id] = sum / max((tfloat)1, weightsum);
+		}
+	}
+
+
+	//////
+	//Or//
+	//////
+
+	template<class T> void d_ReduceOr(T* d_input, T* d_output, uint vectorlength, uint nvectors, uint batch)
+	{
+		int TpB = min(NextMultipleOf(nvectors, 32), 256);
+		dim3 grid = dim3(min(vectorlength, 2048), min(batch, 32768));
+		ReduceOrKernel<T> << <grid, TpB >> > (d_input, d_output, nvectors, vectorlength, batch);
+	}
+	template void d_ReduceOr<char>(char* d_input, char* d_output, uint vectorlength, uint nvectors, uint batch);
+	template void d_ReduceOr<uchar>(uchar* d_input, uchar* d_output, uint vectorlength, uint nvectors, uint batch);
+	template void d_ReduceOr<short>(short* d_input, short* d_output, uint vectorlength, uint nvectors, uint batch);
+	template void d_ReduceOr<ushort>(ushort* d_input, ushort* d_output, uint vectorlength, uint nvectors, uint batch);
+	template void d_ReduceOr<int>(int* d_input, int* d_output, uint vectorlength, uint nvectors, uint batch);
+	template void d_ReduceOr<uint>(uint* d_input, uint* d_output, uint vectorlength, uint nvectors, uint batch);
+	template void d_ReduceOr<bool>(bool* d_input, bool* d_output, uint vectorlength, uint nvectors, uint batch);
+
+	template<class T> __global__ void ReduceOrKernel(T* d_input, T* d_output, uint nvectors, uint vectorlength, uint batch)
+	{
+		d_input += blockIdx.y * nvectors * vectorlength;
+		d_output += blockIdx.y * vectorlength;
+
+		for (uint b = blockIdx.y; b < batch; b += gridDim.y, d_input += gridDim.y * nvectors * vectorlength, d_output += gridDim.y * vectorlength)
+		{
+			for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < vectorlength; id += gridDim.x * blockDim.x)
+			{
+				T sum = (T)0;
+
+				for (uint n = 0; n < nvectors; n++)
+					sum |= d_input[n * vectorlength + id];
+
+				d_output[id] = sum;
+			}
 		}
 	}
 }

@@ -37,6 +37,7 @@
     <ClInclude Include="include\PCA.cuh" />
     <ClInclude Include="include\Projection.cuh" />
     <ClInclude Include="include\Reconstruction.cuh" />
+    <ClInclude Include="include\Relion.cuh" />
     <ClInclude Include="include\Resolution.cuh" />
     <ClInclude Include="include\Transformation.cuh" />
     <ClInclude Include="src\Optimization\polynomials\Polynomial.h" />
@@ -76,6 +77,7 @@
     <CudaCompile Include="src\FFT\FFTResize.cu" />
     <CudaCompile Include="src\FFT\IFFT.cu" />
     <CudaCompile Include="src\Generics\Arithmetics.cu" />
+    <CudaCompile Include="src\Generics\Boolean.cu" />
     <CudaCompile Include="src\Generics\CompositeArithmetics.cu" />
     <CudaCompile Include="src\Generics\Extraction.cu" />
     <CudaCompile Include="src\Generics\Histogram.cu" />
@@ -101,6 +103,7 @@
     <CudaCompile Include="src\Helpers\TypeConversion.cu" />
     <CudaCompile Include="src\ImageManipulation\AnisotropicLowpass.cu" />
     <CudaCompile Include="src\ImageManipulation\Bandpass.cu" />
+    <CudaCompile Include="src\ImageManipulation\BeamTilt.cu" />
     <CudaCompile Include="src\ImageManipulation\LocalLowpass.cu" />
     <CudaCompile Include="src\ImageManipulation\Norm.cu" />
     <CudaCompile Include="src\ImageManipulation\Xray.cu" />
@@ -123,6 +126,10 @@
     <CudaCompile Include="src\Projection\Weighting.cu" />
     <CudaCompile Include="src\Reconstruction\RecFourier.cu" />
     <CudaCompile Include="src\Reconstruction\RecFourierAdd.cu" />
+    <CudaCompile Include="src\Relion\DiffRemap.cu" />
+    <CudaCompile Include="src\Relion\Project.cu" />
+    <CudaCompile Include="src\Relion\SquaredDifferences.cu" />
+    <CudaCompile Include="src\Relion\ConvertWeights.cu" />
     <CudaCompile Include="src\Resolution\AnisotropicFSC.cu" />
     <CudaCompile Include="src\Resolution\FSC.cu" />
     <CudaCompile Include="src\Resolution\LocalAnisotropicFSC.cu" />
@@ -277,7 +284,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_20,sm_20</CodeGeneration>
+      <CodeGeneration>compute_52,sm_52</CodeGeneration>
       <PtxAsOptionV>true</PtxAsOptionV>
       <AdditionalCompilerOptions>/openmp</AdditionalCompilerOptions>
       <FastMath>false</FastMath>

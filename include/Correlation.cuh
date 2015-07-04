@@ -125,7 +125,7 @@ namespace gtom
 		tcomplex* d_refft, *d_reflowft;
 		tfloat* d_refcropped;
 
-		tfloat* d_buffer1;
+		tfloat* d_buffer1, *d_buffer2;
 
 		Picker();
 		~Picker();

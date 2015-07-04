@@ -301,6 +301,8 @@ namespace gtom
 	template short* CudaMallocValueFilled<short>(size_t elements, short value);
 	template unsigned short* CudaMallocValueFilled<unsigned short>(size_t elements, unsigned short value);
 	template int* CudaMallocValueFilled<int>(size_t elements, int value);
+	template int2* CudaMallocValueFilled<int2>(size_t elements, int2 value);
+	template int3* CudaMallocValueFilled<int3>(size_t elements, int3 value);
 	template uint* CudaMallocValueFilled<uint>(size_t elements, uint value);
 	template bool* CudaMallocValueFilled<bool>(size_t elements, bool value);
 	template tfloat2* CudaMallocValueFilled<tfloat2>(size_t elements, tfloat2 value);

@@ -18,6 +18,7 @@
 #include "PCA.cuh"
 #include "Projection.cuh"
 #include "Reconstruction.cuh"
+#include "Relion.cuh"
 #include "Resolution.cuh"
 #include "Transformation.cuh"
 

@@ -1,5 +1,6 @@
 #include "cufft.h"
 #include "Prerequisites.cuh"
+#include "CTF.cuh"
 
 #ifndef IMAGE_MANIPULATION_CUH
 #define IMAGE_MANIPULATION_CUH
@@ -16,6 +17,9 @@ namespace gtom
 	//Bandpass.cu:
 	void d_Bandpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat low, tfloat high, tfloat smooth, tfloat* d_mask = NULL, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, int batch = 1);
 	void d_Bandpass(tcomplex* d_inputft, tcomplex* d_outputft, int3 dims, tfloat low, tfloat high, tfloat smooth, tfloat* d_mask = NULL, int batch = 1);
+
+	//BeamTilt.cu:
+	void d_BeamTilt(tcomplex* d_input, tcomplex* d_output, int2 dims, tfloat2* d_beamtilt, CTFParams* h_params, uint batch = 1);
 
 	//LocalLowpass.cu:
 	void d_LocalLowpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* d_resolution, tfloat maxprecision);
@@ -39,6 +43,6 @@ namespace gtom
 	void d_NormMonolithic(tfloat* d_input, tfloat* d_output, tfloat2* d_mu, size_t elements, tfloat* d_mask, T_NORM_MODE mode, int batch);
 
 	//Xray.cu:
-	void d_Xray(tfloat* d_input, tfloat* d_output, int3 dims, tfloat ndev = (tfloat)4.6, int region = 2, int batch = 1);
+	void d_Xray(tfloat* d_input, tfloat* d_output, int3 dims, tfloat ndev = (tfloat)4.6, int region = 6, int batch = 1);
 }
 #endif

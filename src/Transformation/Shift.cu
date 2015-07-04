@@ -49,7 +49,7 @@ namespace gtom
 		tfloat3* d_delta = (tfloat3*)CudaMallocFromHostArray(h_deltanorm, batch * sizeof(tfloat3));
 		free(h_deltanorm);
 
-		int TpB = min(256, NextMultipleOf(dims.x / 2 + 1, 32));
+		int TpB = tmin(256, NextMultipleOf(dims.x / 2 + 1, 32));
 		dim3 grid = dim3(dims.y, dims.z, batch);
 		if (!iszerocentered)
 		{
@@ -82,8 +82,8 @@ namespace gtom
 		int x, y, z;
 		if (!iszerocentered)
 		{
-			y = ((idy + ((dims.y + 1) / 2)) % dims.y) - dims.y / 2;
-			z = ((idz + ((dims.z + 1) / 2)) % dims.z) - dims.z / 2;
+			y = FFTShift(idy, dims.y) - dims.y / 2;
+			z = FFTShift(idz, dims.z) - dims.z / 2;
 		}
 		else
 		{
@@ -98,7 +98,7 @@ namespace gtom
 		for (int idx = threadIdx.x; idx <= dims.x / 2; idx += blockDim.x)
 		{
 			if (!iszerocentered)
-				x = idx;
+				x = FFTShift(idx, dims.x) - dims.x / 2;
 			else
 				x = dims.x / 2 - idx;
 

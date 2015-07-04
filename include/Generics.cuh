@@ -373,6 +373,26 @@ namespace gtom
 	 */
 	bool IsPow2(size_t x);
 
+	//Boolean.cu:
+
+	/**
+	* \brief Calculates the OR conjunction of all elements
+	* \param[in] d_input	Array with input elements to be combined
+	* \param[in] d_output	Array that will contain the results
+	* \param[in] n	Number of elements
+	* \param[in] batch	Number of groups of elements
+	*/
+	template <class T> void d_Or(T* d_input, T* d_output, uint n, uint batch = 1);
+
+	/**
+	* \brief Calculates the AND conjunction of all elements
+	* \param[in] d_input	Array with input elements to be combined
+	* \param[in] d_output	Array that will contain the results
+	* \param[in] n	Number of elements
+	* \param[in] batch	Number of groups of elements
+	*/
+	template <class T> void d_And(T* d_input, T* d_output, uint n, uint batch = 1);
+
 	//CompositeArithmetics.cu:
 
 	/**
@@ -746,5 +766,15 @@ namespace gtom
 	* \param[in] batch	Number of vector sets to be reduced independently
 	*/
 	template<class T> void d_ReduceMeanWeighted(T* d_input, tfloat* d_inputweights, T* d_output, int vectorlength, int nvectors, int batch = 1);
+
+	/**
+	* \brief Or conjunction over multiple vectors
+	* \param[in] d_input	Array with input data
+	* \param[in] d_output	Array that will contain the reduced data
+	* \param[in] vectorlength	Vector length
+	* \param[in] nvectors	Number of vectors to average over
+	* \param[in] batch	Number of vector sets to be reduced independently
+	*/
+	template<class T> void d_ReduceOr(T* d_input, T* d_output, uint vectorlength, uint nvectors, uint batch = 1);
 }
 #endif

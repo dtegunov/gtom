@@ -64,6 +64,9 @@
     <Filter Include="Optimization\Polynomials">
       <UniqueIdentifier>{a103b920-458b-4691-bf20-0714c45a077b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Relion">
+      <UniqueIdentifier>{0e1018e1-5444-45a6-9b91-d4fea0bd3b6d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Alignment.cuh">
@@ -124,6 +127,9 @@
       <Filter>Optimization\Polynomials</Filter>
     </ClInclude>
     <ClInclude Include="include\cutil_math_bugfixes.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Relion.cuh">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>
@@ -426,6 +432,24 @@
     </CudaCompile>
     <CudaCompile Include="src\Correlation\Picker.cu">
       <Filter>Correlation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Relion\SquaredDifferences.cu">
+      <Filter>Relion</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Relion\Project.cu">
+      <Filter>Relion</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\ImageManipulation\BeamTilt.cu">
+      <Filter>Image Manipulation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Relion\DiffRemap.cu">
+      <Filter>Relion</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Relion\ConvertWeights.cu">
+      <Filter>Relion</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Generics\Boolean.cu">
+      <Filter>Generics</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

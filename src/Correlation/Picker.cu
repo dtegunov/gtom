@@ -68,6 +68,7 @@ namespace gtom
 		cudaMalloc((void**)&d_maskcropped, Elements(dimsref) * sizeof(tfloat));
 
 		cudaMalloc((void**)&d_buffer1, ElementsFFT(dimsimage) * sizeof(tcomplex));
+		cudaMalloc((void**)&d_buffer2, ElementsFFT(dimsimage) * sizeof(tcomplex));
 
 		// Prepare normal and inverted masks
 		{
@@ -152,6 +153,7 @@ namespace gtom
 		cufftDestroy(planforw);
 		cufftDestroy(planback);
 
+		cudaFree(d_buffer2);
 		cudaFree(d_buffer1);
 		cudaFree(d_maskcropped);
 		cudaFree(d_refcropped);
@@ -261,9 +263,10 @@ namespace gtom
 				d_Rotate2DFT(t_refRe, t_refIm, d_reflowft, dimslowpass, angle.z, dimslowpass.x / 2, T_INTERP_LINEAR, false);
 					
 			// Apply image/volume CTF to reference, pad to original resolution, and IFFT it for masking and statistics
-			d_ComplexMultiplyByVector(d_reflowft, d_ctf, d_reflowft, ElementsFFT(dimslowpass));
+			if (doctf)
+				d_ComplexMultiplyByVector(d_reflowft, d_ctf, d_reflowft, ElementsFFT(dimslowpass));
 			d_FFTPad(d_reflowft, d_refft, dimslowpass, dimsimage);
-			d_IFFTC2R(d_refft, (tfloat*)d_refft, &planback, dimsimage);
+			d_IFFTC2R(d_refft, d_buffer2, &planback, dimsimage);
 			//d_WriteMRC((tfloat*)d_refft, dimsimage, "d_refft.mrc");
 
 			// Get mask (for current angle, if not circular)
@@ -277,12 +280,12 @@ namespace gtom
 			}
 
 			// Apply rotated mask to corrected reference
-			d_MultiplyByVector((tfloat*)d_refft, d_maskpadded, (tfloat*)d_refft, Elements(dimsimage));
+			d_MultiplyByVector(d_buffer2, d_maskpadded, d_buffer2, Elements(dimsimage));
 			//d_WriteMRC((tfloat*)d_refft, dimsimage, "d_refftmasked.mrc");
 
 			// Correlate image/volume with corrected reference
 			{
-				d_FFTR2C((tfloat*)d_refft, (tcomplex*)d_buffer1, &planforw);
+				d_FFTR2C(d_buffer2, (tcomplex*)d_buffer1, &planforw);
 				d_ComplexMultiplyByConjVector(d_imageft, (tcomplex*)d_buffer1, (tcomplex*)d_buffer1, ElementsFFT(dimsimage));
 				d_IFFTC2R((tcomplex*)d_buffer1, d_buffer1, &planback);
 				//d_WriteMRC(d_buffer1, dimsimage, "d_buffer1.mrc");
@@ -291,7 +294,7 @@ namespace gtom
 			// Do the statistics
 			{
 				// fftshift reference and crop to dimsref
-				d_FFTFullCrop((tfloat*)d_refft, d_refcropped, dimsimage, dimsref);
+				d_FFTFullCrop(d_buffer2, d_refcropped, dimsimage, dimsref);
 				//d_WriteMRC(d_refcropped, dimsref, "d_refcropped.mrc");
 				// fftshift mask and crop to dimsref
 				d_FFTFullCrop(d_maskpadded, d_maskcropped, dimsimage, dimsref);
@@ -304,6 +307,9 @@ namespace gtom
 					summaskedref = 0;
 					summaskedref2 = 0;
 					expectedpratio = 0;
+					double expectedpratios[5];
+					for (uint r = 0; r < 5; r++)
+						expectedpratios[r] = 0;
 					double samples = 0;
 
 					for (uint i = 0; i < Elements(dimsref); i++)
@@ -314,13 +320,17 @@ namespace gtom
 						double refsample = h_refcropped[i];
 						double refsample2 = refsample * refsample;
 
-						expectedpratio += refsample2 + 2.0 * refsample * gaussrand();
+						for (uint r = 0; r < 5; r++)
+							expectedpratios[r] += refsample2 + 2.0 * refsample * gaussrand();
 						summaskedref += refsample;
 						summaskedref2 += refsample2;
 					}
 
 					summaskedref /= samples;
 					summaskedref2 /= samples;
+					for (uint r = 0; r < 5; r++)
+						expectedpratio += expectedpratios[r];
+					expectedpratio /= 5.0;
 					expectedpratio = exp(expectedpratio / (2.0 * samples));
 
 					h_masksum[n] = samples;
@@ -340,7 +350,10 @@ namespace gtom
 				}
 				
 				if (a == 0 || !ismaskcircular)
+				{
 					CalcSolventStatistics(d_imageft, d_image2ft, d_invmaskft, h_invmasksum[n], d_solventmean, d_solventstd);
+					//d_WriteMRC(d_solventstd, dimsimage, "d_solventstd.mrc");
+				}
 			}
 
 			int TpB = 256;

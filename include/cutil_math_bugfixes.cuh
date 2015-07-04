@@ -85,7 +85,7 @@ __host__ __device__ inline float fmaxf(float a, float b)
 // lerp
 inline __device__ __host__ float lerp(float a, float b, float t)
 {
-    return a + t*(b-a);
+	return fma(b - a, t, a);
 }
 
 // clamp
@@ -211,7 +211,8 @@ inline __host__ __device__ void operator/=(float2 &a, float s)
 // lerp
 inline __device__ __host__ float2 lerp(float2 a, float2 b, float t)
 {
-    return a + t*(b-a);
+	return make_float2(fma(b.x - a.x, t, a.x), fma(b.y - a.y, t, a.y));
+	
 }
 
 // clamp
@@ -364,7 +365,7 @@ inline __host__ __device__ void operator/=(float3 &a, float s)
 // lerp
 inline __device__ __host__ float3 lerp(float3 a, float3 b, float t)
 {
-    return a + t*(b-a);
+	return make_float3(fma(b.x - a.x, t, a.x), fma(b.y - a.y, t, a.y), fma(b.z - a.z, t, a.z));
 }
 
 // clamp
@@ -507,7 +508,7 @@ inline __host__ __device__ void operator/=(float4 &a, float s)
 // lerp
 inline __device__ __host__ float4 lerp(float4 a, float4 b, float t)
 {
-    return a + t*(b-a);
+	return make_float4(fma(b.x - a.x, t, a.x), fma(b.y - a.y, t, a.y), fma(b.z - a.z, t, a.z), fma(b.w - a.w, t, a.w));
 }
 
 // clamp
