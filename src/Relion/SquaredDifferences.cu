@@ -314,7 +314,7 @@ namespace gtom
 						diff2 = dotp2(diff, diff) * minvsigma2;
 					}
 
-					for (uint w = 16; w > ReduceTo / 2; w /= 2)
+					for (uint w = 16; w > ReduceTo / 2; w >>= 1)
 					{
 						diff2 += __shfl_down(diff2, w);
 						if (dofirstitercc)
@@ -339,7 +339,7 @@ namespace gtom
 						diff2 = dotp2(diff, diff) * minvsigma2;
 					}
 
-					for (uint w = 16; w > ReduceTo / 2; w /= 2)
+					for (uint w = 16; w > ReduceTo / 2; w >>= 1)
 					{
 						diff2 += __shfl_down(diff2, w);
 						if (dofirstitercc)
@@ -374,7 +374,7 @@ namespace gtom
 			if (dofirstitercc)
 				suma2 = s_suma2[id];
 
-			for (uint w = TpB / 64 * ReduceTo; w > 0; w /= 2)
+			for (uint w = TpB / 64 * ReduceTo; w > 0; w >>= 1)
 			{
 				diff2 += __shfl_down(diff2, w);
 				if (dofirstitercc)
@@ -405,7 +405,7 @@ namespace gtom
 			if (dofirstitercc)
 				suma2 = s_suma2[id];
 
-			for (uint w = TpB / 64 * ReduceTo; w > 0; w /= 2)
+			for (uint w = TpB / 64 * ReduceTo; w > 0; w >>= 1)
 			{
 				diff2 += __shfl_down(diff2, w);
 				if (dofirstitercc)
@@ -498,7 +498,7 @@ namespace gtom
 						diff2 = dotp2(diff, diff) * minvsigma2;
 					}
 
-					for (uint w = 16; w > ReduceTo / 2; w /= 2)
+					for (uint w = 16; w > ReduceTo / 2; w >>= 1)
 					{
 						diff2 += __shfl_down(diff2, w);
 						if (dofirstitercc)
@@ -529,7 +529,7 @@ namespace gtom
 			if (dofirstitercc)
 				suma2 = s_suma2[id];
 
-			for (uint w = TpB / 64 * ReduceTo; w > 0; w /= 2)
+			for (uint w = TpB / 64 * ReduceTo; w > 0; w >>= 1)
 			{
 				diff2 += __shfl_down(diff2, w);
 				if (dofirstitercc)
