@@ -69,7 +69,7 @@ namespace gtom
 			d_BindTextureTo3DArray(d_tempRe, a_volumepsf, t_volumepsf, dimsvolumeft, cudaFilterModeLinear, false);
 
 			// Sample the planes
-			uint TpB = min(192, NextMultipleOf(ElementsFFT2(dimsimage), 32));
+			uint TpB = tmin(128, NextMultipleOf(ElementsFFT2(dimsimage), 32));
 			dim3 grid = dim3((ElementsFFT2(dimsimage) + TpB - 1) / TpB, batch);
 			if (mode == T_INTERP_CUBIC)
 				if (outputzerocentered)

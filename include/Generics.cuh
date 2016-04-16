@@ -99,7 +99,26 @@ namespace gtom
 	 * \param[in] batch	Number of vectors to be multiplied
 	 */
 	void d_ComplexMultiplyByVector(tcomplex* d_input, tcomplex* d_multiplicators, tcomplex* d_output, size_t elements, int batch = 1);
+	
+	/**
+	* \brief Performs element-wise division of complex numbers by scalars
+	* \param[in] d_input	Array with numbers to be divided
+	* \param[in] d_multiplicators	Array with divisors for the corresponding elements in d_input
+	* \param[in] d_output	Array that will contain the result; d_output == d_input is valid
+	* \param[in] elements	Number of elements per vector
+	* \param[in] batch	Number of vectors to be divided
+	*/
+	void d_ComplexDivideByVector(tcomplex* d_input, tfloat* d_divisors, tcomplex* d_output, size_t elements, int batch = 1);
 
+	/**
+	* \brief Performs element-wise division of complex numbers by scalars, setting an output element to 0 if a division by 0 occurs
+	* \param[in] d_input	Array with numbers to be divided
+	* \param[in] d_multiplicators	Array with divisors for the corresponding elements in d_input
+	* \param[in] d_output	Array that will contain the result; d_output == d_input is valid
+	* \param[in] elements	Number of elements per vector
+	* \param[in] batch	Number of vectors to be divided
+	*/
+	void d_ComplexDivideSafeByVector(tcomplex* d_input, tfloat* d_divisors, tcomplex* d_output, size_t elements, int batch = 1);
 
 	/**
 	 * \brief Multiplies every input element by the conjugate of the same complex scalar.
@@ -305,6 +324,24 @@ namespace gtom
 	template <class T> void d_OneMinus(T* d_input, T* d_output, size_t elements);
 
 	/**
+	* \brief Computes sign(x) for every input element x
+	* \param[in] d_input	Array with input values
+	* \param[in] d_output	Array that will contain the result; d_output == d_input is valid
+	* \param[in] elements	Number of elements
+	*/
+	template <class T> void d_Sign(T* d_input, T* d_output, size_t elements);
+
+	/**
+	* \brief Computes a * b + c for every input
+	* \param[in] d_mult1	Array with a
+	* \param[in] d_mult2	Array with b
+	* \param[in] d_summand	Array with c
+	* \param[in] d_output	Array that will contain the result; d_output == d_mult1/d_mult2/d_summand is valid
+	* \param[in] elements	Number of elements
+	*/
+	template <class T> void d_MultiplyAdd(T* d_mult1, T* d_mult2, T* d_summand, T* d_output, size_t elements);
+
+	/**
 	 * \brief Transforms every complex input element from polar to cartesian form
 	 * \param[in] d_input	Array with numbers in polar form
 	 * \param[in] d_cart	Array that will contain the cartesian form; d_output == d_input is valid
@@ -319,6 +356,14 @@ namespace gtom
 	 * \param[in] elements	Number of elements
 	 */
 	void d_ComplexCartToPolar(tcomplex* d_cart, tcomplex* d_polar, size_t elements);
+
+	/**
+	* \brief Normalizes the length of every complex input element to 1, essentially reducing it to its phase information
+	* \param[in] d_input	Array with unnormalized numbers
+	* \param[in] d_output	Array that will contain the normalized numbers; d_output == d_input is valid
+	* \param[in] elements	Number of elements
+	*/
+	void d_ComplexNormalize(tcomplex* d_input, tcomplex* d_output, size_t elements);
 
 
 	/**

@@ -10,7 +10,7 @@ namespace gtom
 	uint CTFGetAliasingCutoff(CTFParams params, uint sidelength)
 	{
 		double aliasinglevel = 1.0 / (params.pixelsize * 1e10 * (double)(sidelength / 2 + 1));
-		double lambda = CTFParamsLean(params).lambda * 1e10;
+		double lambda = CTFParamsLean(params, toInt3(sidelength, sidelength, 1)).lambda * 1e10;
 
 		for (uint x = 1; x < sidelength / 2; x++)
 		{

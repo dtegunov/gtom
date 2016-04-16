@@ -14,14 +14,14 @@ namespace gtom
 	__global__ void LocalPeaksKernel(tfloat* d_input, char* d_output, int3 dims, int localextent, tfloat threshold);
 
 
-	///////////////////////////////////////
-	//Equivalent of TOM's tom_peak method//
-	///////////////////////////////////////
+	////////////////////////////////////////////////
+	// Find local peaks above specified threshold //
+	////////////////////////////////////////////////
 
 	void d_LocalPeaks(tfloat* d_input, int3** h_peaks, int* h_peaksnum, int3 dims, int localextent, tfloat threshold, int batch)
 	{
-		int TpB = min(32, dims.x);
-		dim3 grid = dim3(min((dims.x + TpB - 1) / TpB, 32768), dims.y, dims.z);
+		int TpB = tmin(128, NextMultipleOf(dims.x, 32));
+		dim3 grid = dim3(tmin((dims.x + TpB - 1) / TpB, 32768), dims.y, dims.z);
 
 		char* h_output;
 		cudaMallocHost((void**)&h_output, Elements(dims) * sizeof(char));
@@ -73,24 +73,24 @@ namespace gtom
 		if (value < threshold)
 			return;
 
-		int limx = min(dims.x, idx + localextent);
-		int limy = min(dims.y, idy + localextent);
-		int limz = min(dims.z, idz + localextent);
+		int limx = tmin(dims.x, idx + localextent);
+		int limy = tmin(dims.y, idy + localextent);
+		int limz = tmin(dims.z, idz + localextent);
 
 		int sqlocalextent = localextent * localextent;
 		int sqy, sqz;
 		int sqdist;
 
-		for (int z = max(0, idz - localextent); z < limz; z++)
+		for (int z = tmax(0, idz - localextent); z < limz; z++)
 		{
 			sqz = idz - z;
 			sqz *= sqz;
-			for (int y = max(0, idy - localextent); y < limy; y++)
+			for (int y = tmax(0, idy - localextent); y < limy; y++)
 			{
 				sqy = idy - y;
 				sqy *= sqy;
 				sqy += sqz;
-				for (int x = max(0, idx - localextent); x < limx; x++)
+				for (int x = tmax(0, idx - localextent); x < limx; x++)
 				{
 					sqdist = idx - x;
 					sqdist *= sqdist;
@@ -99,7 +99,7 @@ namespace gtom
 					if (sqdist > sqlocalextent || sqdist == 0)
 						continue;
 
-					if (value <= d_input[(z * dims.y + y) * dims.x + x])
+					if (value < d_input[(z * dims.y + y) * dims.x + x])
 						return;
 				}
 			}

@@ -22,6 +22,10 @@ namespace gtom
 
 	template<bool outputmu> __global__ void NormMeanStdDevWarpMonoKernel(tfloat* d_input, tfloat* d_output, tfloat2* d_mu, uchar elements, size_t n);
 
+	template<bool flipsign> __global__ void NormBackgroundMonoKernel(tfloat* d_input, tfloat* d_output, int3 dims, uint particleradius2);
+
+	__global__ void Mean0MonoKernel(tfloat* d_input, tfloat* d_output, size_t elements);
+
 
 	///////////////////////////////////////
 	//Equivalent of TOM's tom_norm method//
@@ -98,7 +102,7 @@ namespace gtom
 		if (d_mask != NULL)
 			for (int b = 0; b < batch; b += 32768)
 			{
-				dim3 grid = dim3(min(batch - b, 32768));
+				dim3 grid = dim3(tmin(batch - b, 32768));
 				NormMeanStdDevMonoMaskedKernel<false> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, NULL, d_mask + elements * b, elements);
 			}
 		else
@@ -110,11 +114,32 @@ namespace gtom
 		if (d_mask != NULL)
 			for (int b = 0; b < batch; b += 32768)
 			{
-				dim3 grid = dim3(min(batch - b, 32768));
+				dim3 grid = dim3(tmin(batch - b, 32768));
 				NormMeanStdDevMonoMaskedKernel<true> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, d_mu + b, d_mask + elements * b, elements);
 			}
 		else
 			d_NormMonolithic(d_input, d_output, d_mu, elements, mode, batch);
+	}
+
+	void d_NormBackground(tfloat* d_input, tfloat* d_output, int3 dims, uint particleradius, bool flipsign, uint batch)
+	{
+		for (int b = 0; b < batch; b += 32768)
+		{
+			dim3 grid = dim3(tmin(batch - b, 32768));
+			if (flipsign)
+				NormBackgroundMonoKernel<true> << <grid, MonoTpB >> > (d_input + Elements(dims) * b, d_output + Elements(dims) * b, dims, particleradius * particleradius);
+			else
+				NormBackgroundMonoKernel<false> << <grid, MonoTpB >> > (d_input + Elements(dims) * b, d_output + Elements(dims) * b, dims, particleradius * particleradius);
+		}
+	}
+
+	void d_Mean0Monolithic(tfloat* d_input, tfloat* d_output, size_t elements, int batch)
+	{
+		for (int b = 0; b < batch; b += 32768)
+		{
+			dim3 grid = dim3(min(batch - b, 32768));
+			Mean0MonoKernel << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, elements);
+		}
 	}
 
 
@@ -331,7 +356,7 @@ namespace gtom
 			}
 
 			s_mean[threadIdx.y] = sum1 / (double)elements;
-			s_stddev[threadIdx.y] = sqrt(((double)elements * sum2 - (sum1 * sum1))) / (double)elements;
+			s_stddev[threadIdx.y] = sqrt((double)elements * sum2 - (sum1 * sum1)) / (double)elements;
 		}
 		__syncthreads();
 
@@ -346,5 +371,96 @@ namespace gtom
 
 		if (outputmu && threadIdx.x == 0)
 			d_mu[blockIdx.x * 6 + threadIdx.y] = tfloat2(mean, stddev);
+	}
+	
+	template<bool flipsign> __global__ void NormBackgroundMonoKernel(tfloat* d_input, tfloat* d_output, int3 dims, uint particleradius2)
+	{
+		__shared__ tfloat s_sums1[MonoTpB];
+		__shared__ tfloat s_sums2[MonoTpB];
+		__shared__ uint s_samples[MonoTpB];
+		__shared__ tfloat s_mean, s_stddev;
+
+		uint elements = Elements(dims);
+		uint elementsslice = Elements2(dims);
+
+		d_input += elements * blockIdx.x;
+		d_output += elements * blockIdx.x;
+
+		tfloat sum1 = 0.0, sum2 = 0.0;
+		uint samples = 0;
+		int center = dims.x / 2;
+		
+		for (int y = 0; y < dims.y; y++)
+			for (int x = threadIdx.x; x < dims.x; x += blockDim.x)
+			{
+				int yy = y - center;
+				int xx = x - center;
+
+				uint r = yy * yy + xx * xx;
+				if (r <= particleradius2)
+					continue;
+
+				tfloat val = d_input[y * dims.x + x];
+				sum1 += val;
+				sum2 += val * val;
+				samples++;
+			}
+		s_sums1[threadIdx.x] = sum1;
+		s_sums2[threadIdx.x] = sum2;
+		s_samples[threadIdx.x] = samples;
+		__syncthreads();
+
+		if (threadIdx.x == 0)
+		{
+			for (int i = 1; i < MonoTpB; i++)
+			{
+				sum1 += s_sums1[i];
+				sum2 += s_sums2[i];
+				samples += s_samples[i];
+			}
+
+			s_mean = sum1 / (tfloat)samples;
+			s_stddev = sqrt(((tfloat)samples * sum2 - (sum1 * sum1))) / (tfloat)samples;
+		}
+		__syncthreads();
+
+		tfloat mean = s_mean;
+		tfloat stddev = s_stddev > 0 ? (tfloat)1 / s_stddev * (flipsign ? -1 : 1) : (tfloat)0;
+
+		for (int i = threadIdx.x; i < elements; i += blockDim.x)
+			d_output[i] = (d_input[i] - mean) * stddev;
+	}
+
+	__global__ void Mean0MonoKernel(tfloat* d_input, tfloat* d_output, size_t elements)
+	{
+		__shared__ double s_sums1[MonoTpB];
+		__shared__ double s_mean;
+
+		d_input += elements * blockIdx.x;
+		d_output += elements * blockIdx.x;
+
+		double sum1 = 0.0, sum2 = 0.0;
+
+		for (int i = threadIdx.x; i < elements; i += blockDim.x)
+		{
+			double val = d_input[i];
+			sum1 += val;
+		}
+		s_sums1[threadIdx.x] = sum1;
+		__syncthreads();
+
+		if (threadIdx.x == 0)
+		{
+			for (int i = 1; i < MonoTpB; i++)
+				sum1 += s_sums1[i];
+
+			s_mean = sum1 / (double)elements;
+		}
+		__syncthreads();
+
+		tfloat mean = s_mean;
+
+		for (int i = threadIdx.x; i < elements; i += blockDim.x)
+			d_output[i] = d_input[i] - mean;
 	}
 }

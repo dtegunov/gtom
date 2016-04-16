@@ -17,10 +17,10 @@ namespace gtom
 
 	void d_HannMask(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* radius, tfloat3* center, int batch)
 	{
-		tfloat _radius = radius != NULL ? *radius : min(dims.z > 1 ? min(dims.x, dims.z) : dims.x, dims.y) / 2 - 1;
+		tfloat _radius = radius != NULL ? *radius : tmin(dims.z > 1 ? tmin(dims.x, dims.z) : dims.x, dims.y) / 2 - 1;
 		tfloat3 _center = center != NULL ? *center : tfloat3(dims.x / 2, dims.y / 2, dims.z / 2);
 
-		int TpB = min(NextMultipleOf(dims.x, 32), 256);
+		int TpB = tmin(NextMultipleOf(dims.x, 32), 256);
 		dim3 grid = dim3(dims.y, dims.z, 1);
 		if (DimensionCount(dims) == 1)
 			WindowMaskKernel<0, 1> << <grid, TpB >> > (d_input, d_output, dims, _radius, _center, batch);
@@ -32,10 +32,10 @@ namespace gtom
 
 	void d_HammingMask(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* radius, tfloat3* center, int batch)
 	{
-		tfloat _radius = radius != NULL ? *radius : min(dims.z > 1 ? min(dims.x, dims.z) : dims.x, dims.y) / 2 - 1;
+		tfloat _radius = radius != NULL ? *radius : tmin(dims.z > 1 ? tmin(dims.x, dims.z) : dims.x, dims.y) / 2 - 1;
 		tfloat3 _center = center != NULL ? *center : tfloat3(dims.x / 2, dims.y / 2, dims.z / 2);
 
-		int TpB = min(NextMultipleOf(dims.x, 32), 256);
+		int TpB = tmin(NextMultipleOf(dims.x, 32), 256);
 		dim3 grid = dim3(dims.y, dims.z, 1);
 		if (DimensionCount(dims) == 1)
 			WindowMaskKernel<1, 1> << <grid, TpB >> > (d_input, d_output, dims, _radius, _center, batch);
@@ -50,7 +50,7 @@ namespace gtom
 		tfloat _sigma = sigma != NULL ? *sigma : (tfloat)1;
 		tfloat3 _center = center != NULL ? *center : tfloat3(dims.x / 2, dims.y / 2, dims.z / 2);
 
-		int TpB = min(NextMultipleOf(dims.x, 32), 256);
+		int TpB = tmin(NextMultipleOf(dims.x, 32), 256);
 		dim3 grid = dim3(dims.y, dims.z, 1);
 		if (DimensionCount(dims) == 1)
 			WindowMaskKernel<2, 1> << <grid, TpB >> > (d_input, d_output, dims, (tfloat)2 * _sigma * _sigma, _center, batch);
@@ -62,7 +62,7 @@ namespace gtom
 
 	void d_HannMaskBorderDistance(tfloat* d_input, tfloat* d_output, int3 dims, int falloff, int batch)
 	{
-		int TpB = min(NextMultipleOf(dims.x, 32), 256);
+		int TpB = tmin(NextMultipleOf(dims.x, 32), 256);
 		dim3 grid = dim3(dims.y, dims.z, 1);
 		if (DimensionCount(dims) == 1)
 			WindowMaskBorderDistanceKernel<0, 1> << <grid, TpB >> > (d_input, d_output, dims, falloff, batch);
@@ -74,7 +74,7 @@ namespace gtom
 
 	void d_HammingMaskBorderDistance(tfloat* d_input, tfloat* d_output, int3 dims, int falloff, int batch)
 	{
-		int TpB = min(NextMultipleOf(dims.x, 32), 256);
+		int TpB = tmin(NextMultipleOf(dims.x, 32), 256);
 		dim3 grid = dim3(dims.y, dims.z, 1);
 		if (DimensionCount(dims) == 1)
 			WindowMaskBorderDistanceKernel<1, 1> << <grid, TpB >> > (d_input, d_output, dims, falloff, batch);

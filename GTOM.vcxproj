@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug DLL|x64">
       <Configuration>Debug DLL</Configuration>
@@ -49,10 +49,13 @@
     <CudaCompile Include="src\BinaryManipulation\Binarize.cu" />
     <CudaCompile Include="src\BinaryManipulation\Dilate.cu" />
     <CudaCompile Include="src\Correlation\CCF.cu" />
+    <CudaCompile Include="src\Correlation\Picker.cu" />
+    <CudaCompile Include="src\Correlation\Realspace.cu" />
     <CudaCompile Include="src\Correlation\SimilarityMatrix.cu" />
     <CudaCompile Include="src\Correlation\LocalPeaks.cu" />
     <CudaCompile Include="src\Correlation\Peak.cu" />
-    <CudaCompile Include="src\Correlation\Picker.cu" />
+    <CudaCompile Include="src\Correlation\ProbabilisticPicker.cu" />
+    <CudaCompile Include="src\Correlation\TomoPicker.cu" />
     <CudaCompile Include="src\CTF\AliasingCutoff.cu" />
     <CudaCompile Include="src\CTF\CommonPSF.cu" />
     <CudaCompile Include="src\CTF\Correct.cu" />
@@ -72,6 +75,7 @@
     <CudaCompile Include="src\CubicSplines\internal\cubicPrefilter_kernel.cu" />
     <CudaCompile Include="src\CubicSplines\internal\math_func.cu" />
     <CudaCompile Include="src\CubicSplines\internal\version.cu" />
+    <CudaCompile Include="src\CubicSplines\PCHIP.cu" />
     <CudaCompile Include="src\FFT\FFT.cu" />
     <CudaCompile Include="src\FFT\FFTRemap.cu" />
     <CudaCompile Include="src\FFT\FFTResize.cu" />
@@ -98,12 +102,12 @@
     <CudaCompile Include="src\Helpers\InterpolateIrregular.cu" />
     <CudaCompile Include="src\Helpers\MDPointer.cu" />
     <CudaCompile Include="src\Helpers\Memory.cu" />
-    <CudaCompile Include="src\Helpers\Misc.cu" />
     <CudaCompile Include="src\Helpers\TextureObject.cu" />
     <CudaCompile Include="src\Helpers\TypeConversion.cu" />
     <CudaCompile Include="src\ImageManipulation\AnisotropicLowpass.cu" />
     <CudaCompile Include="src\ImageManipulation\Bandpass.cu" />
     <CudaCompile Include="src\ImageManipulation\BeamTilt.cu" />
+    <CudaCompile Include="src\ImageManipulation\Dose.cu" />
     <CudaCompile Include="src\ImageManipulation\LocalLowpass.cu" />
     <CudaCompile Include="src\ImageManipulation\Norm.cu" />
     <CudaCompile Include="src\ImageManipulation\Xray.cu" />
@@ -123,13 +127,17 @@
     <CudaCompile Include="src\PCA\NIPALS.cu" />
     <CudaCompile Include="src\Projection\Backward.cu" />
     <CudaCompile Include="src\Projection\Forward.cu" />
+    <CudaCompile Include="src\Projection\RaySum.cu" />
     <CudaCompile Include="src\Projection\Weighting.cu" />
     <CudaCompile Include="src\Reconstruction\RecFourier.cu" />
     <CudaCompile Include="src\Reconstruction\RecFourierAdd.cu" />
+    <CudaCompile Include="src\Relion\Backproject.cu" />
     <CudaCompile Include="src\Relion\DiffRemap.cu" />
+    <CudaCompile Include="src\Relion\Misc.cu" />
     <CudaCompile Include="src\Relion\Project.cu" />
     <CudaCompile Include="src\Relion\SquaredDifferences.cu" />
     <CudaCompile Include="src\Relion\ConvertWeights.cu" />
+    <CudaCompile Include="src\Relion\StoreWeights.cu" />
     <CudaCompile Include="src\Resolution\AnisotropicFSC.cu" />
     <CudaCompile Include="src\Resolution\FSC.cu" />
     <CudaCompile Include="src\Resolution\LocalAnisotropicFSC.cu" />
@@ -147,6 +155,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Helpers\KaiserBessel.cpp" />
+    <ClCompile Include="src\Helpers\Misc.cpp" />
     <ClCompile Include="src\IO\em.cpp" />
     <ClCompile Include="src\IO\mrc.cpp" />
     <ClCompile Include="src\IO\raw.cpp" />
@@ -181,12 +190,12 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 7.0.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 7.5.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'" Label="PropertySheets">
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -199,6 +208,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
@@ -210,12 +220,12 @@
       <PreprocessorDefinitions>WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
       <MinimalRebuild>true</MinimalRebuild>
-      <MultiProcessorCompilation>false</MultiProcessorCompilation>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
@@ -223,13 +233,11 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_52,sm_52</CodeGeneration>
+      <CodeGeneration>compute_35,sm_35</CodeGeneration>
       <PtxAsOptionV>true</PtxAsOptionV>
-      <AdditionalCompilerOptions>/openmp</AdditionalCompilerOptions>
-      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
-      <Warning>W0</Warning>
       <GenerateLineInfo>true</GenerateLineInfo>
       <GPUDebugInfo>false</GPUDebugInfo>
+      <HostDebugInfo>false</HostDebugInfo>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
@@ -239,12 +247,12 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <PreprocessorDefinitions>WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
       <MinimalRebuild>true</MinimalRebuild>
-      <MultiProcessorCompilation>false</MultiProcessorCompilation>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
@@ -252,10 +260,10 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_30,sm_30</CodeGeneration>
+      <CodeGeneration>compute_52,sm_52</CodeGeneration>
       <PtxAsOptionV>true</PtxAsOptionV>
-      <AdditionalCompilerOptions>/openmp</AdditionalCompilerOptions>
-      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <GenerateLineInfo>true</GenerateLineInfo>
+      <GPUDebugInfo>false</GPUDebugInfo>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -272,11 +280,10 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
@@ -286,18 +293,12 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <CodeGeneration>compute_52,sm_52</CodeGeneration>
       <PtxAsOptionV>true</PtxAsOptionV>
-      <AdditionalCompilerOptions>/openmp</AdditionalCompilerOptions>
       <FastMath>false</FastMath>
-      <Runtime>MT</Runtime>
-      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
-      <Optimization>O3</Optimization>
+      <Optimization>Od</Optimization>
     </CudaCompile>
-    <CudaLink>
-      <Optimization>O3</Optimization>
-    </CudaLink>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 7.0.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 7.5.targets" />
   </ImportGroup>
 </Project>

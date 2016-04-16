@@ -172,7 +172,7 @@ namespace gtom
 			for (int n = 0; n < nimages; n++)
 				h_indices[n] = n;
 			cudaMemcpy(d_imagesft2, d_imagesft, ElementsFFT2(dimsimage) * nimages * sizeof(tcomplex), cudaMemcpyDeviceToDevice);
-			d_Exact2DWeighting(d_imagesft2, dimsimage, h_indices, h_angles, nimages, dimsimage.x, false, nimages);
+			d_Exact2DWeighting(d_imagesft2, dimsimage, h_indices, h_angles, NULL, nimages, dimsimage.x, false, nimages);
 			free(h_indices);
 
 			d_IFFTC2R(d_imagesft2, d_proj, &planback);
@@ -228,7 +228,7 @@ namespace gtom
 			for (int n = 0; n < nimages; n++)
 				h_indices[n] = n;
 			cudaMemcpy(d_imagesft2, d_imagesft, ElementsFFT2(dimsimage) * nimages * sizeof(tcomplex), cudaMemcpyDeviceToDevice);
-			d_Exact2DWeighting(d_imagesft2, dimsimage, h_indices, h_angles, nimages, dimsimage.x, false, nimages);
+			d_Exact2DWeighting(d_imagesft2, dimsimage, h_indices, h_angles, NULL, nimages, dimsimage.x, false, nimages);
 			free(h_indices);
 
 			d_IFFTC2R(d_imagesft2, d_proj, &planback);

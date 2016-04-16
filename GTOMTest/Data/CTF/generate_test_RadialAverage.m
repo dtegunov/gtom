@@ -3,6 +3,14 @@
 image = 0.07.*amplitude - sqrt(1-0.07^2).*phase;
 % image = tom_cut_out(image, 'center', [128 128]);
 image = image(1:end/2+1,:);
-fid = fopen('Input_RadialAverage.bin','W');
+fid = fopen('Input_RadialAverage1.bin','W');
 fwrite(fid,image,'single');
+fclose(fid);
+
+%Case 2:
+fid = fopen('Input_RadialAverage2.bin','W');
+for z=0.0:0.01:0.09
+    ps=tom_ctf2d(512, 1e-10, 0.1e-10, 0, 300e3, 2e-3, -(1+z)*1e-6, 0.2e-6, 45/180*pi, 0.07, 0, 0);
+    fwrite(fid, ps, 'single');
+end;
 fclose(fid);

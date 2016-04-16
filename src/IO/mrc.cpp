@@ -113,4 +113,18 @@ namespace gtom
 
 		free(h_data);
 	}
+
+	void d_WriteMRC(half* d_data, int3 dims, std::string path)
+	{
+		tfloat* d_data32;
+		cudaMalloc((void**)&d_data32, Elements(dims) * sizeof(tfloat));
+		d_ConvertToTFloat(d_data, d_data32, Elements(dims));
+
+		tfloat* h_data = (tfloat*)MallocFromDeviceArray(d_data32, Elements(dims) * sizeof(tfloat));
+		cudaFree(d_data32);
+
+		WriteMRC(h_data, dims, path);
+
+		free(h_data);
+	}
 }

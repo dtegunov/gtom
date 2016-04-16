@@ -10,7 +10,7 @@ namespace gtom
 		float theta = angles.y;
 		float psi = angles.z;
 
-		return Matrix4RotationZ(phi) * Matrix4RotationY(theta) * Matrix4RotationZ(psi);
+		return Matrix4RotationZ(psi) * Matrix4RotationY(theta) * Matrix4RotationZ(phi);
 	}
 
 	glm::mat3 Matrix3Euler(tfloat3 angles)
@@ -19,7 +19,7 @@ namespace gtom
 		float theta = angles.y;
 		float psi = angles.z;
 
-		return Matrix3RotationZ(phi) * Matrix3RotationY(theta) * Matrix3RotationZ(psi);
+		return Matrix3RotationZ(psi) * Matrix3RotationY(theta) * Matrix3RotationZ(phi);
 	}
 
 	glm::mat4 Matrix4EulerLegacy(tfloat2 angles)

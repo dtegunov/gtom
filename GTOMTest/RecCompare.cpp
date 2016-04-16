@@ -49,7 +49,7 @@ TEST(Reconstruction, RecCompare)
 		scores << "WBP:\n\n";
 		for (int s = 1; s <= 3; s++)
 		{
-			d_RecWBP(d_volume, dimsvolume, volumeoffset, d_images, dimsimage, nimages, h_angles, h_translations, h_scales, T_INTERP_LINEAR, true);
+			d_RecWBP(d_volume, dimsvolume, volumeoffset, d_images, dimsimage, nimages, h_angles, h_translations, h_scales, NULL, T_INTERP_LINEAR, true);
 			CudaWriteToBinaryFile("d_volumewbp.bin", d_volume, Elements(dimsvolume) * sizeof(tfloat));
 			/*d_Pad(d_volume, d_volume2, dimsvolume, toInt3(64, 64, 16), T_PAD_VALUE, 0.0f);
 			d_NormMonolithic(d_volume2, d_volume2, 64 * 64 * 16, T_NORM_MEAN01STD, 1);

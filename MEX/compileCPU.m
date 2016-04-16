@@ -1,0 +1,1 @@
+mex 'CPU/ctom_rotationalaverage.cu' Helper.cu;

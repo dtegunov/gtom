@@ -16,7 +16,7 @@ TEST(ImageManipulation, BeamTilt)
 		CTFParams params;
 		params.pixelsize = 1.35e-10;
 		params.Cs = 2e-3;
-		CTFParamsLean lean = CTFParamsLean(params);
+		CTFParamsLean lean = CTFParamsLean(params, toInt3(dims));
 		
 		tfloat2 beamtilt = tfloat2(1, -2);
 		tfloat2* d_beamtilt = (tfloat2*)CudaMallocFromHostArray(&beamtilt, sizeof(tfloat2));

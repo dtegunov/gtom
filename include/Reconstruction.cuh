@@ -23,10 +23,10 @@ namespace gtom
 	void d_RecSIRT(tfloat* d_volume, tfloat* d_residual, int3 dimsvolume, tfloat3 offsetfromcenter, tfloat* d_image, int2 dimsimage, int nimages, tfloat3* h_angles, tfloat2* h_offsets, tfloat2* h_scales, tfloat2* h_intensities, T_INTERP_MODE mode, int supersample, int iterations, bool outputzerocentered);
 
 	//RecWBP.cu:
-	void d_RecWBP(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter, tfloat* d_image, int2 dimsimage, int nimages, tfloat3* h_angles, tfloat2* h_offsets, tfloat2* h_scales, T_INTERP_MODE mode, bool outputzerocentered);
+	void d_RecWBP(tfloat* d_volume, int3 dimsvolume, tfloat3 offsetfromcenter, tfloat* d_image, int2 dimsimage, int nimages, tfloat3* h_angles, tfloat2* h_offsets, tfloat2* h_scales, tfloat* h_weights, T_INTERP_MODE mode, bool outputzerocentered);
 
 	//Weighting.cu:
-	template <class T> void d_Exact2DWeighting(T* d_weights, int2 dimsimage, int* h_indices, tfloat3* h_angles, int nimages, tfloat maxfreq, bool iszerocentered, int batch = 1);
+	template <class T> void d_Exact2DWeighting(T* d_weights, int2 dimsimage, int* h_indices, tfloat3* h_angles, tfloat* d_imageweights, int nimages, tfloat maxfreq, bool iszerocentered, int batch = 1);
 	template <class T> void d_Exact3DWeighting(T* d_weights, int3 dimsvolume, tfloat3* h_angles, int nimages, tfloat maxfreq, bool iszerocentered);
 }
 #endif

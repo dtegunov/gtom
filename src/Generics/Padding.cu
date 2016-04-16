@@ -38,6 +38,7 @@ namespace gtom
 			PadNothingKernel << <grid, (int)TpB >> > (d_input, d_output, inputdims, outputdims, offset, batch);
 	}
 	template void d_Pad<int>(int* d_input, int* d_output, int3 inputdims, int3 outputdims, T_PAD_MODE mode, int value, int batch);
+	template void d_Pad<half>(half* d_input, half* d_output, int3 inputdims, int3 outputdims, T_PAD_MODE mode, half value, int batch);
 	template void d_Pad<float>(float* d_input, float* d_output, int3 inputdims, int3 outputdims, T_PAD_MODE mode, float value, int batch);
 	template void d_Pad<double>(double* d_input, double* d_output, int3 inputdims, int3 outputdims, T_PAD_MODE mode, double value, int batch);
 

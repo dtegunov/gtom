@@ -21,6 +21,9 @@ namespace gtom
 	//BeamTilt.cu:
 	void d_BeamTilt(tcomplex* d_input, tcomplex* d_output, int2 dims, tfloat2* d_beamtilt, CTFParams* h_params, uint batch = 1);
 
+	//Dose.cu:
+	void d_DoseFilter(tfloat* d_freq, tfloat* d_output, uint length, tfloat* h_dose, tfloat3 nikoconst, uint batch = 1);
+
 	//LocalLowpass.cu:
 	void d_LocalLowpass(tfloat* d_input, tfloat* d_output, int3 dims, tfloat* d_resolution, tfloat maxprecision);
 
@@ -40,7 +43,9 @@ namespace gtom
 	void d_NormMonolithic(tfloat* d_input, tfloat* d_output, size_t elements, T_NORM_MODE mode, int batch);
 	void d_NormMonolithic(tfloat* d_input, tfloat* d_output, tfloat2* d_mu, size_t elements, T_NORM_MODE mode, int batch);
 	void d_NormMonolithic(tfloat* d_input, tfloat* d_output, size_t elements, tfloat* d_mask, T_NORM_MODE mode, int batch);
-	void d_NormMonolithic(tfloat* d_input, tfloat* d_output, tfloat2* d_mu, size_t elements, tfloat* d_mask, T_NORM_MODE mode, int batch);
+	void d_NormMonolithic(tfloat* d_input, tfloat* d_output, tfloat2* d_mu, size_t elements, tfloat* d_mask, T_NORM_MODE mode, int batch); 
+	void d_NormBackground(tfloat* d_input, tfloat* d_output, int3 dims, uint particleradius, bool flipsign, uint batch);
+	void d_Mean0Monolithic(tfloat* d_input, tfloat* d_output, size_t elements, int batch);
 
 	//Xray.cu:
 	void d_Xray(tfloat* d_input, tfloat* d_output, int3 dims, tfloat ndev = (tfloat)4.6, int region = 6, int batch = 1);

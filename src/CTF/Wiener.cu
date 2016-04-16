@@ -20,7 +20,7 @@ namespace gtom
 	{
 		CTFParamsLean* h_lean = (CTFParamsLean*)malloc(batch * sizeof(CTFParamsLean));
 		for (uint b = 0; b < batch; b++)
-			h_lean[b] = CTFParamsLean(h_params[b]);
+			h_lean[b] = CTFParamsLean(h_params[b], dimsinput);
 		CTFParamsLean* d_lean = (CTFParamsLean*)CudaMallocFromHostArray(h_lean, batch * sizeof(CTFParamsLean));
 		free(h_lean);
 
@@ -44,7 +44,7 @@ namespace gtom
 
 		CTFParamsLean* h_lean = (CTFParamsLean*)malloc(batch * sizeof(CTFParamsLean));
 		for (uint b = 0; b < batch; b++)
-			h_lean[b] = CTFParamsLean(h_params[b]);
+			h_lean[b] = CTFParamsLean(h_params[b], dimsinput);
 		CTFParamsLean* d_lean = (CTFParamsLean*)CudaMallocFromHostArray(h_lean, batch * sizeof(CTFParamsLean));
 		free(h_lean);
 
@@ -75,11 +75,15 @@ namespace gtom
 		uint idy = idxy / ElementsFFT1(dims.x);
 		uint idz = blockIdx.y;
 
-		double k, angle, radius;
+		CTFParamsLean p = d_p[blockIdx.z];
+
+		tfloat k, angle, radius;
 		if (ndims == 1)
 		{
 			angle = 0.0;
 			radius = idx;
+
+			k = radius * p.ny;
 		}
 		else if (ndims == 2)
 		{
@@ -88,6 +92,9 @@ namespace gtom
 			float2 position = make_float2(-idx, y);
 			angle = atan2(position.y, position.x);
 			radius = sqrt(position.x * position.x + position.y * position.y);
+			float pixelsize = p.pixelsize + p.pixeldelta * cos(2.0f * (angle - p.pixelangle));
+
+			k = radius * p.ny / pixelsize;
 		}
 		else if (ndims == 3)
 		{
@@ -98,10 +105,10 @@ namespace gtom
 			float3 position = make_float3(idx, y, z);
 			angle = 0.0;
 			radius = sqrt(position.x * position.x + position.y * position.y + position.z * position.z);
-		}
-		CTFParamsLean p = d_p[blockIdx.z];
 
-		k = radius * p.ny * 2.0 / (double)dims.x;
+			k = radius * p.ny;
+		}
+
 
 		{
 			size_t offset;

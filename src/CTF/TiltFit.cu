@@ -17,7 +17,7 @@ namespace gtom
 	//CUDA kernel declarations//
 	////////////////////////////
 
-	__global__ void AccumulateSpectraKernel(tfloat* d_ps1d, tfloat* d_defoci, uint nspectra, uint length, tfloat* d_accumulated, tfloat accumulateddefocus, tfloat* d_perbatchoffsets, uint lowfreq, uint relevantlength, double cs, double lambda, double pxfactor);
+	__global__ void AccumulateSpectraKernel(tfloat* d_ps1d, tfloat* d_defoci, uint nspectra, uint length, tfloat* d_accumulated, tfloat accumulateddefocus, tfloat* d_perbatchoffsets, uint lowfreq, uint relevantlength, tfloat cs, tfloat lambda, tfloat pxfactor);
 
 
 	/////////////////////////////////
@@ -48,16 +48,15 @@ namespace gtom
 	{
 		uint length = fp.dimsperiodogram.x / 2;
 		uint relevantlength = fp.maskouterradius - fp.maskinnerradius;
-		CTFParamsLean lean = CTFParamsLean(p);
-		double pxfactor = lean.ny / (double)length;
+		CTFParamsLean lean = CTFParamsLean(p, toInt3(fp.dimsperiodogram));
 
 		dim3 TpB = dim3(tmin(128, NextMultipleOf(relevantlength, 32)));
 		dim3 grid = dim3((relevantlength + TpB.x - 1) / TpB.x, batch);
 
-		AccumulateSpectraKernel << <grid, TpB >> > (d_ps1d, d_defoci, nspectra, length, d_accumulated, accumulateddefocus, d_perbatchoffsets, fp.maskinnerradius, relevantlength, lean.Cs, lean.lambda, pxfactor);
+		AccumulateSpectraKernel << <grid, TpB >> > (d_ps1d, d_defoci, nspectra, length, d_accumulated, accumulateddefocus, d_perbatchoffsets, fp.maskinnerradius, relevantlength, lean.Cs, lean.lambda, lean.ny);
 	}
 
-	__global__ void AccumulateSpectraKernel(tfloat* d_ps1d, tfloat* d_defoci, uint nspectra, uint length, tfloat* d_accumulated, tfloat accumulateddefocus, tfloat* d_perbatchoffsets, uint lowfreq, uint relevantlength, double cs, double lambda, double pxfactor)
+	__global__ void AccumulateSpectraKernel(tfloat* d_ps1d, tfloat* d_defoci, uint nspectra, uint length, tfloat* d_accumulated, tfloat accumulateddefocus, tfloat* d_perbatchoffsets, uint lowfreq, uint relevantlength, tfloat cs, tfloat lambda, tfloat pxfactor)
 	{
 		uint id = blockIdx.x * blockDim.x + threadIdx.x;
 		if (id >= relevantlength)
@@ -86,10 +85,10 @@ namespace gtom
 
 			// Cubic interpolation
 			uint p1 = k;
-			tfloat sample0 = d_ps1d[max(1U, p1) - 1];
+			tfloat sample0 = d_ps1d[tmax(1U, p1) - 1];
 			tfloat sample1 = d_ps1d[p1];
-			tfloat sample2 = d_ps1d[min(length - 1, p1 + 1)];
-			tfloat sample3 = d_ps1d[min(length - 1, p1 + 2)];
+			tfloat sample2 = d_ps1d[tmin(length - 1, p1 + 1)];
+			tfloat sample3 = d_ps1d[tmin(length - 1, p1 + 2)];
 
 			tfloat factor0 = -0.5f * sample0 + 1.5f * sample1 - 1.5f * sample2 + 0.5f * sample3;
 			tfloat factor1 = sample0 - 2.5f * sample1 + 2.0f * sample2 - 0.5f * sample3;
@@ -102,7 +101,7 @@ namespace gtom
 			samples++;
 		}
 
-		d_accumulated[relevantlength * blockIdx.y + id] = sum / (tfloat)max(1U, samples);
+		d_accumulated[relevantlength * blockIdx.y + id] = sum / (tfloat)tmax(1U, samples);
 	}
 
 	///////////////////////////////////////////
@@ -232,7 +231,7 @@ namespace gtom
 			d_MaxOp(d_ps1dmax, 0.2f, d_ps1dmax, dimspolar.x);
 
 			// Extract, average, convert to polar
-			d_CTFPeriodogram(d_image, dimsimage, d_origins, norigins, fp.dimsperiodogram, d_ps2d);
+			d_CTFPeriodogram(d_image, dimsimage, d_origins, norigins, fp.dimsperiodogram, fp.dimsperiodogram, d_ps2d);
 			d_Cart2PolarFFT(d_ps2d, d_ps2dpolar, fp.dimsperiodogram, T_INTERP_CUBIC, fp.maskinnerradius, fp.maskouterradius, norigins);
 
 			// Create polar background image

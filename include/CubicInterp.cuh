@@ -311,5 +311,20 @@ namespace gtom
 		}
 		return result;
 	}
+
+	class Cubic1D
+	{
+	public:
+		std::vector<tfloat2> Data;
+		std::vector<tfloat> Breaks;
+		std::vector<tfloat4> Coefficients;
+
+		Cubic1D(std::vector<tfloat2> data);
+		std::vector<tfloat> Interp(std::vector<tfloat> x);
+
+	private:
+		std::vector<tfloat> GetPCHIPSlopes(std::vector<tfloat2> data, std::vector<tfloat> del);
+		std::vector<tfloat> Diff(std::vector<tfloat> series);
+	};
 }
 #endif

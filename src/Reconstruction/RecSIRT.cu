@@ -92,7 +92,7 @@ namespace gtom
 			dimsvolume.z + offsetfromcenter.z);
 		for (int n = 0; n < nimages; n++)
 		{
-			int TpB = min(NextMultipleOf(dimsimage.x, 32), 256);
+			int TpB = tmin(NextMultipleOf(dimsimage.x, 32), 256);
 			dim3 grid = dim3((dimsimage.x + TpB - 1) / TpB, dimsimage.y);
 			glm::vec3 direction = Matrix3Euler(h_angles[n]) * glm::vec3(0.0f, 0.0f, -1.0f);
 			glm::vec3 invdirection = glm::vec3(1.0f / direction.x, 1.0f / direction.y, 1.0f / direction.z);
@@ -124,26 +124,26 @@ namespace gtom
 
 			if (mode == T_INTERP_CUBIC)
 				RaytraceVolumeKernel<true> << <grid, TpB >> > (t_volume,
-				toUint3(dimsvolume),
-				d_superimage,
-				d_reprojections,
-				toUint2(dimsimage),
-				d_distmin,
-				d_distmax,
-				d_directions,
-				d_raytransforms,
-				d_intensities);
+																toUint3(dimsvolume),
+																d_superimage,
+																d_reprojections,
+																toUint2(dimsimage),
+																d_distmin,
+																d_distmax,
+																d_directions,
+																d_raytransforms,
+																d_intensities);
 			else
 				RaytraceVolumeKernel<false> << <grid, TpB >> > (t_volume,
-				toUint3(dimsvolume),
-				d_superimage,
-				d_reprojections,
-				toUint2(dimsimage),
-				d_distmin,
-				d_distmax,
-				d_directions,
-				d_raytransforms,
-				d_intensities);
+																toUint3(dimsvolume),
+																d_superimage,
+																d_reprojections,
+																toUint2(dimsimage),
+																d_distmin,
+																d_distmax,
+																d_directions,
+																d_raytransforms,
+																d_intensities);
 			cudaDestroyTextureObject(t_volume);
 			cudaFreeArray(a_volume);
 

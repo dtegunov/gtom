@@ -252,7 +252,7 @@ namespace gtom
 		glm::mat4* h_transform = (glm::mat4*)malloc(nangles * sizeof(glm::mat4));
 		for (int b = 0; b < nangles; b++)
 			h_transform[b] = glm::transpose(Matrix4Euler(h_angles[b])) *
-			Matrix4Translation(tfloat3(-dims.x / 2, -dims.y / 2, -dims.z / 2));
+							 Matrix4Translation(tfloat3(-dims.x / 2, -dims.y / 2, -dims.z / 2));
 		glm::mat4* d_transform = (glm::mat4*)CudaMallocFromHostArray(h_transform, nangles * sizeof(glm::mat4));
 
 		float maxfreq2 = (float)(dims.x * dims.x / 4);
@@ -304,7 +304,7 @@ namespace gtom
 		glm::mat4* h_transform = (glm::mat4*)malloc(nangles * sizeof(glm::mat4));
 		for (int b = 0; b < nangles; b++)
 			h_transform[b] = glm::transpose(Matrix4Euler(h_angles[b])) *
-			Matrix4Translation(tfloat3(-dims.x / 2, -dims.y / 2, -dims.z / 2));
+							 Matrix4Translation(tfloat3(-dims.x / 2, -dims.y / 2, -dims.z / 2));
 		glm::mat4* d_transform = (glm::mat4*)CudaMallocFromHostArray(h_transform, nangles * sizeof(glm::mat4));
 
 		float maxfreq2 = (float)(dims.x * dims.x / 4);

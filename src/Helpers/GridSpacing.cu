@@ -10,7 +10,7 @@ namespace gtom
 
 		int2 shift;
 		shift.x = dimsgrid.x > 1 ? (tfloat)(dimsimage.x - dimsregion.x) / (tfloat)(dimsgrid.x - 1) : (dimsimage.x - dimsregion.x) / 2;
-		shift.y = dimsgrid.y > 1 ? (tfloat)(dimsimage.y - dimsregion.x) / (tfloat)(dimsgrid.y - 1) : (dimsimage.y - dimsregion.y) / 2;
+		shift.y = dimsgrid.y > 1 ? (tfloat)(dimsimage.y - dimsregion.y) / (tfloat)(dimsgrid.y - 1) : (dimsimage.y - dimsregion.y) / 2;
 		int2 offset = toInt2((dimsimage.x - shift.x * (dimsgrid.x - 1) - dimsregion.x) / 2,
 			(dimsimage.y - shift.y * (dimsgrid.y - 1) - dimsregion.y) / 2);
 

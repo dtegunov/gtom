@@ -227,6 +227,11 @@ namespace gtom
 #define dotp(a, b) ((a).x * (b).x + (a).y * (b).y + (a).z * (b).z)
 #define dotp2(a, b) ((a).x * (b).x + (a).y * (b).y)
 
+template <typename T> __host__ __device__ int sgn(T val) 
+{
+	return (T(0) < val) - (val < T(0));
+}
+
 
 	enum T_INTERP_MODE
 	{

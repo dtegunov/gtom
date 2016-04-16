@@ -5,7 +5,7 @@ namespace gtom
 {
 	inline __device__ float sinc(float x)
 	{
-		if (abs(x) <= 1e-8f)
+		if (abs(x) <= 1e-4f)
 			return 1.0f;
 		else
 			return sin(x * PI) / (x * PI);

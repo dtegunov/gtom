@@ -19,7 +19,7 @@ namespace gtom
 	void d_ScaleRotateShiftCubic2D(cudaTex t_input, tfloat* d_output, int2 dims, tfloat2 scale, tfloat angle, tfloat2 shift, bool outputzerocentered);
 
 	//Coordinates.cu:
-	void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE interpolation, int batch = 1);
+	void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE mode, uint innerradius = 0, uint exclusiveouterradius = 0, int batch = 1);
 	int2 GetCart2PolarSize(int2 dims);
 	void d_Cart2PolarFFT(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE mode, uint innerradius = 0, uint exclusiveouterradius = 0, int batch = 1);
 	int2 GetCart2PolarFFTSize(int2 dims);
@@ -50,6 +50,7 @@ namespace gtom
 	//Shift.cu:
 	void d_Shift(tfloat* d_input, tfloat* d_output, int3 dims, tfloat3* h_delta, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, tcomplex* d_sharedintermediate = NULL, int batch = 1);
 	void d_Shift(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat3* h_delta, bool iszerocentered = false, int batch = 1);
+	void d_MotionBlur(tfloat* d_output, int3 dims, float3* h_shifts, uint nshifts, bool iszerocentered, uint batch = 1);
 
 	//Scale.cu:
 	void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, int batch = 1);

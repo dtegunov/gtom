@@ -244,9 +244,6 @@
     <CudaCompile Include="src\Generics\Extraction.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\Helpers\Misc.cu">
-      <Filter>Helpers</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\Helpers\MDPointer.cu">
       <Filter>Helpers</Filter>
     </CudaCompile>
@@ -430,9 +427,6 @@
     <CudaCompile Include="src\Masking\ConeMask.cu">
       <Filter>Masking</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\Correlation\Picker.cu">
-      <Filter>Correlation</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\Relion\SquaredDifferences.cu">
       <Filter>Relion</Filter>
     </CudaCompile>
@@ -450,6 +444,36 @@
     </CudaCompile>
     <CudaCompile Include="src\Generics\Boolean.cu">
       <Filter>Generics</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Relion\StoreWeights.cu">
+      <Filter>Relion</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Relion\Backproject.cu">
+      <Filter>Relion</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Relion\Misc.cu">
+      <Filter>Relion</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Projection\RaySum.cu">
+      <Filter>Projection</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\CubicSplines\PCHIP.cu">
+      <Filter>Cubic Splines</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\ImageManipulation\Dose.cu">
+      <Filter>Image Manipulation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Correlation\ProbabilisticPicker.cu">
+      <Filter>Correlation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Correlation\Picker.cu">
+      <Filter>Correlation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Correlation\Realspace.cu">
+      <Filter>Correlation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Correlation\TomoPicker.cu">
+      <Filter>Correlation</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
@@ -474,5 +498,6 @@
     <ClCompile Include="src\Optimization\polynomials\PolynomialRootFinder.cpp">
       <Filter>Optimization\Polynomials</Filter>
     </ClCompile>
+    <ClCompile Include="src\Helpers\Misc.cpp" />
   </ItemGroup>
 </Project>

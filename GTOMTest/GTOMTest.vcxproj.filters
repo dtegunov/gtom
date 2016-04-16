@@ -237,9 +237,6 @@
     <ClCompile Include="ConeMask.cpp">
       <Filter>Source Files\Masking</Filter>
     </ClCompile>
-    <ClCompile Include="Picker.cpp">
-      <Filter>Source Files\Correlation</Filter>
-    </ClCompile>
     <ClCompile Include="CTFSimulation.cpp">
       <Filter>Source Files\CTF</Filter>
     </ClCompile>
@@ -251,6 +248,18 @@
     </ClCompile>
     <ClCompile Include="BeamTilt.cpp">
       <Filter>Source Files\Image Manipulation</Filter>
+    </ClCompile>
+    <ClCompile Include="MaskWindows.cpp">
+      <Filter>Source Files\Masking</Filter>
+    </ClCompile>
+    <ClCompile Include="ProbabilisticPicker.cpp">
+      <Filter>Source Files\Correlation</Filter>
+    </ClCompile>
+    <ClCompile Include="Picker.cpp">
+      <Filter>Source Files\Correlation</Filter>
+    </ClCompile>
+    <ClCompile Include="TomoPicker.cpp">
+      <Filter>Source Files\Correlation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

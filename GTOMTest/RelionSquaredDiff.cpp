@@ -36,7 +36,7 @@ TEST(Relion, SquaredDiff)
 		for (uint ref = 0, i = 0; ref < nrefs; ref += tile)
 			for (uint shift = 0; shift < nshifts; shift += tile, i++)
 				h_combination[i] = toInt3(shift, 0, ref);
-		int3* d_combination = (int3*)CudaMallocFromHostArray(h_combination, nshifts * nrefs / (tile * tile) * sizeof(int3));
+		uint3* d_combination = (uint3*)CudaMallocFromHostArray(h_combination, nshifts * nrefs / (tile * tile) * sizeof(uint3));
 		tfloat* d_diff2 = CudaMallocValueFilled(nrefs * nshifts, (tfloat)0);
 		
 		tfloat* h_result = MallocValueFilled(nrefs * nshifts, (tfloat)0);

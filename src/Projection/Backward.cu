@@ -28,7 +28,7 @@ namespace gtom
 			h_transforms[b] = Matrix4Translation(tfloat3((tfloat)dimsimage.x / 2.0f + 0.5f, (tfloat)dimsimage.y / 2.0f + 0.5f, 0.0f)) *
 				Matrix4Scale(tfloat3(1.0f / h_scales[b].x, 1.0f / h_scales[b].y, 1.0f)) *
 				Matrix4Translation(tfloat3(-h_offsets[b].x, -h_offsets[b].y, 0.0f)) *
-				glm::transpose(Matrix4Euler(h_angles[b])) *
+				(Matrix4Euler(h_angles[b])) *
 				Matrix4Translation(offsetfromcenter) *
 				Matrix4Translation(tfloat3(-dimsvolume.x / 2, -dimsvolume.y / 2, -dimsvolume.z / 2));
 		}

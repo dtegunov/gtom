@@ -49,6 +49,9 @@
     <Filter Include="Optimization">
       <UniqueIdentifier>{31af14e2-5388-435c-af59-be05cd920497}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\CPU">
+      <UniqueIdentifier>{3ea77795-0184-4a0b-a08f-7bdd248de971}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="Helper.cu">
@@ -138,6 +141,21 @@
     <None Include="CTF\cgtom_ctf_fit.cu">
       <Filter>Source Files\CTF</Filter>
     </None>
+    <None Include="Projection\cgtom_proj_raysum.cu">
+      <Filter>Source Files\Projection</Filter>
+    </None>
+    <None Include="Correlation\cgtom_pick.cu">
+      <Filter>Source Files\Correlation</Filter>
+    </None>
+    <None Include="Transformation\cgtom_rotate.cu">
+      <Filter>Source Files\Transformation</Filter>
+    </None>
+    <None Include="Correlation\cgtom_local_peaks.cu">
+      <Filter>Source Files\Correlation</Filter>
+    </None>
+    <None Include="Reconstruction\cgtom_rec_wbp_many.cu">
+      <Filter>Source Files\Reconstruction</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">
@@ -159,6 +177,9 @@
     </ClCompile>
     <ClCompile Include="ImageManipulation\cgtom_bandpass.cu">
       <Filter>Source Files\Image Manipulation</Filter>
+    </ClCompile>
+    <ClCompile Include="CPU\ctom_rotationalaverage.cu">
+      <Filter>Source Files\CPU</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

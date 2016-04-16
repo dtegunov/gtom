@@ -35,7 +35,7 @@ TEST(CTF, Fit)
 			tfloat score = 0, mean = 0, stddev = 0;
 
 			CTFParams bla;
-			CTFParamsLean blalean = CTFParamsLean(bla);
+			CTFParamsLean blalean = CTFParamsLean(bla, toInt3(dimsimage));
 
 			d_CTFFit(d_input, dimsimage, 0.5f, params, fp, 2, params, score, mean, stddev);
 			cout << params.defocus;

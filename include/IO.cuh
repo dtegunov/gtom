@@ -167,6 +167,7 @@ namespace gtom
 	HeaderMRC ReadMRCHeader(FILE* inputfile);
 	void WriteMRC(void* data, HeaderMRC header, std::string path);
 	void WriteMRC(tfloat* data, int3 dims, std::string path);
+	void d_WriteMRC(half* d_data, int3 dims, std::string path);
 	void d_WriteMRC(tfloat* d_data, int3 dims, std::string path);
 
 	//em.cu:

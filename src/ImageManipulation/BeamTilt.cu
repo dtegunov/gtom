@@ -20,7 +20,7 @@ namespace gtom
 		cudaMallocHost((void**)&h_factors, batch * sizeof(tfloat));
 		for (uint b = 0; b < batch; b++)
 		{
-			CTFParamsLean lean = CTFParamsLean(h_params[b]);
+			CTFParamsLean lean = CTFParamsLean(h_params[b], toInt3(dims));
 			tfloat boxsize = (tfloat)dims.x * (h_params[b].pixelsize * 1e10);
 			tfloat factor = 1e-3f * PI2 * lean.Cs * lean.lambda * lean.lambda / (boxsize * boxsize * boxsize);
 			h_factors[b] = factor;

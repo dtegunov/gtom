@@ -21,9 +21,9 @@ namespace gtom
 		dim3 TpB = dim3(32, 8);
 		dim3 grid = dim3((dimsinput.x / 2 + 1 + TpB.x - 1) / TpB.x, (dimsinput.y + TpB.y - 1) / TpB.y, dimsinput.z);
 		if (DimensionCount(dimsinput) == 2)
-			CTFCorrectKernel<2> << <grid, TpB >> > (d_output, d_output, dimsinput, CTFParamsLean(params));
+			CTFCorrectKernel<2> << <grid, TpB >> > (d_output, d_output, dimsinput, CTFParamsLean(params, dimsinput));
 		else if (DimensionCount(dimsinput) == 3)
-			CTFCorrectKernel<3> << <grid, TpB >> > (d_output, d_output, dimsinput, CTFParamsLean(params));
+			CTFCorrectKernel<3> << <grid, TpB >> > (d_output, d_output, dimsinput, CTFParamsLean(params, dimsinput));
 	}
 
 
@@ -41,7 +41,7 @@ namespace gtom
 			return;
 		int idz = blockIdx.z;
 
-		double k, angle;
+		tfloat k, angle;
 		if (ndims == 2)
 		{
 			int x = dims.x / 2 - idx;
@@ -50,7 +50,8 @@ namespace gtom
 			float2 position = make_float2(x - dims.x / 2, y - dims.y / 2);
 			angle = atan2(position.y, position.x);
 			position = make_float2(position.x, position.y);
-			k = sqrt(position.x * position.x + position.y * position.y) * p.ny * 2.0 / (double)dims.x;
+			float pixelsize = p.pixelsize + p.pixeldelta * cos(2.0f * (angle - p.pixelangle));
+			k = sqrt(position.x * position.x + position.y * position.y) * p.ny / pixelsize;
 		}
 		else if (ndims == 3)
 		{
@@ -61,7 +62,7 @@ namespace gtom
 			float3 position = make_float3((float)(x - dims.x / 2),
 				(float)(y - dims.y / 2),
 				(float)(z - dims.z / 2));
-			k = sqrt(position.x * position.x + position.y * position.y + position.z * position.z) * p.ny * 2.0 / (double)dims.x;
+			k = sqrt(position.x * position.x + position.y * position.y + position.z * position.z) * p.ny;
 			angle = 0.0;
 		}
 

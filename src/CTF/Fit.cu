@@ -5,14 +5,15 @@
 #include "Generics.cuh"
 #include "Helper.cuh"
 #include "ImageManipulation.cuh"
-#include "Masking.cuh"
-#include "Optimization.cuh"
 #include "PCA.cuh"
 #include "Transformation.cuh"
 
 
 namespace gtom
 {
+	__global__ void CTFNormCorrSumKernel(half2* d_simcoords, half* d_sim, half* d_target, CTFParamsLean* d_params, float* d_scores, uint length);
+
+
 	void h_CTFFitEnvelope(tfloat* h_input, uint diminput, tfloat* h_envelopemin, tfloat* h_envelopemax, char peakextent, uint outputstart, uint outputend, uint batch)
 	{
 		// This function does not consider the zero frequency, i. e. starts counting at 1
@@ -143,7 +144,7 @@ namespace gtom
 		// Create raw power spectra in cartesian coords
 		tfloat* d_ps2d;
 		cudaMalloc((void**)&d_ps2d, ElementsFFT2(fp.dimsperiodogram) * norigins * sizeof(tfloat));
-		d_CTFPeriodogram(d_image, dimsimage, d_origins, norigins, fp.dimsperiodogram, d_ps2d);
+		d_CTFPeriodogram(d_image, dimsimage, d_origins, norigins, fp.dimsperiodogram, fp.dimsperiodogram, d_ps2d);
 		if (sumtoone)
 		{
 			d_ReduceMean(d_ps2d, d_ps2d, ElementsFFT2(fp.dimsperiodogram), norigins);
@@ -219,7 +220,7 @@ namespace gtom
 
 		// Store radius & angle for each target point
 		float2* h_ps2dcoords = (float2*)malloc(Elements2(dimspolar) * sizeof(float2));
-		float invhalfsize = 2.0f / (float)fp.dimsperiodogram.x;
+		float invhalfsize = 1.0f / (float)fp.dimsperiodogram.x;
 		float anglestep = PI / (float)(dimspolar.y - 1);
 		for (int a = 0; a < dimspolar.y; a++)
 		{
@@ -242,7 +243,7 @@ namespace gtom
 
 		// Store radius & angle for each 1D target point
 		float2* h_ps1dcoords = (float2*)malloc(dimspolar.x * sizeof(float2));
-		float invhalfsize = 2.0f / (float)fp.dimsperiodogram.x;
+		float invhalfsize = 1.0f / (float)fp.dimsperiodogram.x;
 		for (int r = 0; r < dimspolar.x; r++)
 		{
 			float rf = (float)(r + fp.maskinnerradius) * invhalfsize;
@@ -256,12 +257,20 @@ namespace gtom
 	{
 		uint targetlength = Elements2(dimstarget);
 
-		tcomplex* d_targetft;
+		half* d_targethalf;
+		cudaMalloc((void**)&d_targethalf, targetlength * ntargets * sizeof(half));
+		d_ConvertTFloatTo(d_target, d_targethalf, targetlength * ntargets);
+
+		half2* d_targetcoordshalf;
+		cudaMalloc((void**)&d_targetcoordshalf, targetlength * sizeof(half2));
+		d_ConvertTFloatTo((float*)d_targetcoords, (half*)d_targetcoordshalf, targetlength * 2);
+
+		/*tcomplex* d_targetft;
 		if (dimstarget.y > 1)
 		{
 			cudaMalloc((void**)&d_targetft, ElementsFFT2(dimstarget) * ntargets * sizeof(tcomplex));
 			d_FFTR2C(d_target, d_targetft, 2, toInt3(dimstarget), ntargets);
-		}
+		}*/
 
 		CTFParams bestfit;
 		tfloat bestscore = 0.0f;
@@ -273,17 +282,17 @@ namespace gtom
 		for (int i = 0; i < refinements + 1; i++)
 		{
 			int memlimit = 512 << 20;
-			int batchsize = tmin(32768, tmin((int)(memlimit / (targetlength * ntargets * sizeof(tfloat))), (int)v_params.size()));
+			int batchsize = tmin(32768, tmin((int)(memlimit / (targetlength * ntargets * sizeof(half))), (int)v_params.size()));
 
-			tfloat* d_batchsim;
-			cudaMalloc((void**)&d_batchsim, targetlength * ntargets * batchsize * sizeof(tfloat));
-			tcomplex* d_batchsimft;
+			half* d_batchsim;
+			cudaMalloc((void**)&d_batchsim, targetlength * ntargets * batchsize * sizeof(half));
+			/*tcomplex* d_batchsimft;
 			tfloat3* d_peakpos;
 			if (dimstarget.y > 1)
 			{
 				cudaMalloc((void**)&d_batchsimft, ElementsFFT2(dimstarget) * batchsize * ntargets * sizeof(tcomplex));
 				cudaMalloc((void**)&d_peakpos, batchsize * sizeof(tfloat3));
-			}
+			}*/
 			tfloat* d_targetscores = (tfloat*)CudaMallocValueFilled(batchsize * ntargets, (tfloat)0);
 			tfloat* d_batchscores = (tfloat*)CudaMallocValueFilled(v_params.size(), (tfloat)0);
 			tfloat* h_batchscores = (tfloat*)malloc(v_params.size() * sizeof(tfloat));
@@ -293,40 +302,47 @@ namespace gtom
 			{
 				int curbatch = tmin((int)v_params.size() - b, batchsize);
 				// For every group of targets in current batch...
-				for (uint i = 0; i < curbatch; i++)
+				for (uint j = 0; j < curbatch; j++)
 				{
 					// ... take the group's adjustment calculated based on CTFFitParams...
-					CTFParams adjustment = v_params[b + i].second;
+					CTFParams adjustment = v_params[b + j].second;
 					for (uint n = 0; n < ntargets; n++)
 					{
 						// ... and add it to the original CTFParams of each target.
 						CTFParams* original = h_startparams + n;
-						CTFParams* adjusted = h_params + i * ntargets + n;
-						for (uint p = 0; p < 10; p++)
+						CTFParams* adjusted = h_params + j * ntargets + n;
+						for (uint p = 0; p < 12; p++)
 							((tfloat*)adjusted)[p] = ((tfloat*)original)[p] + ((tfloat*)&adjustment)[p];
-
-						// Angle has already been taken into account when creating rotational average, thus set to 0
-						if (dimstarget.y == 1)
-							h_params[i * ntargets + n].astigmatismangle = 0;
 					}
 				}
 
-				// Simulate the batch's CTF based on adjusted params, and normalize for CC
-				d_CTFSimulate(h_params, d_targetcoords, d_batchsim, targetlength, true, curbatch * ntargets);
-				d_NormMonolithic(d_batchsim, d_batchsim, targetlength, T_NORM_MEAN01STD, curbatch * ntargets);
-				//d_WriteMRC(d_batchsim, toInt3(dimstarget.x, dimstarget.y, curbatch * ntargets), "d_batchsim.mrc");
-
 				// Working with 1D averages only, no need to determine astigmatism angle
-				if (dimstarget.y == 1)
+				//if (dimstarget.y == 1)
 				{
-					// CC every group of simulated spectra with the original n targets
-					d_MultiplyByVector(d_batchsim, d_target, d_batchsim, targetlength * ntargets, curbatch);
-					d_SumMonolithic(d_batchsim, d_targetscores, targetlength, curbatch * ntargets);
+					CTFParamsLean* h_lean;
+					cudaMallocHost((void**)&h_lean, curbatch * ntargets * sizeof(CTFParamsLean));
+					#pragma omp parallel for
+					for (int i = 0; i < curbatch * ntargets; i++)
+						h_lean[i] = CTFParamsLean(h_params[i], toInt3(1, 1, 1));	// Sidelength and pixelsize are already included in d_addresses
+					CTFParamsLean* d_lean = (CTFParamsLean*)CudaMallocFromHostArray(h_lean, curbatch * ntargets * sizeof(CTFParamsLean));
+					cudaFreeHost(h_lean);
 
+					int TpB = 128;
+					dim3 grid = dim3(ntargets, curbatch, 1);
+					CTFNormCorrSumKernel <<<grid, TpB>>> (d_targetcoordshalf, d_batchsim, d_targethalf, d_lean, d_targetscores, targetlength);
+
+					//d_WriteMRC(d_batchsim, toInt3(dimstarget.x, dimstarget.y, ntargets * curbatch), "d_batchsim.mrc");
+					//break;
+					
 					// Sum up CC for each group
-					d_ReduceMean(d_targetscores, d_batchscores + b, 1, ntargets, curbatch);
+					if (ntargets > 1)
+						d_ReduceMean(d_targetscores, d_batchscores + b, 1, ntargets, curbatch);
+					else
+						cudaMemcpy(d_batchscores + b, d_targetscores, curbatch * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+
+					cudaFree(d_lean);
 				}
-				else
+				/*else
 				{
 					// Perform CC through FFT
 					d_FFTR2C(d_batchsim, d_batchsimft, 2, toInt3(dimstarget), curbatch * ntargets);
@@ -348,17 +364,18 @@ namespace gtom
 					}
 					// Update astigmatism angles in fits
 					tfloat3* h_peakpos = (tfloat3*)MallocFromDeviceArray(d_peakpos, curbatch * sizeof(tfloat3));
-					for (uint i = 0; i < curbatch; i++)
-						v_params[b + i].second.astigmatismangle = -(fmod(h_peakpos[i].x + dimstarget.y / 2.0, dimstarget.y) - dimstarget.y / 2) / (tfloat)dimstarget.y * PI;
+					for (uint j = 0; j < curbatch; j++)
+						v_params[b + j].second.astigmatismangle = -fmod((tfloat)h_peakpos[j].x + dimstarget.y, dimstarget.y) / (tfloat)dimstarget.y * PI;
 					free(h_peakpos);
-				}
+				}*/
 			}
 			free(h_params);
 			cudaMemcpy(h_batchscores, d_batchscores, v_params.size() * sizeof(tfloat), cudaMemcpyDeviceToHost);
+
 			// Normalize and assign CC values to their respective CTFParams
 			for (int j = 0; j < v_params.size(); j++)
 			{
-				h_batchscores[j] /= dimstarget.y > 1 ? (tfloat)targetlength * (tfloat)targetlength : (tfloat)targetlength;
+				//h_batchscores[j] /= (tfloat)targetlength;
 				v_params[j].first = h_batchscores[j];
 				if (i == 0)
 					scores.push_back(h_batchscores[j]);
@@ -366,11 +383,11 @@ namespace gtom
 			free(h_batchscores);
 			cudaFree(d_batchscores);
 			cudaFree(d_targetscores);
-			if (dimstarget.y > 1)
+			/*if (dimstarget.y > 1)
 			{
 				cudaFree(d_peakpos);
 				cudaFree(d_batchsimft);
-			}
+			}*/
 			cudaFree(d_batchsim);
 
 			// Sort v_params by score in descending order
@@ -388,7 +405,7 @@ namespace gtom
 
 			// Decrease search step size
 			tfloat3* h_p = (tfloat3*)&p;
-			for (int j = 0; j < 10; j++)
+			for (int j = 0; j < 12; j++)
 				if (h_p[j].x != h_p[j].y)
 					h_p[j].z /= 4.0;
 
@@ -400,7 +417,7 @@ namespace gtom
 				CTFFitParams pNew = p;
 				tfloat3* h_p = (tfloat3*)&pNew;
 				tfloat* h_f = (tfloat*)&fit;
-				for (int j = 0; j < 10; j++)
+				for (int j = 0; j < 12; j++)
 					if (h_p[j].x != h_p[j].y)
 						h_p[j] = tfloat3(h_f[j] - h_p[j].z * 3.0, h_f[j] + h_p[j].z * 3.0, h_p[j].z);
 				AddCTFParamsRange(v_paramsNew, pNew);
@@ -409,8 +426,10 @@ namespace gtom
 			v_params = v_paramsNew;
 		}
 
-		if (dimstarget.y > 1)
-			cudaFree(d_targetft);
+		/*if (dimstarget.y > 1)
+			cudaFree(d_targetft);*/
+		cudaFree(d_targethalf);
+		cudaFree(d_targetcoordshalf);
 
 		if (scores.size() > 1)
 		{
@@ -426,6 +445,64 @@ namespace gtom
 		for (int i = 0; i < v_params.size(); i++)
 			fits.push_back(v_params[i]);
 		score = bestscore;
+	}
+	
+	__global__ void CTFNormCorrSumKernel(half2* d_simcoords, half* d_sim, half* d_target, CTFParamsLean* d_params, float* d_scores, uint length)
+	{
+		__shared__ float s_sums1[128];
+		__shared__ float s_sums2[128];
+		__shared__ float s_mean, s_stddev;
+
+		d_sim += (blockIdx.y * gridDim.x + blockIdx.x) * length;
+		d_target += blockIdx.x * length;
+
+		CTFParamsLean params = d_params[blockIdx.y * gridDim.x + blockIdx.x];
+
+		float sum1 = 0.0, sum2 = 0.0;
+		for (uint i = threadIdx.x; i < length; i += blockDim.x)
+		{
+			float2 simcoords = __half22float2(d_simcoords[i]);
+			float pixelsize = params.pixelsize + params.pixeldelta * __cosf(2.0f * (simcoords.y - params.pixelangle));
+			simcoords.x /= pixelsize;
+
+			float val = d_GetCTF<true>(simcoords.x, simcoords.y, params);
+			d_sim[i] = __float2half(val);
+			sum1 += val;
+			sum2 += val * val;
+		}
+		s_sums1[threadIdx.x] = sum1;
+		s_sums2[threadIdx.x] = sum2;
+		__syncthreads();
+
+		if (threadIdx.x == 0)
+		{
+			for (int i = 1; i < 128; i++)
+			{
+				sum1 += s_sums1[i];
+				sum2 += s_sums2[i];
+			}
+
+			s_mean = sum1 / (float)length;
+			s_stddev = sqrt(((float)length * sum2 - (sum1 * sum1))) / (float)length;
+		}
+		__syncthreads();
+
+		float mean = s_mean;
+		float stddev = s_stddev > 0.0f ? 1.0f / s_stddev : 0.0f;
+
+		sum1 = 0.0f;
+		for (uint i = threadIdx.x; i < length; i += blockDim.x)
+			sum1 += (__half2float(d_sim[i]) - mean) * stddev * __half2float(d_target[i]);
+		s_sums1[threadIdx.x] = sum1;
+		__syncthreads();
+
+		if (threadIdx.x == 0)
+		{
+			for (int i = 1; i < 128; i++)
+				sum1 += s_sums1[i];
+
+			d_scores[blockIdx.y * gridDim.x + blockIdx.x] = sum1 / (float)length;
+		}
 	}
 
 	class CTFFitOptimizer : public Optimizer
@@ -500,7 +577,7 @@ namespace gtom
 		fit = fits[0].second;
 
 		//CTFParams optimizerparams = fit;
-		//for (uint i = 0; i < 10; i++)
+		//for (uint i = 0; i < 12; i++)
 		//	((tfloat*)&optimizerparams)[i] += ((tfloat*)&startparams)[i];
 
 		//CTFFitOptimizer optimizer(d_ps2dpolar, d_ps2dcoords, polardims, fp, optimizerparams);
@@ -560,27 +637,33 @@ namespace gtom
 	void AddCTFParamsRange(std::vector<std::pair<tfloat, CTFParams> > &v_params, CTFFitParams p)
 	{
 		for (tfloat pixelsize = p.pixelsize.x; pixelsize <= p.pixelsize.y; pixelsize += tmax(1e-30, p.pixelsize.z))
-			for (tfloat cs = p.Cs.x; cs <= p.Cs.y; cs += tmax(1e-30, p.Cs.z))
-				for (tfloat voltage = p.voltage.x; voltage <= p.voltage.y; voltage += tmax(1e-30, p.voltage.z))
-					for (tfloat defocus = p.defocus.x; defocus <= p.defocus.y; defocus += tmax(1e-30, p.defocus.z))
-						for (tfloat defocusdelta = p.defocusdelta.x; defocusdelta <= p.defocusdelta.y; defocusdelta += tmax(1e-30, p.defocusdelta.z))
-							for (tfloat amplitude = p.amplitude.x; amplitude <= p.amplitude.y; amplitude += tmax(1e-30, p.amplitude.z))
-								for (tfloat bfactor = p.Bfactor.x; bfactor <= p.Bfactor.y; bfactor += tmax(1e-30, p.Bfactor.z))
-									for (tfloat scale = p.scale.x; scale <= p.scale.y; scale += tmax(1e-30, p.scale.z))
-										for (tfloat phaseshift = p.phaseshift.x; phaseshift <= p.phaseshift.y; phaseshift += tmax(1e-30, p.phaseshift.z))
-										{
-											CTFParams testparams;
-											testparams.pixelsize = pixelsize;
-											testparams.Cs = cs;
-											testparams.voltage = voltage;
-											testparams.defocus = defocus;
-											testparams.defocusdelta = defocusdelta;
-											testparams.amplitude = amplitude;
-											testparams.Bfactor = bfactor;
-											testparams.scale = scale;
-											testparams.phaseshift = phaseshift;
+			for (tfloat pixeldelta = p.pixeldelta.x; pixeldelta <= p.pixeldelta.y; pixeldelta += tmax(1e-30, p.pixeldelta.z))
+				for (tfloat pixelangle = p.pixelangle.x; pixelangle <= p.pixelangle.y; pixelangle += tmax(1e-30, p.pixelangle.z))
+					for (tfloat cs = p.Cs.x; cs <= p.Cs.y; cs += tmax(1e-30, p.Cs.z))
+						for (tfloat voltage = p.voltage.x; voltage <= p.voltage.y; voltage += tmax(1e-30, p.voltage.z))
+							for (tfloat defocus = p.defocus.x; defocus <= p.defocus.y; defocus += tmax(1e-30, p.defocus.z))
+								for (tfloat defocusdelta = p.defocusdelta.x; defocusdelta <= p.defocusdelta.y; defocusdelta += tmax(1e-30, p.defocusdelta.z))
+									for (tfloat defocusangle = p.astigmatismangle.x; defocusangle <= p.astigmatismangle.y; defocusangle += tmax(1e-30, p.astigmatismangle.z))
+										for (tfloat amplitude = p.amplitude.x; amplitude <= p.amplitude.y; amplitude += tmax(1e-30, p.amplitude.z))
+											for (tfloat bfactor = p.Bfactor.x; bfactor <= p.Bfactor.y; bfactor += tmax(1e-30, p.Bfactor.z))
+												for (tfloat scale = p.scale.x; scale <= p.scale.y; scale += tmax(1e-30, p.scale.z))
+													for (tfloat phaseshift = p.phaseshift.x; phaseshift <= p.phaseshift.y; phaseshift += tmax(1e-30, p.phaseshift.z))
+													{
+														CTFParams testparams;
+														testparams.pixelsize = pixelsize;
+														testparams.pixeldelta = pixeldelta;
+														testparams.pixelangle = pixelangle;
+														testparams.Cs = cs;
+														testparams.voltage = voltage;
+														testparams.defocus = defocus;
+														testparams.defocusdelta = defocusdelta;
+														testparams.astigmatismangle = defocusangle;
+														testparams.amplitude = amplitude;
+														testparams.Bfactor = bfactor;
+														testparams.scale = scale;
+														testparams.phaseshift = phaseshift;
 
-											v_params.push_back(std::pair<tfloat, CTFParams>((tfloat)0, testparams));
-										}
+														v_params.push_back(std::pair<tfloat, CTFParams>((tfloat)0, testparams));
+													}
 	}
 }

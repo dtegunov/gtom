@@ -32,7 +32,8 @@ namespace gtom
 		dim3 grid = dim3(regiondims.y, regiondims.z, batch);
 		ExtractKernel << <grid, (int)TpB >> > (d_input, d_output, sourcedims, Elements(sourcedims), regiondims, Elements(regiondims), regionorigin);
 	}
-	template void d_Extract<tfloat>(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
+	template void d_Extract<half>(half* d_input, half* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
+	template void d_Extract<float>(float* d_input, float* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
 	template void d_Extract<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
 	template void d_Extract<double>(double* d_input, double* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
 	template void d_Extract<int>(int* d_input, int* d_output, int3 sourcedims, int3 regiondims, int3 regioncenter, int batch);
@@ -44,7 +45,8 @@ namespace gtom
 		dim3 grid = dim3(regiondims.y, regiondims.z, batch);
 		ExtractKernel << <grid, (int)TpB >> > (d_input, d_output, sourcedims, Elements(sourcedims), regiondims, Elements(regiondims), d_regionorigins);
 	}
-	template void d_Extract<tfloat>(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+	template void d_Extract<half>(half* d_input, half* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+	template void d_Extract<float>(float* d_input, float* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 	template void d_Extract<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 	template void d_Extract<double>(double* d_input, double* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 	template void d_Extract<int>(int* d_input, int* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
@@ -56,7 +58,8 @@ namespace gtom
 		dim3 grid = dim3(regiondims.y, regiondims.z, batch);
 		ExtractManyKernel << <grid, (int)TpB >> > (d_input, d_output, sourcedims, regiondims, Elements(regiondims), d_regionorigins);
 	}
-	template void d_ExtractMany<tfloat>(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+	template void d_ExtractMany<half>(half* d_input, half* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+	template void d_ExtractMany<float>(float* d_input, float* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 	template void d_ExtractMany<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 	template void d_ExtractMany<double>(double* d_input, double* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 	template void d_ExtractMany<int>(int* d_input, int* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);

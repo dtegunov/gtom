@@ -16,7 +16,7 @@ namespace gtom
 		tfloat* d_denseinput = d_input;
 		if (d_mask != NULL)
 		{
-			intptr_t* d_mapforward = NULL;
+			size_t* d_mapforward = NULL;
 			d_MaskSparseToDense(d_mask, &d_mapforward, NULL, denseelements, elements);
 			if (denseelements == 0)
 				throw;

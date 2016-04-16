@@ -10,7 +10,7 @@ namespace gtom
 	//CUDA kernel declarations//
 	////////////////////////////
 
-	template <bool iscentered, class T> __global__ void Exact2DWeightingKernel(T* d_weights, int2 dims, int index, glm::vec3* d_normals, glm::mat3x2 globalB2localB, int nimages, tfloat maxfreq);
+	template <bool iscentered, class T> __global__ void Exact2DWeightingKernel(T* d_weights, int2 dims, int index, glm::vec3* d_normals, glm::mat3x2 globalB2localB, tfloat* d_imageweights, int nimages, uint currentimage, tfloat maxfreq);
 	template <bool iscentered, class T> __global__ void Exact3DWeightingKernel(T* d_weights, int3 dims, glm::vec3* d_normals, int nimages, tfloat maxfreq);
 
 
@@ -18,7 +18,7 @@ namespace gtom
 	//2D weighting of frequency components for WBP reconstruction, using sinc(distance)//
 	/////////////////////////////////////////////////////////////////////////////////////
 
-	template <class T> void d_Exact2DWeighting(T* d_weights, int2 dimsimage, int* h_indices, tfloat3* h_angles, int nimages, tfloat maxfreq, bool iszerocentered, int batch)
+	template <class T> void d_Exact2DWeighting(T* d_weights, int2 dimsimage, int* h_indices, tfloat3* h_angles, tfloat* d_imageweights, int nimages, tfloat maxfreq, bool iszerocentered, int batch)
 	{
 		glm::vec3* h_normals = (glm::vec3*)malloc(nimages * sizeof(glm::vec3));
 		glm::mat3x2* h_globalB2localB = (glm::mat3x2*)malloc(nimages * sizeof(glm::mat3x2));
@@ -32,20 +32,28 @@ namespace gtom
 
 		glm::vec3* d_normals = (glm::vec3*)CudaMallocFromHostArray(h_normals, nimages * sizeof(glm::vec3));
 
-		uint TpB = min(NextMultipleOf(dimsimage.x / 2 + 1, 32), 128);
+		tfloat* d_tempweights;
+		if (d_imageweights == NULL)
+			d_tempweights = CudaMallocValueFilled(nimages, (tfloat)1);
+		else
+			d_tempweights = d_imageweights;
+
+		uint TpB = tmin(NextMultipleOf(dimsimage.x / 2 + 1, 32), 128);
 		dim3 grid = dim3(dimsimage.y);
 		for (int b = 0; b < batch; b++)
 			if (iszerocentered)
-				Exact2DWeightingKernel<true, T> << <grid, TpB >> > (d_weights + (dimsimage.x / 2 + 1) * dimsimage.y * b, dimsimage, h_indices[b], d_normals, h_globalB2localB[b], nimages, maxfreq);
+				Exact2DWeightingKernel<true, T> << <grid, TpB >> > (d_weights + (dimsimage.x / 2 + 1) * dimsimage.y * b, dimsimage, h_indices[b], d_normals, h_globalB2localB[b], d_tempweights, nimages, b, maxfreq);
 			else
-				Exact2DWeightingKernel<false, T> << <grid, TpB >> > (d_weights + (dimsimage.x / 2 + 1) * dimsimage.y * b, dimsimage, h_indices[b], d_normals, h_globalB2localB[b], nimages, maxfreq);
+				Exact2DWeightingKernel<false, T> << <grid, TpB >> > (d_weights + (dimsimage.x / 2 + 1) * dimsimage.y * b, dimsimage, h_indices[b], d_normals, h_globalB2localB[b], d_tempweights, nimages, b, maxfreq);
 
 		free(h_globalB2localB);
 		free(h_normals);
 		cudaFree(d_normals);
+		if (d_imageweights == NULL)
+			cudaFree(d_tempweights);
 	}
-	template void d_Exact2DWeighting<tfloat>(tfloat* d_weights, int2 dimsimage, int* h_indices, tfloat3* h_angles, int nimages, tfloat maxfreq, bool iszerocentered, int batch);
-	template void d_Exact2DWeighting<tcomplex>(tcomplex* d_weights, int2 dimsimage, int* h_indices, tfloat3* h_angles, int nimages, tfloat maxfreq, bool iszerocentered, int batch);
+	template void d_Exact2DWeighting<tfloat>(tfloat* d_weights, int2 dimsimage, int* h_indices, tfloat3* h_angles, tfloat* d_imageweights, int nimages, tfloat maxfreq, bool iszerocentered, int batch);
+	template void d_Exact2DWeighting<tcomplex>(tcomplex* d_weights, int2 dimsimage, int* h_indices, tfloat3* h_angles, tfloat* d_imageweights, int nimages, tfloat maxfreq, bool iszerocentered, int batch);
 
 	template <class T> void d_Exact3DWeighting(T* d_weights, int3 dimsvolume, tfloat3* h_angles, int nimages, tfloat maxfreq, bool iszerocentered)
 	{
@@ -77,7 +85,7 @@ namespace gtom
 	//CUDA kernels//
 	////////////////
 
-	template <bool iscentered, class T> __global__ void Exact2DWeightingKernel(T* d_weights, int2 dims, int index, glm::vec3* d_normals, glm::mat3x2 globalB2localB, int nimages, tfloat maxfreq)
+	template <bool iscentered, class T> __global__ void Exact2DWeightingKernel(T* d_weights, int2 dims, int index, glm::vec3* d_normals, glm::mat3x2 globalB2localB, tfloat* d_imageweights, int nimages, uint currentimage, tfloat maxfreq)
 	{
 		int idy = blockIdx.x;
 
@@ -109,10 +117,10 @@ namespace gtom
 				{
 					glm::vec3 normalB = d_normals[b];
 					float distance = dotp(globalA, normalB);
-					weightsum += sinc(distance);
+					weightsum += abs(sinc(distance)) * d_imageweights[b]; //tmax(0, 1 - abs(distance));
 				}
 
-				d_weights[x] *= 1.0f / weightsum;
+				d_weights[x] *= d_imageweights[currentimage] * d_imageweights[currentimage] / weightsum;
 			}
 			else
 			{

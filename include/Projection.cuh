@@ -1,4 +1,5 @@
 #include "cufft.h"
+#include "Angles.cuh"
 #include "Prerequisites.cuh"
 
 #ifndef PROJECTION_CUH
@@ -17,5 +18,8 @@ namespace gtom
 	void d_ProjForward(tfloat* d_volume, tfloat* d_volumepsf, int3 dimsvolume, tfloat* d_projections, tfloat* d_projectionspsf, tfloat3* h_angles, tfloat2* h_shifts, T_INTERP_MODE mode, int batch);
 	void d_ProjForward(tcomplex* d_volumeft, tfloat* d_volumepsf, int3 dimsvolume, tcomplex* d_projectionsft, tfloat* d_projectionspsf, tfloat3* h_angles, tfloat2* h_shifts, T_INTERP_MODE mode, bool outputzerocentered, int batch);
 	void d_ProjForwardRaytrace(tfloat* d_volume, int3 dimsvolume, tfloat3 volumeoffset, tfloat* d_projections, int2 dimsproj, tfloat3* h_angles, tfloat2* h_offsets, tfloat2* h_scales, T_INTERP_MODE mode, int supersample, int batch);
+
+	//RaySum.cu:
+	void d_RaySum(cudaTex t_volume, glm::vec3* d_start, glm::vec3* d_finish, tfloat* d_sums, T_INTERP_MODE mode, uint supersample, uint batch);
 }
 #endif

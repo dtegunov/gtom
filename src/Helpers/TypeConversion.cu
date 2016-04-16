@@ -126,6 +126,7 @@ namespace gtom
 	}
 	template void d_ConvertToTFloat<double>(double* d_original, tfloat* d_copy, size_t n);
 	template void d_ConvertToTFloat<float>(float* d_original, tfloat* d_copy, size_t n);
+	template void d_ConvertToTFloat<half>(half* d_original, tfloat* d_copy, size_t n);
 	template void d_ConvertToTFloat<int>(int* d_original, tfloat* d_copy, size_t n);
 	template void d_ConvertToTFloat<uint>(uint* d_original, tfloat* d_copy, size_t n);
 	template void d_ConvertToTFloat<short>(short* d_original, tfloat* d_copy, size_t n);
@@ -140,6 +141,7 @@ namespace gtom
 	}
 	template void d_ConvertTFloatTo<double>(tfloat* d_original, double* d_copy, size_t n);
 	template void d_ConvertTFloatTo<float>(tfloat* d_original, float* d_copy, size_t n);
+	template void d_ConvertTFloatTo<half>(tfloat* d_original, half* d_copy, size_t n);
 
 	template <class T> void d_ConvertSplitComplexToTComplex(T* d_originalr, T* d_originali, tcomplex* d_copy, size_t n)
 	{
@@ -191,6 +193,38 @@ namespace gtom
 			id < n;
 			id += blockDim.x * gridDim.x)
 			d_copy[id] = (Tto)d_original[id];
+	}
+
+	template<> __global__ void ConvertToKernel<float, half>(float* d_original, half* d_copy, size_t n)
+	{
+		for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+			id < n;
+			id += blockDim.x * gridDim.x)
+			d_copy[id] = __float2half(d_original[id]);
+	}
+
+	template<> __global__ void ConvertToKernel<half, float>(half* d_original, float* d_copy, size_t n)
+	{
+		for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+			id < n;
+			id += blockDim.x * gridDim.x)
+			d_copy[id] = __half2float(d_original[id]);
+	}
+
+	template<> __global__ void ConvertToKernel<double, half>(double* d_original, half* d_copy, size_t n)
+	{
+		for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+			id < n;
+			id += blockDim.x * gridDim.x)
+			d_copy[id] = __float2half((float)d_original[id]);
+	}
+
+	template<> __global__ void ConvertToKernel<half, double>(half* d_original, double* d_copy, size_t n)
+	{
+		for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+			id < n;
+			id += blockDim.x * gridDim.x)
+			d_copy[id] = (double)__half2float(d_original[id]);
 	}
 
 	template <class T> __global__ void ConvertSplitComplexToTComplexKernel(T* d_originalr, T* d_originali, tcomplex* d_copy, size_t n)

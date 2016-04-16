@@ -11,16 +11,18 @@ namespace gtom
 	//CUDA kernel declarations//
 	////////////////////////////
 
-	template<bool cubicinterp> __global__ void Cart2PolarKernel(cudaTex t_input, tfloat* d_output, int2 polardims, int2 dims);
+	template<bool cubicinterp> __global__ void Cart2PolarKernel(cudaTex t_input, tfloat* d_output, int2 polardims, int2 dims, uint innerradius);
 	template<bool cubicinterp> __global__ void Cart2PolarFFTKernel(cudaTex* t_input, tfloat* d_output, int2 polardims, int2 dims, uint innerradius);
 
 	/////////////////////////////////////////////
 	//Equivalent of TOM's tom_cart2polar method//
 	/////////////////////////////////////////////
 
-	void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE mode, int batch)
+	void d_Cart2Polar(tfloat* d_input, tfloat* d_output, int2 dims, T_INTERP_MODE mode, uint innerradius, uint exclusiveouterradius, int batch)
 	{
 		int2 polardims = GetCart2PolarSize(dims);
+		if (exclusiveouterradius != 0)
+			polardims.x = tmin(polardims.x, exclusiveouterradius - innerradius);
 		tfloat* d_temp;
 		if (mode == T_INTERP_CUBIC)
 			cudaMalloc((void**)&d_temp, Elements2(dims) * sizeof(tfloat));
@@ -38,13 +40,13 @@ namespace gtom
 				d_BindTextureToArray(d_temp, a_input, t_input, dims, cudaFilterModeLinear, false);
 			}
 
-			int TpB = min(256, NextMultipleOf(polardims.y, 32));
+			int TpB = tmin(256, NextMultipleOf(polardims.y, 32));
 			dim3 grid = dim3((int)((polardims.y + TpB - 1) / TpB), polardims.x);
 
 			if (mode == T_INTERP_LINEAR)
-				Cart2PolarKernel<false> << <grid, TpB >> > (t_input, d_output + Elements2(polardims) * b, polardims, dims);
+				Cart2PolarKernel<false> << <grid, TpB >> > (t_input, d_output + Elements2(polardims) * b, polardims, dims, innerradius);
 			else if (mode == T_INTERP_CUBIC)
-				Cart2PolarKernel<true> << <grid, TpB >> > (t_input, d_output + Elements2(polardims) * b, polardims, dims);
+				Cart2PolarKernel<true> << <grid, TpB >> > (t_input, d_output + Elements2(polardims) * b, polardims, dims, innerradius);
 
 			cudaDestroyTextureObject(t_input);
 			cudaFreeArray(a_input);
@@ -57,8 +59,8 @@ namespace gtom
 	int2 GetCart2PolarSize(int2 dims)
 	{
 		int2 polardims;
-		polardims.x = max(dims.x, dims.y) / 2;		//radial
-		polardims.y = max(dims.x, dims.y) * 2;		//angular
+		polardims.x = tmax(dims.x, dims.y) / 2;		//radial
+		polardims.y = tmax(dims.x, dims.y) * 2;		//angular
 
 		return polardims;
 	}
@@ -111,7 +113,7 @@ namespace gtom
 
 	uint GetCart2PolarFFTNonredundantSize(int2 dims)
 	{
-		return GetCart2PolarFFTNonredundantSize(dims, 0, max(dims.x, dims.y) / 2);
+		return GetCart2PolarFFTNonredundantSize(dims, 0, tmax(dims.x, dims.y) / 2);
 	}
 
 	uint GetCart2PolarFFTNonredundantSize(int2 dims, int maskinner, int maskouter)
@@ -160,7 +162,7 @@ namespace gtom
 		int2 dimsft = toInt2(ElementsFFT1(dims.x), dims.y);
 		int2 polardims = GetCart2PolarFFTSize(dims);
 		if (exclusiveouterradius != 0)
-			polardims.x = min(polardims.x, exclusiveouterradius - innerradius);
+			polardims.x = tmin(polardims.x, exclusiveouterradius - innerradius);
 		tfloat* d_temp;
 		if (mode == T_INTERP_CUBIC)
 			cudaMalloc((void**)&d_temp, ElementsFFT2(dims) * batch * sizeof(tfloat));
@@ -177,7 +179,7 @@ namespace gtom
 		}
 		cudaTex* dt_input = (cudaTex*)CudaMallocFromHostArray(t_input, batch * sizeof(cudaTex));
 
-		int TpB = min(256, NextMultipleOf(polardims.y, 32));
+		int TpB = tmin(256, NextMultipleOf(polardims.y, 32));
 		dim3 grid = dim3((int)((polardims.y + TpB - 1) / TpB), polardims.x, batch);
 
 		if (mode == T_INTERP_LINEAR)
@@ -201,8 +203,8 @@ namespace gtom
 	int2 GetCart2PolarFFTSize(int2 dims)
 	{
 		int2 polardims;
-		polardims.x = max(dims.x, dims.y) / 2;		//radial
-		polardims.y = max(dims.x, dims.y);		//angular
+		polardims.x = tmax(dims.x, dims.y) / 2;		//radial
+		polardims.y = tmax(dims.x, dims.y);		//angular
 
 		return polardims;
 	}
@@ -212,14 +214,14 @@ namespace gtom
 	//CUDA kernels//
 	////////////////
 
-	template<bool cubicinterp> __global__ void Cart2PolarKernel(cudaTex t_input, tfloat* d_output, int2 polardims, int2 dims)
+	template<bool cubicinterp> __global__ void Cart2PolarKernel(cudaTex t_input, tfloat* d_output, int2 polardims, int2 dims, uint innerradius)
 	{
 		int idy = blockIdx.x * blockDim.x + threadIdx.x;
 		if (idy >= polardims.y)
 			return;
 		int idx = blockIdx.y;
 
-		tfloat r = (tfloat)idx;
+		tfloat r = (tfloat)idx + innerradius;
 		tfloat phi = (tfloat)idy / (tfloat)polardims.y * PI2;
 
 		tfloat val;

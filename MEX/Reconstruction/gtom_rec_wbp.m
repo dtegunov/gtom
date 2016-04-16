@@ -1,4 +1,4 @@
-function [ volume ] = gtom_rec_wbp( projections, volumesize, angles, shifts, scales )
+function [ volume ] = gtom_rec_wbp( projections, volumesize, angles, shifts, scales, offsetfromcenter, weights )
 
 if size(angles, 1) ~= 3
     angles = angles';
@@ -6,6 +6,8 @@ if size(angles, 1) ~= 3
         error 'Angles must contain 3 values per column.';
     end;
 end;
+
+angles = angles./180.*pi;
 
 if size(shifts, 1) ~= 2
     shifts = shifts';
@@ -21,7 +23,7 @@ if size(scales, 1) ~= 2
     end;
 end;
 
-volume = cgtom_rec_wbp(projections, volumesize, angles, shifts, scales);
+volume = cgtom_rec_wbp(projections, volumesize, angles, shifts, scales, offsetfromcenter, weights);
 
 end
 

@@ -147,6 +147,7 @@ namespace gtom
 		}
 	}
 	template void d_SumMonolithic<float>(float* d_input, float* d_output, int n, int batch);
+	template void d_SumMonolithic<float2>(float2* d_input, float2* d_output, int n, int batch);
 	template void d_SumMonolithic<double>(double* d_input, double* d_output, int n, int batch);
 	template void d_SumMonolithic<int>(int* d_input, int* d_output, int n, int batch);
 
@@ -298,6 +299,40 @@ namespace gtom
 
 		T result = 0;
 		T c = 0, y, t;
+		for (int id = threadIdx.x; id < n; id += blockDim.x)
+		{
+			y = d_input[id] - c;
+			t = result + y;
+			c = (t - result) - y;
+			result = t;
+		}
+
+		sums[threadIdx.x] = result;
+
+		__syncthreads();
+
+		if (threadIdx.x == 0)
+		{
+			for (int i = 1; i < blockDim.x; i++)
+			{
+				y = sums[i] - c;
+				t = result + y;
+				c = (t - result) - y;
+				result = t;
+			}
+
+			d_output[blockIdx.x] = result;
+		}
+	}
+
+	template<> __global__ void SumMonolithicKernel<float2>(float2* d_input, float2* d_output, int n)
+	{
+		__shared__ float2 sums[MonoTpB];
+
+		d_input += n * blockIdx.x;
+
+		float2 result = make_float2(0.0f);
+		float2 c = make_float2(0.0f, 0.0f), y, t;
 		for (int id = threadIdx.x; id < n; id += blockDim.x)
 		{
 			y = d_input[id] - c;

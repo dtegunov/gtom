@@ -1,4 +1,4 @@
-function [ projections, projectionspsf ] = gtom_proj_forward_fourier( volume, volumepsf, angles, shifts )
+function [ projections ] = gtom_proj_forward_fourier( volume, angles )
 
 if size(angles,1) ~= 3
     angles = angles';
@@ -7,13 +7,8 @@ if size(angles,1) ~= 3
     end;
 end;
 
-if size(shifts,1) ~= 2
-    shifts = shifts';
-    if size(shifts,1) ~= 2
-        error('Shifts must have 2 values per column.');
-    end;
-end;
+angles = angles./180.*pi;
 
-[ projections, projectionspsf ] = cgtom_proj_forward_fourier(volume, volumepsf, angles, shifts);
+[ projections ] = cgtom_proj_forward_fourier(volume, angles);
 
 end

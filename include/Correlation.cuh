@@ -76,6 +76,10 @@ namespace gtom
 	*/
 	void d_LocalPeaks(tfloat* d_input, int3** h_peaks, int* h_peaksnum, int3 dims, int localextent, tfloat threshold, int batch = 1);
 
+	//Realspace.cu:
+
+	void d_CorrelateRealspace(tfloat* d_image, tfloat* d_sum1, tfloat* d_sum2, int2 dimsimage, tfloat* d_template, tfloat* d_mask, int2 dimstemplate, tfloat* d_samples, tfloat* d_corr, uint nimages);
+
 	//SimilarityMatrix.cu:
 
 	void d_RotationSeries(tfloat* d_image, tfloat* d_series, int2 dimsimage, int anglesteps);
@@ -94,6 +98,36 @@ namespace gtom
 	};
 
 	class Picker
+	{
+	public:
+		int3 dimsref, dimsimage;
+		uint ndims;
+		
+		cufftHandle planforw, planback, planrefback;
+
+		tcomplex* d_imageft, *d_image2ft;
+		tfloat* d_ctf;
+
+		cudaArray_t a_maskRe, a_maskIm;
+		cudaTex t_maskRe, t_maskIm;
+		tcomplex* d_maskft;
+
+		tfloat* d_imagesum1, *d_imagesum2;
+
+		cudaArray_t a_refRe, a_refIm;
+		cudaTex t_refRe, t_refIm;
+		tcomplex* d_refft;
+		tfloat* d_refpadded;
+
+		Picker();
+		~Picker();
+
+		void Initialize(tfloat* _d_ref, int3 _dimsref, tfloat* _d_refmask, int3 _dimsimage);
+		void SetImage(tfloat* _d_image, tfloat* _d_ctf);
+		void PerformCorrelation(tfloat anglestep, tfloat* d_bestccf, tfloat3* d_bestangle);
+	};
+
+	class ProbabilisticPicker
 	{
 	private:
 		void CalcSolventStatistics(tcomplex* d_imageft, tcomplex* d_image2ft, tcomplex* d_solventmaskft, tfloat solventsamples, tfloat* d_solventmean, tfloat* d_solventstd);
@@ -127,13 +161,63 @@ namespace gtom
 
 		tfloat* d_buffer1, *d_buffer2;
 
-		Picker();
-		~Picker();
+		ProbabilisticPicker();
+		~ProbabilisticPicker();
 		
 		void Initialize(tfloat* _d_refs, int3 _dimsref, uint _nrefs, tfloat* _d_refmasks, bool _ismaskcircular, bool _doctf, int3 _dimsimage, uint _lowpassfreq);
 		std::vector<Peak> PickImage(tfloat* d_image, tfloat* d_ctf, tfloat anglestep, tfloat* d_out_bestccf = NULL, tfloat* d_out_bestpsi = NULL);
 		void SetImage(tfloat* _d_image, tfloat* _d_ctf);
 		void PerformCorrelation(uint n, tfloat anglestep, tfloat* d_bestccf, tfloat3* d_bestangle, int* d_bestref);
+	};
+
+	class TomoPicker
+	{
+	private:
+		void CalcSolventStatistics(tfloat solventsamples);
+
+	public:
+		int3 dimsref;
+		int3 dimsrefpadded;
+		int2 dimsimage;
+		uint nimages;
+		bool ismaskcircular;
+
+		tfloat* d_masksum;
+
+		tfloat* d_refRe, *d_refIm;
+		cudaArray_t a_refRe, a_refIm;
+		cudaTex t_refRe, t_refIm;
+		tcomplex* d_refrotated;
+
+		tfloat* d_maskRe, *d_maskIm;
+		cudaArray_t a_maskRe, a_maskIm;
+		cudaTex t_maskRe, t_maskIm;
+		tcomplex* d_maskrotated;
+
+		tcomplex* d_ref2dft, *d_mask2dft;
+		tfloat* d_ref2d, *d_mask2d;
+		tfloat* d_ref2dcropped, *d_mask2dcropped;
+
+		cufftHandle planimageforw, planimageback;
+		cufftHandle planrefback;
+
+		tcomplex* d_imageft, *d_image2ft;
+		tcomplex* d_maskpaddedft, *d_maskpaddedcorr;
+		tfloat* d_maskpadded;
+
+		tfloat* d_image;
+		tfloat* d_imagesum1, *d_imagesum2;
+		tfloat* d_imagecorr;
+
+		tfloat3* h_imageangles;
+		tfloat* d_imageweights;
+
+		TomoPicker();
+		~TomoPicker();
+
+		void Initialize(tfloat* _d_ref, int3 _dimsref, tfloat* _d_refmask, bool _ismaskcircular, int2 _dimsimage, uint _nimages);
+		void SetImage(tfloat* _d_image, tfloat3* _h_imageangles, tfloat* _h_imageweights);
+		void PerformCorrelation(tfloat* d_corr, tfloat3* d_corrangle, int3 dimscorr, tfloat anglestep);
 	};
 }
 #endif

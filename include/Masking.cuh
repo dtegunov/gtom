@@ -23,11 +23,11 @@ namespace gtom
 	template <class T> void d_RectangleMask(T* d_input, T* d_output, int3 dimsmask, int3 dimsbox, int3* center, int batch = 1);
 
 	//Remap.cu:
-	template <class T> void d_Remap(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch = 1);
-	template <class T> void d_RemapReverse(T* d_input, intptr_t* d_map, T* d_output, size_t elementsmapped, size_t elementsdestination, T defvalue, int batch = 1);
-	template <class T> void h_Remap(T* h_input, intptr_t* h_map, T* h_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch = 1);
-	template <class T> void d_MaskSparseToDense(T* d_input, intptr_t** d_mapforward, intptr_t* d_mapbackward, size_t &elementsmapped, size_t elementsoriginal);
-	template <class T> void MaskSparseToDense(T* h_input, intptr_t** h_mapforward, intptr_t* h_mapbackward, size_t &elementsmapped, size_t elementsoriginal);
+	template <class T> void d_Remap(T* d_input, size_t* d_map, T* d_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch = 1);
+	template <class T> void d_RemapReverse(T* d_input, size_t* d_map, T* d_output, size_t elementsmapped, size_t elementsdestination, T defvalue, int batch = 1);
+	template <class T> void h_Remap(T* h_input, size_t* h_map, T* h_output, size_t elementsmapped, size_t elementsoriginal, T defvalue, int batch = 1);
+	template <class T> void d_MaskSparseToDense(T* d_input, size_t** d_mapforward, size_t* d_mapbackward, size_t &elementsmapped, size_t elementsoriginal);
+	template <class T> void h_MaskSparseToDense(T* h_input, size_t** h_mapforward, size_t* h_mapbackward, size_t &elementsmapped, size_t elementsoriginal);
 	void d_RemapInterpolated2D(tfloat* d_input, int2 dimsinput, tfloat* d_output, float2* d_addresses, int n, T_INTERP_MODE mode);
 
 	//Windows.cu:

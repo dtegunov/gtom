@@ -6,8 +6,8 @@ TEST(CTF, Periodogram)
 
 	//Case 1:
 	{
-		int2 dimsimage = toInt2(2048, 2048);
-		int2 dimsregion = toInt2(256, 256);
+		int2 dimsimage = toInt2(3838, 3710);
+		int2 dimsregion = toInt2(512, 512);
 
 		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data/CTF/Input_Periodogram.bin");
 		tfloat* d_output = CudaMallocValueFilled(ElementsFFT2(dimsregion), (tfloat)0);
@@ -17,7 +17,7 @@ TEST(CTF, Periodogram)
 		params.astigmatismangle = ToRad(67.5);
 		params.defocusdelta = 2.5e-7f;
 
-		d_CTFPeriodogram(d_input, dimsimage, 0.0f, dimsregion, d_output);
+		d_CTFPeriodogram(d_input, dimsimage, 0.0f, dimsregion, dimsregion, d_output);
 		d_WriteMRC(d_output, toInt3(ElementsFFT1(dimsregion.x), dimsregion.y, 1), "d_periodogram.mrc");
 
 		int2 dimsgrid;

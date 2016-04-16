@@ -46,10 +46,10 @@ namespace gtom
 		cudaMalloc((void**)&d_extractorigins, batchsize * sizeof(int3));
 
 		// Addresses used to remap resolution values within smaller accessible volume to the larger overall volume
-		intptr_t* h_remapaddresses;
-		cudaMallocHost((void**)&h_remapaddresses, batchsize * sizeof(intptr_t));
-		intptr_t* d_remapaddresses;
-		cudaMalloc((void**)&d_remapaddresses, batchsize * sizeof(intptr_t));
+		size_t* h_remapaddresses;
+		cudaMallocHost((void**)&h_remapaddresses, batchsize * sizeof(size_t));
+		size_t* d_remapaddresses;
+		cudaMalloc((void**)&d_remapaddresses, batchsize * sizeof(size_t));
 
 		// FSC precursor data
 		tfloat* d_fscnums, *d_fscdenoms1, *d_fscdenoms2;
@@ -89,7 +89,7 @@ namespace gtom
 				h_remapaddresses[b] = (z * dimsvolume.y + y) * dimsvolume.x + x;
 			}
 			cudaMemcpy(d_extractorigins, h_extractorigins, curbatch * sizeof(int3), cudaMemcpyHostToDevice);
-			cudaMemcpy(d_remapaddresses, h_remapaddresses, curbatch * sizeof(intptr_t), cudaMemcpyHostToDevice);
+			cudaMemcpy(d_remapaddresses, h_remapaddresses, curbatch * sizeof(size_t), cudaMemcpyHostToDevice);
 
 			for (uint v = 0; v < nvolumes; v++)
 			{
