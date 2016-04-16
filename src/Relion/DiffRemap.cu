@@ -3,7 +3,7 @@
 namespace gtom
 {
 	template<bool docc> __global__ void DiffRemapDenseKernel(tfloat* d_input, tfloat* d_output, uint3* d_orientationindices, uint elements, uint iclass, uint nparticles, uint nclasses, uint nrot, uint ntrans, uint ntranspadded, const tfloat* __restrict__ d_xi2imgs, const tfloat* __restrict__ d_sqrtxi2);
-	template<bool docc> __global__ void DiffRemapSparseKernel(tfloat* d_input, tfloat* d_output, uint3* d_combinations, uint* d_hiddenover, uint elements, uint tileelements, uint weightsperpart, const tfloat* __restrict__ d_xi2imgs, const tfloat* __restrict__ d_sqrtxi2);
+	template<bool docc> __global__ void DiffRemapSparseKernel(tfloat* d_input, tfloat* d_output, tfloat* d_mindiff2, const uint3* __restrict__ d_combinations, uint* d_hiddenover, uint elements, uint tileelements, uint weightsperpart, uint nparticles, const tfloat* __restrict__ d_xi2imgs, const tfloat* __restrict__ d_sqrtxi2);
 
 	void d_rlnDiffRemapDense(tfloat* d_input, tfloat* d_output, uint3* d_orientationindices, uint norientations, uint iclass, uint nparticles, uint nclasses, uint nrot, uint ntrans, uint ntranspadded, tfloat* d_xi2imgs, tfloat* d_sqrtxi2, bool docc)
 	{
@@ -16,14 +16,14 @@ namespace gtom
 			DiffRemapDenseKernel<false> <<<grid, TpB>>> (d_input, d_output, d_orientationindices, elements, iclass, nparticles, nclasses, nrot, ntrans, ntranspadded, d_xi2imgs, d_sqrtxi2);
 	}
 
-	void d_rlnDiffRemapSparse(tfloat* d_input, tfloat* d_output, uint3* d_combinations, uint* d_hiddenover, uint elements, uint tileelements, uint weightsperpart, tfloat* d_xi2imgs, tfloat* d_sqrtxi2, bool docc)
+	void d_rlnDiffRemapSparse(tfloat* d_input, tfloat* d_output, tfloat* d_mindiff2, uint3* d_combinations, uint* d_hiddenover, uint elements, uint tileelements, uint weightsperpart, uint nparticles, tfloat* d_xi2imgs, tfloat* d_sqrtxi2, bool docc)
 	{
 		uint TpB = 128;
 		dim3 grid = dim3((elements + TpB - 1) / TpB, 1, 1);
 		if (docc)
-			DiffRemapSparseKernel<true> << <grid, TpB >> > (d_input, d_output, d_combinations, d_hiddenover, elements, tileelements, weightsperpart, d_xi2imgs, d_sqrtxi2);
+			DiffRemapSparseKernel<true> << <grid, TpB >> > (d_input, d_output, d_mindiff2, d_combinations, d_hiddenover, elements, tileelements, weightsperpart, nparticles, d_xi2imgs, d_sqrtxi2);
 		else
-			DiffRemapSparseKernel<false> << <grid, TpB >> > (d_input, d_output, d_combinations, d_hiddenover, elements, tileelements, weightsperpart, d_xi2imgs, d_sqrtxi2);
+			DiffRemapSparseKernel<false> << <grid, TpB >> > (d_input, d_output, d_mindiff2, d_combinations, d_hiddenover, elements, tileelements, weightsperpart, nparticles, d_xi2imgs, d_sqrtxi2);
 	}
 
 	template<bool docc> __global__ void DiffRemapDenseKernel(tfloat* d_input, tfloat* d_output, uint3* d_orientationindices, uint elements, uint iclass, uint nparticles, uint nclasses, uint nrot, uint ntrans, uint ntranspadded, const tfloat* __restrict__ d_xi2imgs, const tfloat* __restrict__ d_sqrtxi2)
@@ -48,8 +48,25 @@ namespace gtom
 		}
 	}
 
-	template<bool docc> __global__ void DiffRemapSparseKernel(tfloat* d_input, tfloat* d_output, uint3* d_combinations, uint* d_hiddenover, uint elements, uint tileelements, uint weightsperpart, const tfloat* __restrict__ d_xi2imgs, const tfloat* __restrict__ d_sqrtxi2)
+	__device__ inline void fatomicMin(tfloat* addr, tfloat val)
 	{
+		int* address_as_i = (int*)addr;
+		int old = *address_as_i, assumed;
+		do 
+		{
+			assumed = old;
+			old = atomicCAS(address_as_i, assumed, __float_as_int(fminf(val, __int_as_float(assumed))));
+		} 
+		while (assumed != old);
+	}
+
+	template<bool docc> __global__ void DiffRemapSparseKernel(tfloat* d_input, tfloat* d_output, tfloat* d_mindiff2, const uint3* __restrict__ d_combinations, uint* d_hiddenover, uint elements, uint tileelements, uint weightsperpart, uint nparticles, const tfloat* __restrict__ d_xi2imgs, const tfloat* __restrict__ d_sqrtxi2)
+	{
+		__shared__ tfloat s_mindiff2[1024];
+		for (uint i = threadIdx.x; i < nparticles; i += blockDim.x)
+			s_mindiff2[i] = 1e30;
+		__syncthreads();
+
 		for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < elements; id += gridDim.x * blockDim.x)
 		{
 			uint ipart = d_combinations[id / tileelements].y;
@@ -61,6 +78,12 @@ namespace gtom
 				val += d_xi2imgs[ipart];	// Already x/2
 
 			d_output[weightsperpart * ipart + d_hiddenover[id]] = val;
+			
+			fatomicMin(&s_mindiff2[ipart], val);
 		}
+		__syncthreads();
+
+		for (uint i = threadIdx.x; i < nparticles; i += blockDim.x)
+			fatomicMin(d_mindiff2 + i, s_mindiff2[i]);
 	}
 }
