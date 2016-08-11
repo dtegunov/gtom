@@ -86,6 +86,7 @@
     <CudaCompile Include="src\Generics\Extraction.cu" />
     <CudaCompile Include="src\Generics\Histogram.cu" />
     <CudaCompile Include="src\Generics\IndexOf.cu" />
+    <CudaCompile Include="src\Generics\LocalStd.cu" />
     <CudaCompile Include="src\Generics\MakeAtlas.cu" />
     <CudaCompile Include="src\Generics\MinMax.cu" />
     <CudaCompile Include="src\Generics\MinMaxMonolithic.cu" />
@@ -142,6 +143,9 @@
     <CudaCompile Include="src\Resolution\FSC.cu" />
     <CudaCompile Include="src\Resolution\LocalAnisotropicFSC.cu" />
     <CudaCompile Include="src\Resolution\LocalFSC.cu" />
+    <CudaCompile Include="src\Resolution\LocalFSCBFac.cu" />
+    <CudaCompile Include="src\Transformation\FitMagAnisotropy.cu" />
+    <CudaCompile Include="src\Transformation\MagAnisotropy.cu" />
     <CudaCompile Include="src\Transformation\Rotation.cu" />
     <CudaCompile Include="src\Reconstruction\RecSIRT.cu" />
     <CudaCompile Include="src\Reconstruction\RecWBP.cu" />

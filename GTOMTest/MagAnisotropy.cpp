@@ -1,6 +1,6 @@
 #include "Prerequisites.h"
 
-TEST(Transformation, Shift)
+TEST(Transformation, MagAnisotropy)
 {
 	cudaDeviceReset();
 
@@ -9,21 +9,19 @@ TEST(Transformation, Shift)
 		int3 dims = toInt3(8, 8, 1);
 		tfloat* h_input = (tfloat*)malloc(Elements(dims) * sizeof(tfloat));
 		for (uint i = 0; i < Elements(dims); i++)
-			h_input[i] = i;
+			h_input[i] = sin((tfloat)(i % 8) / 7.0f * PI);
 		tfloat* d_input = (tfloat*)CudaMallocFromHostArray(h_input, Elements(dims) * sizeof(tfloat));
-		tcomplex* d_inputft;
-		cudaMalloc((void**)&d_inputft, ElementsFFT(dims) * sizeof(tcomplex));
-		d_FFTR2C(d_input, d_inputft, 2, dims);
-		d_RemapHalfFFT2Half(d_inputft, d_inputft, dims);
+		
+		tfloat* d_scaled;
+		cudaMalloc((void**)&d_scaled, Elements(dims) * sizeof(tfloat));
 
-		tfloat3 delta = tfloat3(1, 1, 0);
-		d_Shift(d_inputft, d_inputft, dims, &delta, true);
+		d_MagAnisotropyCorrect(d_input, toInt2(dims.x, dims.y), d_scaled, toInt2(dims.x, dims.y), 1.0f, 1.0f, 0.0f, 8, 1);
 
-		d_RemapHalf2HalfFFT(d_inputft, d_inputft, dims);
-		d_IFFTC2R(d_inputft, d_input, 2, dims);
+		tfloat* h_scaled = (tfloat*)MallocFromDeviceArray(d_scaled, Elements2(dims) * sizeof(tfloat));
 
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, Elements(dims) * sizeof(tfloat));
 		free(h_output);
+		free(h_scaled);
 	}
 
 

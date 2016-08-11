@@ -31,6 +31,23 @@ namespace gtom
 	//LocalFSC.cu:
 	void d_LocalFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, uint nvolumes, tfloat* d_resolution, int windowsize, int maxradius, tfloat threshold);
 
+	//LocalFSCBfac.cu:
+	void d_LocalFSCBfac(tfloat* d_volume1,
+						tfloat* d_volume2,
+						int3 dimsvolume,
+						tfloat* d_resolution,
+						tfloat* d_bfactors,
+						tfloat* d_corrected,
+						tfloat* d_unsharpened,
+						int windowsize,
+						tfloat fscthreshold,
+						tfloat minresbfac,
+						tfloat angpix,
+						tfloat minbfac,
+						tfloat bfacbias,
+						tfloat mtfslope,
+						bool doanisotropy);
+
 	//AnisotropicFSC:
 	void d_AnisotropicFSC(tcomplex* d_volumeft1,
 		tcomplex* d_volumeft2,

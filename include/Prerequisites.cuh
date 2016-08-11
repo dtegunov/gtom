@@ -264,5 +264,27 @@ template <typename T> __host__ __device__ int sgn(T val)
 #define CUDA_MEASURE_TIME(call) call
 #endif
 
+	// Process has done x out of n rounds,
+	// and we want a bar of width w and resolution r.
+	static inline void progressbar(int x, int n, int w)
+	{
+		// Calculuate the ratio of complete-to-incomplete.
+		float ratio = x / (float)n;
+		int c = ratio * w;
+
+		// Show the percentage complete.
+		printf("%3d%% [", (int)(ratio * 100));
+
+		// Show the load bar.
+		for (int i = 0; i < c; i++)
+			printf("=");
+
+		for (int i = c; i < w; i++)
+			printf(" ");
+
+		// ANSI Control codes to go back to the
+		// previous line and clear it.
+		printf("]\n\033[F\033[J");
+	}
 }
 #endif

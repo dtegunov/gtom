@@ -108,7 +108,7 @@ namespace gtom
 		tfloat K1, K2, K3, K4;
 
 		CTFParamsLean(CTFParams p, int3 dims) :
-			ny(1.0f / (dims.z > 1 ? (tfloat)dims.x * (p.pixelsize * 1e10): (tfloat)dims.x)),
+			ny(1.0f / (dims.z > 1 ? (tfloat)dims.x * (p.pixelsize * 1e10) : (tfloat)dims.x)),
 			pixelsize(p.pixelsize * 1e10),
 			pixeldelta(p.pixeldelta * 0.5e10),
 			pixelangle(p.pixelangle),
@@ -123,7 +123,7 @@ namespace gtom
 			K1(PI * lambda),
 			K2(PIHALF * Cs * lambda * lambda * lambda),
 			K3(sqrt(1 - p.amplitude * p.amplitude)),
-			K4(-p.Bfactor * 0.25e20) {}
+			K4(p.Bfactor * 0.25e20) {}
 	};
 
 	class CTFTiltParams
@@ -194,13 +194,16 @@ namespace gtom
 		tfloat argument = p.K1 * deltaf * r2 + p.K2 * r4 - p.phaseshift;
 		tfloat retval = -(p.K3 * __sinf(argument) - p.amplitude * __cosf(argument));
 
+		// NOTE: BFACTOR INCLUDED!
 		if (p.K4 != 0)
 			retval *= __expf(p.K4 * r2);
 
 		if (ampsquared)
 			retval = retval * retval;
 
-		return p.scale * retval;
+		retval *= p.scale;
+
+		return retval;
 	}
 
 	//AliasingCutoff.cu:

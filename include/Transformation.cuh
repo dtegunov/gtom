@@ -32,8 +32,14 @@ namespace gtom
 	float2* GetPolarFFTNonredundantCoords(int2 dims);
 	float2* GetPolarFFTNonredundantCoords(int2 dims, int maskinner, int maskouter);
 
+	//FitMagAnisotropy.cu:
+	void d_FitMagAnisotropy(tfloat* h_image, int2 dimsimage, float compareradius, float maxdistortion, float distortionstep, float anglestep, float &bestdistortion, float &bestangle);
+
 	//FFTLines.cu:
 	void d_FFTLines(tcomplex* d_input, tcomplex* d_output, int2 dims, T_INTERP_MODE mode, int anglesteps, int linewidth, int batch);
+
+	//MagAnisotropy.cu:
+	void d_MagAnisotropyCorrect(tfloat* d_image, int2 dimsimage, tfloat* d_scaledimage, int2 dimsscaled, float majorpixel, float minorpixel, float majorangle, uint supersample, uint batch = 1);
 
 	//Rotation.cu:
 	void d_Rotate2D(tfloat* d_input, tfloat* d_output, int2 dims, tfloat* angles, T_INTERP_MODE mode, bool isoutputzerocentered, uint batch = 1);

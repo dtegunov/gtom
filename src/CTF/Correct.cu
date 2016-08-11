@@ -51,7 +51,7 @@ namespace gtom
 			angle = atan2(position.y, position.x);
 			position = make_float2(position.x, position.y);
 			float pixelsize = p.pixelsize + p.pixeldelta * cos(2.0f * (angle - p.pixelangle));
-			k = sqrt(position.x * position.x + position.y * position.y) * p.ny / pixelsize;
+			k = sqrt(position.x * position.x + position.y * position.y) / dims.x / pixelsize;
 		}
 		else if (ndims == 3)
 		{
@@ -62,7 +62,7 @@ namespace gtom
 			float3 position = make_float3((float)(x - dims.x / 2),
 				(float)(y - dims.y / 2),
 				(float)(z - dims.z / 2));
-			k = sqrt(position.x * position.x + position.y * position.y + position.z * position.z) * p.ny;
+			k = sqrt(position.x * position.x + position.y * position.y + position.z * position.z) / dims.x;
 			angle = 0.0;
 		}
 

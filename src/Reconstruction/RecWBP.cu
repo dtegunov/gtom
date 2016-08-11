@@ -34,7 +34,7 @@ namespace gtom
 		tfloat* d_weighted;
 		cudaMalloc((void**)&d_weighted, Elements2(dimsimage) * nimages * sizeof(tfloat));
 
-		size_t memlimit = 1024 << 20;
+		size_t memlimit = 2048 << 20;
 		int ftbatch = memlimit / (Elements2(dimsimage) * sizeof(tfloat) * 6);
 
 		for (int b = 0; b < nimages; b += ftbatch)

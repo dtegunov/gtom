@@ -46,6 +46,7 @@
     <None Include="Reconstruction\cgtom_rec_wbp_many.cu" />
     <None Include="Resolution\cgtom_fsc_anisotropic.cu" />
     <None Include="Resolution\cgtom_fsc_local.cu" />
+    <None Include="Transformation\cgtom_correctmaganisotropy.cu" />
     <None Include="Transformation\cgtom_rotate.cu" />
     <None Include="Transformation\cgtom_transform.cu" />
     <None Include="Transformation\cgtom_warp2d.cu" />

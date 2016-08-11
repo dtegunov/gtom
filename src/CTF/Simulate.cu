@@ -76,8 +76,7 @@ namespace gtom
 			float k = address.x;
 
 			float pixelsize = p.pixelsize + p.pixeldelta * __cosf(2.0f * (angle - p.pixelangle));
-			//k /= pixelsize;
-			k /= 1.35f;
+			k /= pixelsize;
 
 			d_output[idx] = d_GetCTF<amplitudesquared>(k, angle, p);
 		}
@@ -97,8 +96,7 @@ namespace gtom
 			float k = address.x;
 
 			float pixelsize = p.pixelsize + p.pixeldelta * __cosf(2.0f * (angle - p.pixelangle));
-			//k /= pixelsize;
-			k /= 1.35f;
+			k /= pixelsize;
 
 			d_output[idx] = __float2half(d_GetCTF<amplitudesquared>(k, angle, p));
 		}

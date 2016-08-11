@@ -261,6 +261,21 @@
     <ClCompile Include="TomoPicker.cpp">
       <Filter>Source Files\Correlation</Filter>
     </ClCompile>
+    <ClCompile Include="MagAnisotropy.cpp">
+      <Filter>Source Files\Transformation</Filter>
+    </ClCompile>
+    <ClCompile Include="LocalFSCBfac.cpp">
+      <Filter>Source Files\Resolution</Filter>
+    </ClCompile>
+    <ClCompile Include="FitMagAnisotropy.cpp">
+      <Filter>Source Files\Transformation</Filter>
+    </ClCompile>
+    <ClCompile Include="LocalStd.cpp">
+      <Filter>Source Files\Generics</Filter>
+    </ClCompile>
+    <ClCompile Include="Liblion.cpp">
+      <Filter>Source Files\Relion</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">

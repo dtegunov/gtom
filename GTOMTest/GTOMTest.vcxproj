@@ -54,8 +54,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)GoogleTest\include;$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)..\liblion;$(SolutionDir)GoogleTest\include;$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\liblion\x64\Debug;$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -73,7 +73,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_VARIADIC_MAX=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;FLOAT_PRECISION;_CONSOLE;_VARIADIC_MAX=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
       <MinimalRebuild>true</MinimalRebuild>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
@@ -81,7 +81,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib;liblion.lib;libfftw3f-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy "$(ProjectDir)Data" "$(TargetDir)Data" /e /d /y</Command>
@@ -126,6 +126,7 @@
       <PreprocessorDefinitions>WIN32;_CONSOLE;_VARIADIC_MAX=10;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/D_SECURE_SCL=0,/D_ITERATOR_DEBUG_LEVEL=0</AdditionalOptions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -155,7 +156,12 @@
     <ClCompile Include="Decay.cpp" />
     <ClCompile Include="Euler.cpp" />
     <ClCompile Include="FFTLines.cpp" />
+    <ClCompile Include="FitMagAnisotropy.cpp" />
     <ClCompile Include="GS.cpp" />
+    <ClCompile Include="Liblion.cpp" />
+    <ClCompile Include="LocalFSCBfac.cpp" />
+    <ClCompile Include="LocalStd.cpp" />
+    <ClCompile Include="MagAnisotropy.cpp" />
     <ClCompile Include="MaskWindows.cpp" />
     <ClCompile Include="NIPALS.cpp" />
     <ClCompile Include="OptimizeSPAParams.cpp" />

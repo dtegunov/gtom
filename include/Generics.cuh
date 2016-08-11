@@ -737,6 +737,18 @@ namespace gtom
 	 */
 	void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int2 sourcedims, int2 regiondims, tfloat2* h_scale, tfloat* h_rotation, tfloat2* h_translation, T_INTERP_MODE mode, int batch = 1);
 
+	//LocalStd.cu:
+
+	/**
+	* \brief Computes the local standard deviation within a sphere centered around each pixel/voxel
+	* \param[in] d_map	Array with input data
+	* \param[in] dimsmap	Map dimensions
+	* \param[in] localradius	Sphere radius
+	* \param[in] d_std	Array that will contain the local standard deviation
+	* \param[in] d_mean	Optional array that will contain the local mean
+	*/
+	void d_LocalStd(tfloat* d_map, int3 dimsmap, tfloat localradius, tfloat* d_std, tfloat* d_mean = NULL);
+
 	//Padding.cu:
 
 	/**

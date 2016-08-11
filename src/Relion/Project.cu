@@ -7,6 +7,7 @@ namespace gtom
 {
 	template<uint TpB> __global__ void Project2Dto2DKernel(cudaTex t_volumeRe, cudaTex t_volumeIm, uint dimvolume, tcomplex* d_proj, uint dimproj, uint rmax, uint rmax2);
 	template<uint ndims, uint TpB> __global__ void Project3DtoNDKernel(cudaTex t_volumeRe, cudaTex t_volumeIm, uint dimvolume, tcomplex* d_proj, uint dimproj, size_t elementsproj, uint rmax, int rmax2);
+	template<uint ndims, uint TpB> __global__ void Project3DArraytoNDKernel(tcomplex* d_volume, uint dimvolume, tcomplex* d_proj, uint dimproj, size_t elementsproj, uint rmax, int rmax2);
 
 
 	__constant__ float c_matrices[128 * 9];
@@ -14,7 +15,7 @@ namespace gtom
 
 	void d_rlnProject(tcomplex* d_volumeft, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, tfloat3* h_angles, float supersample, uint batch)
 	{
-		cudaArray_t a_volumeRe, a_volumeIm;
+		/*cudaArray_t a_volumeRe, a_volumeIm;
 		cudaTex t_volumeRe, t_volumeIm;
 
 		{
@@ -36,6 +37,22 @@ namespace gtom
 			cudaFreeArray(a_volumeIm);
 			cudaDestroyTextureObject(t_volumeIm);
 			cudaFreeArray(a_volumeRe);
+		}*/
+
+		glm::mat3* d_matrices;
+
+		{
+			glm::mat3* h_matrices = (glm::mat3*)malloc(sizeof(glm::mat3) * batch);
+			for (int i = 0; i < batch; i++)
+				h_matrices[i] = glm::transpose(Matrix3Euler(h_angles[i])) * Matrix3Scale(supersample);
+			d_matrices = (glm::mat3*)CudaMallocFromHostArray(h_matrices, sizeof(glm::mat3) * batch);
+			free(h_matrices);
+		}
+
+		d_rlnProject(d_volumeft, dimsvolume, d_proj, dimsproj, dimsproj.x / 2, d_matrices, batch);
+
+		{
+			cudaFree(d_matrices);
 		}
 	}
 
@@ -93,6 +110,31 @@ namespace gtom
 				uint TpB = 1 << tmin(7, tmax(7, (uint)(log(elements / 4.0) / log(2.0))));
 
 				Project2Dto2DKernel<128> << <grid, 128 >> > (t_volumeRe, t_volumeIm, dimsvolume.x, d_proj + ElementsFFT(dimsproj) * b, dimsproj.x, rmax, rmax * rmax);
+			}
+		}
+	}
+
+	void d_rlnProject(tcomplex* d_volumeft, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, uint rmax, glm::mat3* d_matrices, uint batch)
+	{
+		uint ndimsvolume = DimensionCount(dimsvolume);
+		uint ndimsproj = DimensionCount(dimsproj);
+		if (ndimsvolume < ndimsproj)
+			throw;
+
+		rmax = tmin(rmax, dimsproj.x / 2);
+
+		for (int b = 0; b < batch; b += 128)
+		{
+			int curbatch = tmin(128, batch - b);
+
+			if (ndimsproj == 2)
+			{
+				cudaMemcpyToSymbol(c_matrices, d_matrices + b, curbatch * sizeof(glm::mat3), 0, cudaMemcpyDeviceToDevice);
+
+				dim3 grid = dim3(curbatch, 1, 1);
+				uint elements = ElementsFFT(dimsproj);
+
+				Project3DArraytoNDKernel<2, 128> << <grid, 128 >> > (d_volumeft, dimsvolume.x, d_proj + ElementsFFT(dimsproj) * b, dimsproj.x, elements, rmax, rmax * rmax);
 			}
 		}
 	}
@@ -260,6 +302,111 @@ namespace gtom
 			val.y *= is_neg_x;
 
 			d_proj[id] = val;
+		}
+	}
+
+	template<uint ndims, uint TpB> __global__ void Project3DArraytoNDKernel(tcomplex* d_volume, uint dimvolume, tcomplex* d_proj, uint dimproj, size_t elementsproj, uint rmax, int rmax2)
+	{
+		d_proj += elementsproj * blockIdx.x;
+
+		int x0, x1, y0, y1, z0, z1;
+		tcomplex d000, d010, d100, d110, d001, d011, d101, d111, dx00, dx10, dxy0, dx01, dx11, dxy1;
+
+		uint slice = ElementsFFT1(dimproj) * dimproj;
+		uint dimft = ElementsFFT1(dimproj);
+
+		for (uint id = threadIdx.x; id < elementsproj; id += TpB)
+		{
+			uint idx = id % dimft;
+			uint idy = (ndims == 3 ? id % slice : id) / dimft;
+			uint idz = ndims == 3 ? id / slice : 0;
+
+			int x = idx;
+			int y = idy <= dimproj / 2 ? idy : (int)idy - (int)dimproj;
+			int z = idz <= dimproj / 2 ? idz : (int)idz - (int)dimproj;
+			int r2 = ndims == 3 ? z * z + y * y + x * x : y * y + x * x;
+			if (r2 > rmax2)
+			{
+				d_proj[id] = make_cuComplex(0, 0);
+				continue;
+			}
+
+			tcomplex val1, val2;
+			glm::vec3 pos = glm::vec3(x, y, z);
+
+			/*if (ndims == 2)
+			{
+				float theta = 0.0196876f / (0.8484f * 320 * 2);
+				float r = sqrt((float)r2);
+				theta *= r;
+
+				float costheta = cos(theta);
+				pos.x *= costheta;
+				pos.y *= costheta;
+				pos.z = r * sin(theta);
+			}*/
+
+			{
+				glm::vec3 pos1 = glm::vec3(c_matrices[blockIdx.x * 9 + 0] * pos.x + c_matrices[blockIdx.x * 9 + 3] * pos.y + c_matrices[blockIdx.x * 9 + 6] * pos.z,
+										   c_matrices[blockIdx.x * 9 + 1] * pos.x + c_matrices[blockIdx.x * 9 + 4] * pos.y + c_matrices[blockIdx.x * 9 + 7] * pos.z,
+										   c_matrices[blockIdx.x * 9 + 2] * pos.x + c_matrices[blockIdx.x * 9 + 5] * pos.y + c_matrices[blockIdx.x * 9 + 8] * pos.z);
+
+				// Only asymmetric half is stored
+				float is_neg_x = 1.0f;
+				if (pos1.x + 1e-5f < 0)
+				{
+					// Get complex conjugated hermitian symmetry pair
+					pos1.x = abs(pos1.x);
+					pos1.y = -pos1.y;
+					pos1.z = -pos1.z;
+					is_neg_x = -1.0f;
+				}
+
+				// Trilinear interpolation (with physical coords)
+				x0 = floor(pos1.x + 1e-5f);
+				x1 = x0 + 1;
+				pos1.x -= floor(pos1.x + 1e-5f);
+
+				y0 = floor(pos1.y);
+				y1 = y0 + 1;
+				if (y0 < 0)
+					y0 += dimvolume;
+				if (y1 < 0)
+					y1 += dimvolume;
+				pos1.y -= floor(pos1.y);
+
+				z0 = floor(pos1.z);
+				z1 = z0 + 1;
+				if (z0 < 0)
+					z0 += dimvolume;
+				if (z1 < 0)
+					z1 += dimvolume;
+				pos1.z -= floor(pos1.z);
+
+				d000 = d_volume[(z0 * dimvolume + y0) * (dimvolume / 2 + 1) + x0];
+				d001 = d_volume[(z0 * dimvolume + y0) * (dimvolume / 2 + 1) + x1];
+				d010 = d_volume[(z0 * dimvolume + y1) * (dimvolume / 2 + 1) + x0];
+				d011 = d_volume[(z0 * dimvolume + y1) * (dimvolume / 2 + 1) + x1];
+				d100 = d_volume[(z1 * dimvolume + y0) * (dimvolume / 2 + 1) + x0];
+				d101 = d_volume[(z1 * dimvolume + y0) * (dimvolume / 2 + 1) + x1];
+				d110 = d_volume[(z1 * dimvolume + y1) * (dimvolume / 2 + 1) + x0];
+				d111 = d_volume[(z1 * dimvolume + y1) * (dimvolume / 2 + 1) + x1];
+
+				dx00 = lerp(d000, d001, pos1.x);
+				dx01 = lerp(d010, d011, pos1.x);
+				dx10 = lerp(d100, d101, pos1.x);
+				dx11 = lerp(d110, d111, pos1.x);
+
+				dxy0 = lerp(dx00, dx01, pos1.y);
+				dxy1 = lerp(dx10, dx11, pos1.y);
+
+				val1 = lerp(dxy0, dxy1, pos1.z);
+				//tcomplex val = d_volume[(z0 * dimvolume + y0) * (dimvolume / 2 + 1) + x0];
+
+				val1.y *= is_neg_x;
+			}
+
+			d_proj[id] = val1;
 		}
 	}
 }

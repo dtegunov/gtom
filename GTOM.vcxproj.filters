@@ -475,6 +475,18 @@
     <CudaCompile Include="src\Correlation\TomoPicker.cu">
       <Filter>Correlation</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\Transformation\MagAnisotropy.cu">
+      <Filter>Transformation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Resolution\LocalFSCBFac.cu">
+      <Filter>Resolution</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Transformation\FitMagAnisotropy.cu">
+      <Filter>Transformation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Generics\LocalStd.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\IO\em.cpp">

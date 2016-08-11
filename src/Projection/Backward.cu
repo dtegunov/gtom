@@ -26,11 +26,11 @@ namespace gtom
 		for (int b = 0; b < batch; b++)
 		{
 			h_transforms[b] = Matrix4Translation(tfloat3((tfloat)dimsimage.x / 2.0f + 0.5f, (tfloat)dimsimage.y / 2.0f + 0.5f, 0.0f)) *
-				Matrix4Scale(tfloat3(1.0f / h_scales[b].x, 1.0f / h_scales[b].y, 1.0f)) *
-				Matrix4Translation(tfloat3(-h_offsets[b].x, -h_offsets[b].y, 0.0f)) *
-				(Matrix4Euler(h_angles[b])) *
-				Matrix4Translation(offsetfromcenter) *
-				Matrix4Translation(tfloat3(-dimsvolume.x / 2, -dimsvolume.y / 2, -dimsvolume.z / 2));
+							  Matrix4Scale(tfloat3(1.0f / h_scales[b].x, 1.0f / h_scales[b].y, 1.0f)) *
+							  Matrix4Translation(tfloat3(-h_offsets[b].x, -h_offsets[b].y, 0.0f)) *
+							  (Matrix4Euler(h_angles[b])) *
+							  Matrix4Translation(offsetfromcenter) *
+							  Matrix4Translation(tfloat3(-dimsvolume.x / 2, -dimsvolume.y / 2, -dimsvolume.z / 2));
 		}
 
 		if (mode == T_INTERP_LINEAR || mode == T_INTERP_CUBIC)

@@ -156,6 +156,9 @@
     <None Include="Reconstruction\cgtom_rec_wbp_many.cu">
       <Filter>Source Files\Reconstruction</Filter>
     </None>
+    <None Include="Transformation\cgtom_correctmaganisotropy.cu">
+      <Filter>Source Files\Transformation</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Prerequisites.h">

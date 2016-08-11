@@ -6,20 +6,65 @@ namespace gtom
 {
 	glm::mat4 Matrix4Euler(tfloat3 angles)
 	{
-		float phi = angles.x;
+		/*float phi = angles.x;
 		float theta = angles.y;
 		float psi = angles.z;
 
-		return Matrix4RotationZ(psi) * Matrix4RotationY(theta) * Matrix4RotationZ(phi);
+		return Matrix4RotationZ(psi) * Matrix4RotationY(theta) * Matrix4RotationZ(phi);*/
+		float alpha = angles.x;
+		float beta = angles.y;
+		float gamma = angles.z;
+
+		/*return Matrix3RotationZ(psi) * Matrix3RotationY(theta) * Matrix3RotationZ(phi);*/
+		float ca, sa, cb, sb, cg, sg;
+		float cc, cs, sc, ss;
+
+		ca = cos(alpha);
+		cb = cos(beta);
+		cg = cos(gamma);
+		sa = sin(alpha);
+		sb = sin(beta);
+		sg = sin(gamma);
+		cc = cb * ca;
+		cs = cb * sa;
+		sc = sb * ca;
+		ss = sb * sa;
+
+		return glm::mat4(cg * cc - sg * sa, -sg * cc - cg * sa, sc, 0,
+						 cg * cs + sg * ca, -sg * cs + cg * ca, ss, 0,
+						 -cg * sb, sg * sb, cb, 0,
+						 0, 0, 0, 1);
 	}
 
 	glm::mat3 Matrix3Euler(tfloat3 angles)
 	{
-		float phi = angles.x;
+		/*float psi = angles.x;
 		float theta = angles.y;
-		float psi = angles.z;
+		float phi = angles.z;
 
-		return Matrix3RotationZ(psi) * Matrix3RotationY(theta) * Matrix3RotationZ(phi);
+		return Matrix3RotationZ(psi) * Matrix3RotationY(theta) * Matrix3RotationZ(phi);*/
+
+		float alpha = angles.x;
+		float beta = angles.y;
+		float gamma = angles.z;
+
+		float ca, sa, cb, sb, cg, sg;
+		float cc, cs, sc, ss;
+
+		ca = cos(alpha);
+		cb = cos(beta);
+		cg = cos(gamma);
+		sa = sin(alpha);
+		sb = sin(beta);
+		sg = sin(gamma);
+		cc = cb * ca;
+		cs = cb * sa;
+		sc = sb * ca;
+		ss = sb * sa;
+
+		return glm::mat3(cg * cc - sg * sa, -sg * cc - cg * sa, sc,
+						 cg * cs + sg * ca, -sg * cs + cg * ca, ss,
+						 -cg * sb, sg * sb, cb);
 	}
 
 	glm::mat4 Matrix4EulerLegacy(tfloat2 angles)
