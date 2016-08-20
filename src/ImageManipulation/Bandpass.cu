@@ -8,6 +8,8 @@
 
 namespace gtom
 {
+	__global__ void BandpassNonCubicKernel(tcomplex* d_inputft, tcomplex* d_outputft, int3 dims, tfloat nyquistlow, tfloat nyquisthigh);
+
 	///////////////////////////////////////////
 	//Equivalent of TOM's tom_bandpass method//
 	///////////////////////////////////////////
@@ -76,5 +78,47 @@ namespace gtom
 
 		if (d_mask == NULL)
 			cudaFree(d_localmask);
+	}
+
+	void d_BandpassNonCubic(tfloat* d_input, tfloat* d_output, int3 dims, tfloat nyquistlow, tfloat nyquisthigh, uint batch)
+	{
+		tcomplex* d_inputft;
+		cudaMalloc((void**)&d_inputft, ElementsFFT(dims) * sizeof(tcomplex));
+		d_FFTR2C(d_input, d_inputft, DimensionCount(dims), dims, batch);
+
+		dim3 grid = dim3(dims.y, dims.z, batch);
+		BandpassNonCubicKernel <<<grid, 128>>> (d_inputft, d_inputft, dims, nyquistlow, nyquisthigh);
+
+		d_IFFTC2R(d_inputft, d_output, DimensionCount(dims), dims, batch);
+		cudaFree(d_inputft);
+	}
+
+	__global__ void BandpassNonCubicKernel(tcomplex* d_inputft, tcomplex* d_outputft, int3 dims, tfloat nyquistlow, tfloat nyquisthigh)
+	{
+		int y = blockIdx.x;
+		int z = blockIdx.y;
+
+		d_inputft += ElementsFFT(dims) * blockIdx.z + (z * dims.y + y) * (dims.x / 2 + 1);
+		d_outputft += ElementsFFT(dims) * blockIdx.z + (z * dims.y + y) * (dims.x / 2 + 1);
+
+		float yy = y >= dims.y / 2 + 1 ? y - dims.y : y;
+		yy /= dims.y / 2.0f;
+		yy *= yy;
+		float zz = z >= dims.z / 2 + 1 ? z - dims.z : z;
+		zz /= dims.z / 2.0f;
+		zz *= zz;
+
+		for (int x = threadIdx.x; x < dims.x / 2 + 1; x += blockDim.x)
+		{
+			float xx = x;
+			xx /= dims.x / 2.0f;
+			xx *= xx;
+
+			float r = sqrt(xx + yy + zz);
+			if (r >= nyquistlow && r < nyquisthigh)
+				d_outputft[x] = d_inputft[x];
+			else
+				d_outputft[x] = make_cuComplex(0, 0);
+		}
 	}
 }

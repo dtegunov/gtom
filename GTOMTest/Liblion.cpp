@@ -1,5 +1,6 @@
 #include "Prerequisites.h"
 #include "liblion.h"
+//#include <vld.h>
 
 TEST(Relion, Liblion)
 {
@@ -17,8 +18,8 @@ TEST(Relion, Liblion)
 
 	//Case 2:
 	{
-#pragma omp parallel for
-		for (int i = 0; i < 10; i++)
+//#pragma omp parallel for
+		for (int i = 0; i < 1; i++)
 		{
 			relion::BackProjector backprojector(160, 3, "C1");
 			backprojector.initZeros(160);

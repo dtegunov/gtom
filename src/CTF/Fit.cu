@@ -465,7 +465,7 @@ namespace gtom
 			float pixelsize = params.pixelsize + params.pixeldelta * __cosf(2.0f * (simcoords.y - params.pixelangle));
 			simcoords.x /= pixelsize;
 
-			float val = d_GetCTF<true>(simcoords.x, simcoords.y, params);
+			float val = d_GetCTF<true, false>(simcoords.x, simcoords.y, params);
 			d_sim[i] = __float2half(val);
 			sum1 += val;
 			sum2 += val * val;

@@ -141,7 +141,6 @@
     <CudaCompile Include="src\Relion\StoreWeights.cu" />
     <CudaCompile Include="src\Resolution\AnisotropicFSC.cu" />
     <CudaCompile Include="src\Resolution\FSC.cu" />
-    <CudaCompile Include="src\Resolution\LocalAnisotropicFSC.cu" />
     <CudaCompile Include="src\Resolution\LocalFSC.cu" />
     <CudaCompile Include="src\Resolution\LocalFSCBFac.cu" />
     <CudaCompile Include="src\Transformation\FitMagAnisotropy.cu" />

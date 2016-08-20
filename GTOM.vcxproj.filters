@@ -319,9 +319,6 @@
     <CudaCompile Include="src\Reconstruction\RecFourier.cu">
       <Filter>Reconstruction</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\Resolution\LocalAnisotropicFSC.cu">
-      <Filter>Resolution</Filter>
-    </CudaCompile>
     <CudaCompile Include="src\Reconstruction\RecFourierAdd.cu">
       <Filter>Reconstruction</Filter>
     </CudaCompile>

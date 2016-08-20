@@ -5,7 +5,7 @@ TEST(ImageManipulation, Bandpass)
 	cudaDeviceReset();
 
 	//Case 1:
-	{
+	/*{
 		int3 dims = {256, 1, 1};
 		tfloat* d_input = (tfloat*)CudaMallocFromBinaryFile("Data\\ImageManipulation\\Input_Bandpass_1.bin");
 		tfloat* desired_output = (tfloat*)MallocFromBinaryFile("Data\\ImageManipulation\\Output_Bandpass_1.bin");
@@ -66,6 +66,19 @@ TEST(ImageManipulation, Bandpass)
 		cudaFree(d_input);
 		free(desired_output);
 		free(h_output);
+	}*/
+
+	//Case 5:
+	{
+		int3 dims = toInt3(959, 927, 300);
+		tfloat* h_input = MallocValueFilled(Elements(dims), 0.0f);
+		h_input[0] = 1.0f;
+		tfloat* d_input = (tfloat*)CudaMallocFromHostArray(h_input, Elements(dims) * sizeof(tfloat));
+		//d_RemapFullFFT2Full(d_input, d_input, dims);
+
+		d_BandpassNonCubic(d_input, d_input, dims, 0, 0.1f);
+
+		d_WriteMRC(d_input, dims, "d_bandpassnoncubic.mrc");
 	}
 
 	cudaDeviceReset();

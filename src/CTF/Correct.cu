@@ -66,7 +66,7 @@ namespace gtom
 			angle = 0.0;
 		}
 
-		double amplitude = d_GetCTF<false>(k, angle, p);
+		double amplitude = d_GetCTF<false, false>(k, angle, p);
 
 		if (ndims == 2)
 		{

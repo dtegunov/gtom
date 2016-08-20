@@ -185,14 +185,18 @@ namespace gtom
 		}
 	};
 
-	template<bool ampsquared> __device__ tfloat d_GetCTF(tfloat r, tfloat angle, CTFParamsLean p)
+	template<bool ampsquared, bool ignorefirstpeak> __device__ tfloat d_GetCTF(tfloat r, tfloat angle, CTFParamsLean p)
 	{
 		tfloat r2 = r * r;
 		tfloat r4 = r2 * r2;
 				
 		tfloat deltaf = p.defocus + p.defocusdelta * __cosf((tfloat)2 * (angle - p.astigmatismangle));
 		tfloat argument = p.K1 * deltaf * r2 + p.K2 * r4 - p.phaseshift;
-		tfloat retval = -(p.K3 * __sinf(argument) - p.amplitude * __cosf(argument));
+		tfloat retval;
+		if (ignorefirstpeak && abs(argument) < PI / 2)
+			retval = 1;
+		else
+			retval = -(p.K3 * __sinf(argument) - p.amplitude * __cosf(argument));
 
 		// NOTE: BFACTOR INCLUDED!
 		if (p.K4 != 0)
@@ -275,8 +279,8 @@ namespace gtom
 													int batch);
 
 	//Simulate.cu:
-	void d_CTFSimulate(CTFParams* h_params, float2* d_addresses, tfloat* d_output, uint n, bool amplitudesquared = false, int batch = 1);
-	void d_CTFSimulate(CTFParams* h_params, half2* d_addresses, half* d_output, uint n, bool amplitudesquared = false, int batch = 1);
+	void d_CTFSimulate(CTFParams* h_params, float2* d_addresses, tfloat* d_output, uint n, bool amplitudesquared = false, bool ignorefirstpeak = false, int batch = 1);
+	void d_CTFSimulate(CTFParams* h_params, half2* d_addresses, half* d_output, uint n, bool amplitudesquared = false, bool ignorefirstpeak = false, int batch = 1);
 
 	//TiltCorrect.cu:
 	void d_CTFTiltCorrect(tfloat* d_image, int2 dimsimage, CTFTiltParams tiltparams, tfloat snr, tfloat* d_output);
