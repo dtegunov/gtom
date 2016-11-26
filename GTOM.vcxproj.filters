@@ -484,6 +484,9 @@
     <CudaCompile Include="src\Generics\LocalStd.cu">
       <Filter>Generics</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\Correlation\SubTomograms.cu">
+      <Filter>Correlation</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\IO\em.cpp">

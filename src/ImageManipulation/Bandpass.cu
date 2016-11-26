@@ -83,11 +83,11 @@ namespace gtom
 	void d_BandpassNonCubic(tfloat* d_input, tfloat* d_output, int3 dims, tfloat nyquistlow, tfloat nyquisthigh, uint batch)
 	{
 		tcomplex* d_inputft;
-		cudaMalloc((void**)&d_inputft, ElementsFFT(dims) * sizeof(tcomplex));
+		cudaMalloc((void**)&d_inputft, ElementsFFT(dims) * batch * sizeof(tcomplex));
 		d_FFTR2C(d_input, d_inputft, DimensionCount(dims), dims, batch);
 
 		dim3 grid = dim3(dims.y, dims.z, batch);
-		BandpassNonCubicKernel <<<grid, 128>>> (d_inputft, d_inputft, dims, nyquistlow, nyquisthigh);
+		BandpassNonCubicKernel <<<grid, 128>>> (d_inputft, d_inputft, dims, nyquistlow * nyquistlow, nyquisthigh * nyquisthigh);
 
 		d_IFFTC2R(d_inputft, d_output, DimensionCount(dims), dims, batch);
 		cudaFree(d_inputft);
@@ -114,7 +114,7 @@ namespace gtom
 			xx /= dims.x / 2.0f;
 			xx *= xx;
 
-			float r = sqrt(xx + yy + zz);
+			float r = xx + yy + zz;
 			if (r >= nyquistlow && r < nyquisthigh)
 				d_outputft[x] = d_inputft[x];
 			else

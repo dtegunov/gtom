@@ -55,6 +55,7 @@
     <CudaCompile Include="src\Correlation\LocalPeaks.cu" />
     <CudaCompile Include="src\Correlation\Peak.cu" />
     <CudaCompile Include="src\Correlation\ProbabilisticPicker.cu" />
+    <CudaCompile Include="src\Correlation\SubTomograms.cu" />
     <CudaCompile Include="src\Correlation\TomoPicker.cu" />
     <CudaCompile Include="src\CTF\AliasingCutoff.cu" />
     <CudaCompile Include="src\CTF\CommonPSF.cu" />
@@ -241,6 +242,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <GenerateLineInfo>true</GenerateLineInfo>
       <GPUDebugInfo>false</GPUDebugInfo>
       <HostDebugInfo>false</HostDebugInfo>
+      <AdditionalOptions>--default-stream per-thread %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">

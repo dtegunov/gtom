@@ -5,7 +5,7 @@ TEST(Reconstruction, Fourier)
 	cudaDeviceReset();
 
 	//Case 1:
-	{
+	/*{
 		int3 dimsvolume = {16, 16, 16};
 		int3 dimsimage = {16, 16, 2249};
 
@@ -31,6 +31,29 @@ TEST(Reconstruction, Fourier)
 		cudaFree(d_inputproj);
 		free(desired_output);
 		free(h_output);
+	}*/
+
+	//Case 2:
+	{
+		int3 dimsori = toInt3(128, 128, 128);
+		int3 dimspadded = toInt3(259, 259, 259);
+
+		tfloat* h_weights = (tfloat*)malloc(ElementsFFT(dimspadded) * sizeof(tfloat));
+		ReadMRC("d_weights.mrc", (void**)&h_weights);
+		tfloat* d_weights = (tfloat*)CudaMallocFromHostArray(h_weights, ElementsFFT(dimspadded) * sizeof(tfloat));
+
+		tcomplex* h_data = (tcomplex*)malloc(ElementsFFT(dimspadded) * sizeof(tcomplex));
+		ReadMRC("d_dataRe.mrc", (void**)&h_weights);
+		for (int i = 0; i < ElementsFFT(dimspadded); i++)
+			h_data[i].x = h_weights[i];
+		ReadMRC("d_dataIm.mrc", (void**)&h_weights);
+		for (int i = 0; i < ElementsFFT(dimspadded); i++)
+			h_data[i].y = h_weights[i];
+		tcomplex* d_data = (tcomplex*)CudaMallocFromHostArray(h_data, ElementsFFT(dimspadded) * sizeof(tcomplex));
+
+		tfloat* d_reconstructed = CudaMallocValueFilled(Elements(dimsori), (tfloat)0);
+
+		d_ReconstructGridding(d_data, d_weights, d_reconstructed, dimsori, dimspadded);
 	}
 
 	cudaDeviceReset();

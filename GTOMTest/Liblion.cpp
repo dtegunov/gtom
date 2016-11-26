@@ -7,14 +7,15 @@ TEST(Relion, Liblion)
 	cudaDeviceReset();
 
 	//Case 1:
-	/*{
+	{
 		relion::HealpixSampling sampling;
 		sampling.setTranslations(1, 0);
 		sampling.setOrientations(3);
 		sampling.psi_step = -1;
 		sampling.limit_tilt = -91;
+		sampling.fn_sym = "D4";
 		sampling.initialise(NOPRIOR, 3);
-	}*/
+	}
 
 	//Case 2:
 	{

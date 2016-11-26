@@ -18,6 +18,7 @@ namespace gtom
 
 	//SphereMask.cu:
 	template <class T> void d_SphereMask(T* d_input, T* d_output, int3 size, tfloat* radius, tfloat sigma, tfloat3* center, int batch = 1);
+	void d_SphereMaskFT(tfloat* d_input, tfloat* d_output, int3 dims, int radius, uint batch = 1);
 
 	//RectangleMask.cu:
 	template <class T> void d_RectangleMask(T* d_input, T* d_output, int3 dimsmask, int3 dimsbox, int3* center, int batch = 1);

@@ -13,7 +13,7 @@ namespace gtom
 	//RecFourier.cu:
 	void d_ReconstructFourier(tcomplex* d_imagesft, tfloat* d_imagespsf, tcomplex* d_volumeft, tfloat* d_volumepsf, int3 dims, tfloat3* h_angles, tfloat2* h_shifts, int nimages, bool performgridding, bool everythingcentered);
 	void d_ReconstructFourierPrecise(tfloat* d_images, tfloat* d_imagespsf, tfloat* d_volume, tfloat* d_volumepsf, int3 dims, tfloat3* h_angles, tfloat2* h_shifts, int nimages, bool dogridding);
-	void d_ReconstructionFourierCorrection(tfloat* d_weight, tfloat* d_newweight, int3 dims, int paddingfactor);
+	void d_ReconstructGridding(tcomplex* d_dataft, tfloat* d_weight, tfloat* d_reconstructed, int3 dimsori, int3 dimspadded, int paddingfactor = 2, cufftHandle pre_planforw = NULL, cufftHandle pre_planback = NULL, int iterations = 10, double blobradius = 1.9, int bloborder = 0, double blobalpha = 15);
 	void d_ReconstructFourierAdd(tcomplex* d_volumeft, tfloat* d_volumepsf, int3 dims, tcomplex* d_imagesft, tfloat* d_imagespsf, tfloat3* h_angles, tfloat2* h_shifts, int nimages);
 	void d_ReconstructFourierPreciseAdd(tcomplex* d_volumeft, tfloat* d_samples, int3 dims, tfloat* d_images, tfloat* d_imagespsf, tfloat3* h_angles, tfloat2* h_shifts, int nimages, T_INTERP_MODE mode, bool outputzerocentered = true, bool finalize = false);
 	void d_ReconstructFourierSincAdd(tcomplex* d_volumeft, tfloat* d_samples, int3 dims, tcomplex* d_imagesft, tfloat* d_imagespsf, tfloat3* h_angles, tfloat2* h_shifts, int nimages, bool outputzerocentered, bool finalize);

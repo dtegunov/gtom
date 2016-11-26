@@ -417,8 +417,8 @@ namespace gtom
 					bfacaniso = finalbfac[0];
 				}
 
-				//bfacaniso = -200;
-				finalresaniso = tmin(sidelength / 3.5f * angpix, tmax(finalresaniso, sidelength / 100.0f * angpix));
+				bfacaniso = -450;
+				//finalresaniso = tmin(sidelength / 3.5f * angpix, tmax(finalresaniso, sidelength / 100.0f * angpix));
 
 				tfloat fscweight = 1 - tmax(0, tmin(1, radius - finalresaniso));
 				val *= fscweight;

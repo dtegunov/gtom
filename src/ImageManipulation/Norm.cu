@@ -103,7 +103,7 @@ namespace gtom
 			for (int b = 0; b < batch; b += 32768)
 			{
 				dim3 grid = dim3(tmin(batch - b, 32768));
-				NormMeanStdDevMonoMaskedKernel<false> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, NULL, d_mask + elements * b, elements);
+				NormMeanStdDevMonoMaskedKernel<false> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, NULL, d_mask, elements);
 			}
 		else
 			d_NormMonolithic(d_input, d_output, elements, mode, batch);
@@ -115,7 +115,7 @@ namespace gtom
 			for (int b = 0; b < batch; b += 32768)
 			{
 				dim3 grid = dim3(tmin(batch - b, 32768));
-				NormMeanStdDevMonoMaskedKernel<true> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, d_mu + b, d_mask + elements * b, elements);
+				NormMeanStdDevMonoMaskedKernel<true> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, d_mu + b, d_mask, elements);
 			}
 		else
 			d_NormMonolithic(d_input, d_output, d_mu, elements, mode, batch);
@@ -281,7 +281,6 @@ namespace gtom
 
 		d_input += elements * blockIdx.x;
 		d_output += elements * blockIdx.x;
-		d_mask += elements * blockIdx.x;
 
 		double sum1 = 0.0, sum2 = 0.0, samples = 0.0;
 
@@ -289,9 +288,8 @@ namespace gtom
 		{
 			double val = d_input[i];
 			double mask = d_mask[i];
-			val *= mask;
-			sum1 += val;
-			sum2 += val * val;
+			sum1 += val * mask;
+			sum2 += val * val * mask;
 			samples += mask;
 		}
 		s_sums1[threadIdx.x] = sum1;
@@ -381,30 +379,30 @@ namespace gtom
 		__shared__ tfloat s_mean, s_stddev;
 
 		uint elements = Elements(dims);
-		uint elementsslice = Elements2(dims);
 
 		d_input += elements * blockIdx.x;
 		d_output += elements * blockIdx.x;
 
 		tfloat sum1 = 0.0, sum2 = 0.0;
 		uint samples = 0;
-		int center = dims.x / 2;
 		
-		for (int y = 0; y < dims.y; y++)
-			for (int x = threadIdx.x; x < dims.x; x += blockDim.x)
-			{
-				int yy = y - center;
-				int xx = x - center;
+		for (int z = 0; z < dims.z; z++)
+			for (int y = 0; y < dims.y; y++)
+				for (int x = threadIdx.x; x < dims.x; x += blockDim.x)
+				{
+					int zz = y - dims.z / 2;
+					int yy = y - dims.y / 2;
+					int xx = x - dims.x / 2;
 
-				uint r = yy * yy + xx * xx;
-				if (r <= particleradius2)
-					continue;
+					uint r = zz * zz + yy * yy + xx * xx;
+					if (r <= particleradius2)
+						continue;
 
-				tfloat val = d_input[y * dims.x + x];
-				sum1 += val;
-				sum2 += val * val;
-				samples++;
-			}
+					tfloat val = d_input[(z * dims.y + y) * dims.x + x];
+					sum1 += val;
+					sum2 += val * val;
+					samples++;
+				}
 		s_sums1[threadIdx.x] = sum1;
 		s_sums2[threadIdx.x] = sum2;
 		s_samples[threadIdx.x] = samples;

@@ -92,7 +92,7 @@ namespace gtom
 	{
 		tfloat* d_temp;
 		if (mode == T_INTERP_CUBIC)
-			cudaMalloc((void**)&d_temp, Elements2(dims) * sizeof(tfloat));
+			cudaMalloc((void**)&d_temp, Elements2(dims) * batch * sizeof(tfloat));
 
 		cudaArray_t* a_input = (cudaArray_t*)malloc(batch * sizeof(cudaArray_t));
 		cudaTex* t_input = (cudaTex*)malloc(batch * sizeof(cudaTex));
@@ -129,7 +129,7 @@ namespace gtom
 		free(h_transforms);
 
 		dim3 TpB = dim3(16, 16);
-		dim3 grid = dim3((dims.x + 15) / 16, (dims.y + 15) / 16, 1);
+		dim3 grid = dim3((dims.x + 15) / 16, (dims.y + 15) / 16, batch);
 
 		if (isoutputzerocentered)
 		{
@@ -376,7 +376,7 @@ namespace gtom
 	template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate2DKernel(cudaTex* t_input, tfloat* d_output, int2 dims, glm::mat2* d_transforms)
 	{
 		uint idx = blockIdx.x * blockDim.x + threadIdx.x;
-		if (idx > dims.x)
+		if (idx >= dims.x)
 			return;
 		uint idy = blockIdx.y * blockDim.y + threadIdx.y;
 		if (idy >= dims.y)

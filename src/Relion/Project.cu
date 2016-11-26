@@ -127,14 +127,18 @@ namespace gtom
 		{
 			int curbatch = tmin(128, batch - b);
 
-			if (ndimsproj == 2)
 			{
 				cudaMemcpyToSymbol(c_matrices, d_matrices + b, curbatch * sizeof(glm::mat3), 0, cudaMemcpyDeviceToDevice);
 
-				dim3 grid = dim3(curbatch, 1, 1);
 				uint elements = ElementsFFT(dimsproj);
+				dim3 grid = dim3(tmin(64, (elements + 127) / 128), curbatch, 1);
 
-				Project3DArraytoNDKernel<2, 128> << <grid, 128 >> > (d_volumeft, dimsvolume.x, d_proj + ElementsFFT(dimsproj) * b, dimsproj.x, elements, rmax, rmax * rmax);
+				if (ndimsproj == 2)
+					Project3DArraytoNDKernel<2, 128> << <grid, 128 >> > (d_volumeft, dimsvolume.x, d_proj + ElementsFFT(dimsproj) * b, dimsproj.x, elements, rmax, rmax * rmax);
+				else if (ndimsproj == 3)
+					Project3DArraytoNDKernel<3, 128> << <grid, 128 >> > (d_volumeft, dimsvolume.x, d_proj + ElementsFFT(dimsproj) * b, dimsproj.x, elements, rmax, rmax * rmax);
+				else
+					throw;
 			}
 		}
 	}
@@ -307,7 +311,7 @@ namespace gtom
 
 	template<uint ndims, uint TpB> __global__ void Project3DArraytoNDKernel(tcomplex* d_volume, uint dimvolume, tcomplex* d_proj, uint dimproj, size_t elementsproj, uint rmax, int rmax2)
 	{
-		d_proj += elementsproj * blockIdx.x;
+		d_proj += elementsproj * blockIdx.y;
 
 		int x0, x1, y0, y1, z0, z1;
 		tcomplex d000, d010, d100, d110, d001, d011, d101, d111, dx00, dx10, dxy0, dx01, dx11, dxy1;
@@ -315,7 +319,7 @@ namespace gtom
 		uint slice = ElementsFFT1(dimproj) * dimproj;
 		uint dimft = ElementsFFT1(dimproj);
 
-		for (uint id = threadIdx.x; id < elementsproj; id += TpB)
+		for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < elementsproj; id += gridDim.x * TpB)
 		{
 			uint idx = id % dimft;
 			uint idy = (ndims == 3 ? id % slice : id) / dimft;
@@ -347,9 +351,9 @@ namespace gtom
 			}*/
 
 			{
-				glm::vec3 pos1 = glm::vec3(c_matrices[blockIdx.x * 9 + 0] * pos.x + c_matrices[blockIdx.x * 9 + 3] * pos.y + c_matrices[blockIdx.x * 9 + 6] * pos.z,
-										   c_matrices[blockIdx.x * 9 + 1] * pos.x + c_matrices[blockIdx.x * 9 + 4] * pos.y + c_matrices[blockIdx.x * 9 + 7] * pos.z,
-										   c_matrices[blockIdx.x * 9 + 2] * pos.x + c_matrices[blockIdx.x * 9 + 5] * pos.y + c_matrices[blockIdx.x * 9 + 8] * pos.z);
+				glm::vec3 pos1 = glm::vec3(c_matrices[blockIdx.y * 9 + 0] * pos.x + c_matrices[blockIdx.y * 9 + 3] * pos.y + c_matrices[blockIdx.y * 9 + 6] * pos.z,
+										   c_matrices[blockIdx.y * 9 + 1] * pos.x + c_matrices[blockIdx.y * 9 + 4] * pos.y + c_matrices[blockIdx.y * 9 + 7] * pos.z,
+										   c_matrices[blockIdx.y * 9 + 2] * pos.x + c_matrices[blockIdx.y * 9 + 5] * pos.y + c_matrices[blockIdx.y * 9 + 8] * pos.z);
 
 				// Only asymmetric half is stored
 				float is_neg_x = 1.0f;

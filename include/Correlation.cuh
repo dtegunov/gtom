@@ -86,6 +86,23 @@ namespace gtom
 	void d_SimilarityMatrixRow(tfloat* d_images, tcomplex* d_imagesft, int2 dimsimage, int nimages, int anglesteps, int target, tfloat* d_similarity);
 	void d_LineSimilarityMatrixRow(tcomplex* d_linesft, int2 dimsimage, int nimages, int linewidth, int anglesteps, int target, tfloat* d_similarity);
 
+	// SubTomograms.cu:
+
+	void d_PickSubTomograms(tcomplex* d_projectordata,
+							tfloat projectoroversample,
+							int3 dimsprojector,
+							tcomplex* d_experimentalft,
+							tfloat* d_ctf,
+							int3 dimsvolume,
+							uint nvolumes,
+							tfloat3* h_angles,
+							uint nangles,
+							tfloat maskradius,
+							tfloat* d_bestcorrelation,
+							tfloat* d_bestrot,
+							tfloat* d_besttilt,
+							tfloat* d_bestpsi);
+
 	//Picker.cu:
 
 	struct Peak

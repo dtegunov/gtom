@@ -15,10 +15,12 @@ namespace gtom
 	//CUDA kernel declarations//
 	////////////////////////////
 
-	__global__ void PrecomputeBlobKernel(tfloat* d_precompblob, uint dim, tfloat* d_funcvals, tfloat funcsampling, int funcelements, tfloat normftblob);
-	__global__ void SoftMaskKernel(tfloat* d_input, uint dim, uint dimft, uint n);
+	__global__ void PrecomputeBlobKernel(tfloat* d_precompblob, int paddim, int oripadded, tfloat* d_funcvals, tfloat funcsampling, int funcelements);
+	template<class T> __global__ void DecenterKernel(T* d_input, T* d_output, int3 newdims, int3 olddims);
+	__global__ void Iteration1Kernel(tcomplex* d_convft, tfloat* d_Fweight, tfloat* d_Fnewweight, uint elements);
+	__global__ void Iteration2Kernel(tcomplex* d_convft, tfloat* d_Fnewweight, uint elements);
 	__global__ void UpdateWeightKernel(tcomplex* d_conv, tfloat* d_weight, tfloat* d_newweight, uint n);
-	__global__ void CorrectGriddingKernel(tfloat* d_volume, uint dim);
+	__global__ void CorrectGriddingKernel(tfloat* d_volume, int dim, int oripadded);
 
 
 	//////////////////////////////////////////////////////
@@ -60,21 +62,19 @@ namespace gtom
 
 	void d_ReconstructFourierPrecise(tfloat* d_images, tfloat* d_imagespsf, tfloat* d_volume, tfloat* d_volumepsf, int3 dims, tfloat3* h_angles, tfloat2* h_shifts, int nimages, bool dogridding)
 	{
-		tcomplex* d_volumeft = (tcomplex*)CudaMallocValueFilled(ElementsFFT(dims) * 2, (tfloat)0);
+		/*tcomplex* d_volumeft = (tcomplex*)CudaMallocValueFilled(ElementsFFT(dims) * 2, (tfloat)0);
 
 		d_ReconstructFourierPreciseAdd(d_volumeft, d_volumepsf, dims, d_images, d_imagespsf, h_angles, h_shifts, nimages, T_INTERP_SINC, false, !dogridding);
 
 		if (dogridding)
 		{
 			tfloat* d_newweight = CudaMallocValueFilled(Elements(dims), (tfloat)1);
-			int TpB = min(192, NextMultipleOf(ElementsFFT(dims), 32));
+			int TpB = tmin(192, NextMultipleOf(ElementsFFT(dims), 32));
 			dim3 grid = dim3((ElementsFFT(dims) + TpB - 1) / TpB);
 			SoftMaskKernel << <grid, TpB >> > (d_newweight, dims.x, dims.x / 2 + 1, ElementsFFT(dims));
-			/*d_SphereMask(d_newweight, d_newweight, dims, NULL, 0, NULL);
-			d_RemapFull2HalfFFT(d_newweight, d_newweight, dims);*/
 
 			d_ReconstructionFourierCorrection(d_volumepsf, d_newweight, dims, 2);
-			CudaWriteToBinaryFile("d_newweight.bin", d_newweight, ElementsFFT(dims) * sizeof(tfloat));
+			d_WriteMRC(d_newweight, toInt3FFT(dims), "d_newweight.mrc");
 
 			d_ComplexMultiplyByVector(d_volumeft, d_newweight, d_volumeft, ElementsFFT(dims));
 			cudaFree(d_newweight);
@@ -91,150 +91,197 @@ namespace gtom
 			CorrectGriddingKernel << <grid, TpB >> > (d_volume, dims.x);
 		}
 
-		cudaFree(d_volumeft);
+		cudaFree(d_volumeft);*/
 	}
 
-	void d_ReconstructionFourierCorrection(tfloat* d_weight, tfloat* d_newweight, int3 dims, int paddingfactor)
+	void d_ReconstructGridding(tcomplex* d_dataft, tfloat* d_weight, tfloat* d_reconstructed, int3 dimsori, int3 dimspadded, int paddingfactor, cufftHandle pre_planforw, cufftHandle pre_planback, int iterations, double blobradius, int bloborder, double blobalpha)
 	{
-		tfloat* d_zeroIm;
-		cudaMalloc((void**)&d_zeroIm, ElementsFFT(dims) * sizeof(tfloat));
-		tcomplex* d_conv;
-		cudaMalloc((void**)&d_conv, ElementsFFT(dims) * sizeof(tcomplex));
-
-		tfloat* d_buffer;
-		cudaMalloc((void**)&d_buffer, ElementsFFT(dims) * sizeof(tfloat));
+		int3 dimsoripad = dimsori * paddingfactor;
 
 		// Precalc blob values
 		tfloat* d_precompblob;
 		{
-			double radius = 1.9 * (double)paddingfactor;
-			double alpha = 15.0;
-			int order = 0;
+			double radius = blobradius * paddingfactor;
+			double alpha = blobalpha;
+			int order = bloborder;
 			int elements = 10000;
-			double sampling = 0.5 / (double)elements;
+			double sampling = 0.5 / elements;
 			tfloat* h_blobvalues = (tfloat*)malloc(elements * sizeof(tfloat));
 			for (int i = 0; i < elements; i++)
-				h_blobvalues[i] = kaiser_Fourier_value((double)i * sampling, radius, alpha, order);
+				h_blobvalues[i] = kaiser_Fourier_value(i * sampling, radius, alpha, order);
+			float blobnorm = h_blobvalues[0];
+			for (int i = 0; i < elements; i++)
+				h_blobvalues[i] /= blobnorm;
 			tfloat* d_blobvalues = (tfloat*)CudaMallocFromHostArray(h_blobvalues, elements * sizeof(tfloat));
 
-			cudaMalloc((void**)&d_precompblob, Elements(dims) * sizeof(tfloat));
-			int TpB = min(192, NextMultipleOf(Elements(dims), 32));
-			dim3 grid = (Elements(dims) + TpB - 1) / TpB;
-			PrecomputeBlobKernel << <grid, TpB >> > (d_precompblob, dims.x, d_blobvalues, (tfloat)sampling, elements, h_blobvalues[0]);
+			cudaMalloc((void**)&d_precompblob, Elements(dimsoripad) * sizeof(tfloat));
+			int TpB = tmin(128, NextMultipleOf(dimsoripad.x, 32));
+			dim3 grid = dim3(dimsoripad.y, dimsoripad.z);
+			PrecomputeBlobKernel << <grid, TpB >> > (d_precompblob, dimsoripad.x, dimsoripad.x, d_blobvalues, (tfloat)sampling, elements);
+
+			//d_WriteMRC(d_blobvalues, toInt3(elements, 1, 1), "d_blobvalues.mrc");
+			//d_WriteMRC(d_precompblob, dimsoripad, "d_precompblob.mrc");
 
 			cudaFree(d_blobvalues);
 			free(h_blobvalues);
 		}
 
-		for (int i = 0; i < 10; i++)
+		int r_max = dimsori.x / 2;
+		int max_r2 = r_max * r_max * paddingfactor * paddingfactor;
+
+		tcomplex* d_convft;
+		cudaMalloc((void**)&d_convft, ElementsFFT(dimsoripad) * sizeof(tcomplex));
+		tfloat* d_conv;
+		cudaMalloc((void**)&d_conv, Elements(dimsoripad) * sizeof(tfloat));
+
+		tfloat* d_Fweight;
+		cudaMalloc((void**)&d_Fweight, ElementsFFT(dimsoripad) * sizeof(tfloat));
 		{
-			d_ValueFill(d_zeroIm, ElementsFFT(dims), (tfloat)0);
-
-			d_MultiplyByVector(d_newweight, d_weight, d_buffer, ElementsFFT(dims));
-			d_ConvertSplitComplexToTComplex(d_buffer, d_zeroIm, d_conv, ElementsFFT(dims));
-
-			d_IFFTC2R(d_conv, (tfloat*)d_conv, 3, dims);
-
-			d_MultiplyByVector((tfloat*)d_conv, d_precompblob, (tfloat*)d_conv, Elements(dims));
-
-			d_FFTR2C((tfloat*)d_conv, d_conv, 3, dims);
-
-			int TpB = min(192, NextMultipleOf(ElementsFFT(dims), 32));
-			dim3 grid = dim3((ElementsFFT(dims) + TpB - 1) / TpB);
-			UpdateWeightKernel << <grid, TpB >> > (d_conv, d_weight, d_newweight, ElementsFFT(dims));
+			int TpB = tmin(128, NextMultipleOf(dimsoripad.x, 32));
+			dim3 grid = dim3(dimsoripad.y, dimsoripad.z);
+			DecenterKernel<tfloat> <<<grid, TpB>>> (d_weight, d_Fweight, dimsori * paddingfactor, dimspadded);
 		}
+		//d_WriteMRC(d_Fweight, toInt3FFT(dimsoripad), "d_Fweight.mrc");
 
-		cudaFree(d_zeroIm);
-		cudaFree(d_conv);
-		cudaFree(d_buffer);
+		// Fnewweight is initialized to 1 within r_max
+		tfloat* d_Fnewweight = CudaMallocValueFilled(ElementsFFT(dimsoripad), (tfloat)1);
+		d_SphereMaskFT(d_Fnewweight, d_Fnewweight, dimsoripad, r_max * paddingfactor);
+		//d_WriteMRC(d_Fnewweight, toInt3FFT(dimsoripad), "d_Fnewweight.mrc");
+
+		cufftHandle planforw = pre_planforw, planback = pre_planback;
+		if (pre_planforw <= NULL)
+			planforw = d_FFTR2CGetPlan(3, dimsoripad);
+		if (pre_planback <= NULL)
+			planback = d_IFFTC2RGetPlan(3, dimsoripad);
+
+		for (int i = 0; i < iterations; i++)
+		{
+			int TpB = 128;
+			dim3 grid = dim3((ElementsFFT(dimsoripad) + TpB - 1) / TpB, 1, 1);
+			Iteration1Kernel << <grid, TpB >> > (d_convft, d_Fweight, d_Fnewweight, ElementsFFT(dimsoripad));
+
+			// Convolute with blob in real space
+			d_IFFTC2R(d_convft, d_conv, &planback, dimsoripad);
+			d_MultiplyByVector(d_conv, d_precompblob, d_conv, Elements(dimsoripad));
+			d_FFTR2C(d_conv, d_convft, &planforw);
+
+			Iteration2Kernel << <grid, TpB >> > (d_convft, d_Fnewweight, ElementsFFT(dimsoripad));
+
+		}
+		//d_MinOp(d_Fnewweight, 1e20f, d_Fnewweight, ElementsFFT(dimsoripad));
+		//d_WriteMRC(d_Fnewweight, toInt3FFT(dimsoripad), "d_Fnewweight.mrc");
+
+		{
+			int TpB = tmin(128, NextMultipleOf(dimsoripad.x, 32));
+			dim3 grid = dim3(dimsoripad.y, dimsoripad.z);
+			DecenterKernel<tcomplex> << <grid, TpB >> > (d_dataft, d_convft, dimsori * paddingfactor, dimspadded);
+		}
+		d_ComplexMultiplyByVector(d_convft, d_Fnewweight, d_convft, ElementsFFT(dimsoripad));
+
+		cudaFree(d_Fweight);
+		cudaFree(d_Fnewweight);
 		cudaFree(d_precompblob);
+
+		d_IFFTC2R(d_convft, d_conv, &planback, dimsoripad);
+		//d_WriteMRC(d_conv, dimsori * paddingfactor, "d_reconstructed.mrc");
+		d_FFTFullCrop(d_conv, d_reconstructed, dimsoripad, dimsori);
+		d_RemapFullFFT2Full(d_reconstructed, d_reconstructed, dimsori);
+
+		if (pre_planforw <= NULL)
+			cufftDestroy(planforw);
+		if (pre_planback <= NULL)
+			cufftDestroy(planback);
+
+		tfloat rf = r_max - 1;
+		//d_SphereMask(d_reconstructed, d_reconstructed, dimsori, &rf, 3.0f, NULL);
+		
+		{
+			int TpB = tmin(128, NextMultipleOf(dimsori.x, 32));
+			dim3 grid = dim3(dimsori.y, dimsori.z);
+			CorrectGriddingKernel <<<grid, TpB>>> (d_reconstructed, dimsori.x, dimsori.x * paddingfactor);
+		}
+		//d_DivideByScalar(d_reconstructed, d_reconstructed, Elements(dimsori), (tfloat)paddingfactor * paddingfactor * paddingfactor);
+		//d_WriteMRC(d_reconstructed, dimsori, "d_reconstructed.mrc");
+
+		cudaFree(d_conv);
+		cudaFree(d_convft);
 	}
 
-	__global__ void PrecomputeBlobKernel(tfloat* d_precompblob, uint dim, tfloat* d_funcvals, tfloat funcsampling, int funcelements, tfloat normftblob)
+	__global__ void PrecomputeBlobKernel(tfloat* d_precompblob, int paddim, int oripadded, tfloat* d_funcvals, tfloat funcsampling, int funcelements)
 	{
-		uint id = blockIdx.x * blockDim.x + threadIdx.x;
-		if (id >= dim * dim * dim)
-			return;
+		int z = blockIdx.y;
+		int y = blockIdx.x;
 
-		uint idx = id % dim;
-		uint idy = (id / dim) % dim;
-		uint idz = id / (dim * dim);
+		d_precompblob += (z * paddim + y) * paddim;
 
-		int x = (idx + dim / 2) % dim;
-		x -= (int)(dim / 2);
-		int y = (idy + dim / 2) % dim;
-		y -= (int)(dim / 2);
-		int z = (idz + dim / 2) % dim;
-		z -= (int)(dim / 2);
+		int zp = z < paddim / 2 ? z : z - paddim;
+		zp *= zp;
+		int yp = y < paddim / 2 ? y : y - paddim;
+		yp *= yp;
 
-		tfloat val = 0;
-		tfloat r = sqrt((tfloat)(x * x + y * y + z * z)) / (tfloat)dim;
-		int funcid = (int)(r / funcsampling);
-		if (funcid < funcelements)
-			val = d_funcvals[funcid] / normftblob;
+		for (int x = threadIdx.x; x < paddim; x += blockDim.x)
+		{
+			float xp = x < paddim / 2 ? x : x - paddim;
+			float r = sqrt(xp * xp + yp + zp) / oripadded / funcsampling;
 
-		d_precompblob[id] = val;
+			d_precompblob[x] = d_funcvals[tmin(funcelements - 1, (int)r)];
+		}
 	}
 
-	__global__ void SoftMaskKernel(tfloat* d_input, uint dim, uint dimft, uint n)
+	template<class T> __global__ void DecenterKernel(T* d_input, T* d_output, int3 newdims, int3 olddims)
 	{
-		uint id = blockIdx.x * blockDim.x + threadIdx.x;
-		if (id >= n)
-			return;
+		int z = blockIdx.y;
+		int y = blockIdx.x;
+		
+		int zp = z < newdims.z / 2 + 1 ? z : z - newdims.x;
+		zp += olddims.z / 2;
+		int yp = y < newdims.y / 2 + 1 ? y : y - newdims.x;
+		yp += olddims.y / 2;
 
-		uint idx = id % dimft;
-		uint idy = (id / dimft) % dim;
-		uint idz = id / (dimft * dim);
+		for (int x = threadIdx.x; x < newdims.x / 2 + 1; x += blockDim.x)
+		{
+			int xp = x;
 
-		int x = idx;
-		int y = (idy + dim / 2) % dim;
-		y -= (int)(dim / 2);
-		int z = (idz + dim / 2) % dim;
-		z -= (int)(dim / 2);
-
-		/*float r = sqrt((float)(x * x + y * y + z * z));
-		float falloff = min(max(0.0f, r - (float)(dim / 2 - 4)), 4.0f);
-		falloff = cos(falloff * 0.25f * PI) * 0.5f + 0.5f;*/
-		float falloff = x * x + y * y + z * z >= dim * dim / 4 ? 0.0f : 1.0f;
-		d_input[id] *= falloff;
+			d_output[(z * newdims.y + y) * (newdims.x / 2 + 1) + x] = d_input[(zp * olddims.y + yp) * (olddims.x / 2 + 1) + xp];
+		}
+	}
+	
+	__global__ void Iteration1Kernel(tcomplex* d_convft, tfloat* d_Fweight, tfloat* d_Fnewweight, uint elements)
+	{
+		for (uint i = blockIdx.x * blockDim.x + threadIdx.x; i < elements; i += gridDim.x * blockDim.x)
+			d_convft[i] = make_cuComplex(d_Fweight[i] * d_Fnewweight[i], 0);
 	}
 
-	__global__ void UpdateWeightKernel(tcomplex* d_conv, tfloat* d_weight, tfloat* d_newweight, uint n)
+	__global__ void Iteration2Kernel(tcomplex* d_convft, tfloat* d_Fnewweight, uint elements)
 	{
-		uint id = blockIdx.x * blockDim.x + threadIdx.x;
-		if (id >= n)
-			return;
-
-		tfloat update = abs(d_conv[id].x);
-		tfloat weight = d_newweight[id];
-		//if (d_weight[id] == 0)
-		//d_newweight[id] = 0;
-		if (update > 0)
-			d_newweight[id] = min((tfloat)1e24, weight / max((tfloat)1e-6, update));
-		else
-			d_newweight[id] = weight;
+		for (uint i = blockIdx.x * blockDim.x + threadIdx.x; i < elements; i += gridDim.x * blockDim.x)
+		{
+			tfloat w = tmax(1e-6f, abs(d_convft[i].x));
+			d_Fnewweight[i] = tmin(1e20f, d_Fnewweight[i] / w);
+		}
 	}
 
-	__global__ void CorrectGriddingKernel(tfloat* d_volume, uint dim)
+	__global__ void CorrectGriddingKernel(tfloat* d_volume, int dim, int oripadded)
 	{
-		uint idx = blockIdx.x * blockDim.x + threadIdx.x;
-		if (idx >= dim)
-			return;
-		uint idy = blockIdx.y * blockDim.y + threadIdx.y;
-		if (idy >= dim)
-			return;
-		uint idz = blockIdx.z * blockDim.z + threadIdx.z;
-		if (idz >= dim)
-			return;
+		int z = blockIdx.y;
+		int y = blockIdx.x;
 
-		int x = (int)idx - (int)(dim / 2);
-		int y = (int)idy - (int)(dim / 2);
-		int z = (int)idz - (int)(dim / 2);
+		d_volume += (z * dim + y) * dim;
+		
+		y -= dim / 2;
+		y *= y;
+		z -= dim / 2;
+		z *= z;
 
-		tfloat r = sqrt((tfloat)(x * x + y * y + z * z));
-		r /= (tfloat)dim;
+		for (int x = 0; x < dim; x++)
+		{
+			float xx = x - dim / 2;
 
-		if (r > 0)
-			d_volume[(idz * dim + idy) * dim + idx] /= sinc(r) * sinc(r);
+			float r = sqrt(xx * xx + y + z);
+			r /= oripadded;
+
+			if (r > 0)
+				d_volume[x] /= abs(sinc(r));// *sinc(r);
+		}
 	}
 }

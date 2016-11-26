@@ -8,6 +8,7 @@ namespace gtom
 	////////////////////////////
 
 	template <class T> __global__ void SphereMaskKernel(T* d_input, T* d_output, int3 size, tfloat radius, tfloat sigma, tfloat3 center);
+	__global__ void SphereMaskFTKernel(tfloat* d_input, tfloat* d_output, int3 dims, int radius2);
 
 
 	////////////////
@@ -15,12 +16,12 @@ namespace gtom
 	////////////////
 
 	template <class T> void d_SphereMask(T* d_input,
-		T* d_output,
-		int3 size,
-		tfloat* radius,
-		tfloat sigma,
-		tfloat3* center,
-		int batch)
+										T* d_output,
+										int3 size,
+										tfloat* radius,
+										tfloat sigma,
+										tfloat3* center,
+										int batch)
 	{
 		tfloat _radius = radius != NULL ? *radius : min(min(size.x, size.y), size.z > 1 ? size.z : size.x) / 2;
 		tfloat3 _center = center != NULL ? *center : tfloat3(size.x / 2, size.y / 2, size.z / 2);
@@ -31,6 +32,13 @@ namespace gtom
 	}
 	template void d_SphereMask<tfloat>(tfloat* d_input, tfloat* d_output, int3 size, tfloat* radius, tfloat sigma, tfloat3* center, int batch);
 	template void d_SphereMask<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 size, tfloat* radius, tfloat sigma, tfloat3* center, int batch);
+
+	void d_SphereMaskFT(tfloat* d_input, tfloat* d_output, int3 dims, int radius, uint batch)
+	{
+		int TpB = tmin(128, NextMultipleOf(dims.x, 32));
+		dim3 grid = dim3(dims.y, dims.z, batch);
+		SphereMaskFTKernel <<<grid, TpB>>> (d_input, d_output, dims, radius * radius);
+	}
 
 
 	////////////////
@@ -135,6 +143,30 @@ namespace gtom
 			//Write masked input to output
 			d_output[offset + x].x = maskvalue * d_input[offset + x].x;
 			d_output[offset + x].y = maskvalue * d_input[offset + x].y;
+		}
+	}
+
+	__global__ void SphereMaskFTKernel(tfloat* d_input, tfloat* d_output, int3 dims, int radius2)
+	{
+		int z = blockIdx.y;
+		int y = blockIdx.x;
+
+		d_input +=  blockIdx.z * ElementsFFT(dims) + (z * dims.y + y) * (dims.x / 2 + 1);
+		d_output += blockIdx.z * ElementsFFT(dims) + (z * dims.y + y) * (dims.x / 2 + 1);
+
+		int zp = z < dims.z / 2 + 1 ? z : z - dims.x;
+		zp *= zp;
+		int yp = y < dims.y / 2 + 1 ? y : y - dims.x;
+		yp *= yp;
+
+		for (int x = threadIdx.x; x < dims.x / 2 + 1; x += blockDim.x)
+		{
+			int r = x * x + yp + zp;
+
+			if (r < radius2)
+				d_output[x] = d_input[x];
+			else
+				d_output[x] = 0;
 		}
 	}
 }
