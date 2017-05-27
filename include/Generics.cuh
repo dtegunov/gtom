@@ -747,7 +747,7 @@ namespace gtom
 	* \param[in] d_std	Array that will contain the local standard deviation
 	* \param[in] d_mean	Optional array that will contain the local mean
 	*/
-	void d_LocalStd(tfloat* d_map, int3 dimsmap, tfloat localradius, tfloat* d_std, tfloat* d_mean = NULL);
+	void d_LocalStd(tfloat* d_map, int3 dimsmap, tfloat localradius, tfloat* d_std, tfloat* d_mean = NULL, cufftHandle planforw = NULL, cufftHandle planback = NULL);
 
 	//Padding.cu:
 

@@ -5,11 +5,31 @@
 
 namespace gtom
 {
-	template<uint ndims, uint TpB> __global__ void Project3DtoNDKernel(cudaTex t_volumeRe, cudaTex t_volumeIm, uint dimvolume, tcomplex* d_proj, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, uint rmax, int rmax2);
-	template<uint ndims, uint TpB> __global__ void Project3DArraytoNDKernel(tcomplex* d_volume, uint dimvolume, tcomplex* d_proj, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, uint rmax, int rmax2);
+	template<uint ndims, uint TpB> __global__ void ProjectShifted3DArraytoNDKernel(tcomplex* d_volume, 
+																					uint dimvolume, 
+																					tcomplex* d_proj, 
+																					uint dimproj, 
+																					size_t elementsproj, 
+																					glm::mat3* d_rotations, 
+																					tfloat3* d_shifts,
+																					float* d_globalweights,
+																					uint rmax, 
+																					int rmax2);
+
+	template<uint ndims, uint TpB> __global__ void ProjectShifted3DtoNDKernel(cudaTex t_volumeRe,
+																				cudaTex t_volumeIm,
+																				uint dimvolume,
+																				tcomplex* d_proj,
+																				uint dimproj,
+																				size_t elementsproj,
+																				glm::mat3* d_rotations,
+																				tfloat3* d_shifts,
+																				float* d_globalweights,
+																				uint rmax,
+																				int rmax2);
 
 
-	void d_rlnProject(tcomplex* d_volumeft, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, tfloat3* h_angles, float supersample, uint batch)
+	void d_rlnProjectShifted(tcomplex* d_volumeft, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, tfloat3* h_angles, tfloat3* h_shifts, float* h_globalweights, float supersample, uint batch)
 	{
 		glm::mat3* h_matrices = (glm::mat3*)malloc(sizeof(glm::mat3) * batch);
 		for (int i = 0; i < batch; i++)
@@ -17,12 +37,24 @@ namespace gtom
 		glm::mat3* d_matrices = (glm::mat3*)CudaMallocFromHostArray(h_matrices, sizeof(glm::mat3) * batch);
 		free(h_matrices);
 
-		d_rlnProject(d_volumeft, dimsvolume, d_proj, dimsproj, dimsproj.x / 2, d_matrices, batch);
+		tfloat3* h_shiftsscaled = (tfloat3*)malloc(batch * sizeof(tfloat3));
+		for (int i = 0; i < batch; i++)
+			h_shiftsscaled[i] = tfloat3(h_shifts[i].x * PI2 / dimsproj.x,
+										h_shifts[i].y * PI2 / dimsproj.x,
+										h_shifts[i].z * PI2 / dimsproj.x);
+		tfloat3* d_shifts = (tfloat3*)CudaMallocFromHostArray(h_shiftsscaled, batch * sizeof(tfloat3));
+		free(h_shiftsscaled);
 
+		float* d_globalweights = (float*)CudaMallocFromHostArray(h_globalweights, batch * sizeof(float));
+
+		d_rlnProjectShifted(d_volumeft, dimsvolume, d_proj, dimsproj, dimsproj.x / 2, d_matrices, d_shifts, d_globalweights, batch);
+
+		cudaFree(d_globalweights);
+		cudaFree(d_shifts);
 		cudaFree(d_matrices);
 	}
 
-	void d_rlnProject(tcomplex* d_volumeft, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, uint rmax, glm::mat3* d_matrices, uint batch)
+	void d_rlnProjectShifted(tcomplex* d_volumeft, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, uint rmax, glm::mat3* d_matrices, tfloat3* d_shifts, float* d_globalweights, uint batch)
 	{
 		uint ndimsvolume = DimensionCount(dimsvolume);
 		uint ndimsproj = DimensionCount(dimsproj);
@@ -35,14 +67,15 @@ namespace gtom
 		dim3 grid = dim3(tmin(64, (elements + 127) / 128), batch, 1);
 
 		if (ndimsproj == 2)
-			Project3DArraytoNDKernel<2, 128> << <grid, 128 >> > (d_volumeft, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, rmax, rmax * rmax);
+			ProjectShifted3DArraytoNDKernel<2, 128> << <grid, 128 >> > (d_volumeft, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, d_shifts, d_globalweights, rmax, rmax * rmax);
 		else if (ndimsproj == 3)
-			Project3DArraytoNDKernel<3, 128> << <grid, 128 >> > (d_volumeft, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, rmax, rmax * rmax);
+			ProjectShifted3DArraytoNDKernel<3, 128> << <grid, 128 >> > (d_volumeft, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, d_shifts, d_globalweights, rmax, rmax * rmax);
 		else
 			throw;
 	}
 
-	void d_rlnProject(cudaTex t_volumeRe, cudaTex t_volumeIm, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, tfloat3* h_angles, float supersample, uint batch)
+
+	void d_rlnProjectShifted(cudaTex t_volumeRe, cudaTex t_volumeIm, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, tfloat3* h_angles, tfloat3* h_shifts, float* h_globalweights, float supersample, uint batch)
 	{
 		glm::mat3* h_matrices = (glm::mat3*)malloc(sizeof(glm::mat3) * batch);
 		for (int i = 0; i < batch; i++)
@@ -50,12 +83,24 @@ namespace gtom
 		glm::mat3* d_matrices = (glm::mat3*)CudaMallocFromHostArray(h_matrices, sizeof(glm::mat3) * batch);
 		free(h_matrices);
 
-		d_rlnProject(t_volumeRe, t_volumeIm, dimsvolume, d_proj, dimsproj, dimsproj.x / 2, d_matrices, batch);
+		tfloat3* h_shiftsscaled = (tfloat3*)malloc(batch * sizeof(tfloat3));
+		for (int i = 0; i < batch; i++)
+			h_shiftsscaled[i] = tfloat3(h_shifts[i].x * PI2 / dimsproj.x,
+			h_shifts[i].y * PI2 / dimsproj.x,
+			h_shifts[i].z * PI2 / dimsproj.x);
+		tfloat3* d_shifts = (tfloat3*)CudaMallocFromHostArray(h_shiftsscaled, batch * sizeof(tfloat3));
+		free(h_shiftsscaled);
 
+		float* d_globalweights = (float*)CudaMallocFromHostArray(h_globalweights, batch * sizeof(float));
+
+		d_rlnProjectShifted(t_volumeRe, t_volumeIm, dimsvolume, d_proj, dimsproj, dimsproj.x / 2, d_matrices, d_shifts, d_globalweights, batch);
+
+		cudaFree(d_globalweights);
+		cudaFree(d_shifts);
 		cudaFree(d_matrices);
 	}
 
-	void d_rlnProject(cudaTex t_volumeRe, cudaTex t_volumeIm, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, uint rmax, glm::mat3* d_matrices, uint batch)
+	void d_rlnProjectShifted(cudaTex t_volumeRe, cudaTex t_volumeIm, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, uint rmax, glm::mat3* d_matrices, tfloat3* d_shifts, float* d_globalweights, uint batch)
 	{
 		uint ndimsvolume = DimensionCount(dimsvolume);
 		uint ndimsproj = DimensionCount(dimsproj);
@@ -68,14 +113,23 @@ namespace gtom
 		dim3 grid = dim3(tmin(64, (elements + 127) / 128), batch, 1);
 
 		if (ndimsproj == 2)
-			Project3DtoNDKernel<2, 128> << <grid, 128 >> > (t_volumeRe, t_volumeIm, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, rmax, rmax * rmax);
+			ProjectShifted3DtoNDKernel<2, 128> << <grid, 128 >> > (t_volumeRe, t_volumeIm, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, d_shifts, d_globalweights, rmax, rmax * rmax);
 		else if (ndimsproj == 3)
-			Project3DtoNDKernel<3, 128> << <grid, 128 >> > (t_volumeRe, t_volumeIm, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, rmax, rmax * rmax);
+			ProjectShifted3DtoNDKernel<3, 128> << <grid, 128 >> > (t_volumeRe, t_volumeIm, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, d_shifts, d_globalweights, rmax, rmax * rmax);
 		else
 			throw;
 	}
 
-	template<uint ndims, uint TpB> __global__ void Project3DArraytoNDKernel(tcomplex* d_volume, uint dimvolume, tcomplex* d_proj, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, uint rmax, int rmax2)
+	template<uint ndims, uint TpB> __global__ void ProjectShifted3DArraytoNDKernel(tcomplex* d_volume, 
+																					uint dimvolume, 
+																					tcomplex* d_proj, 
+																					uint dimproj, 
+																					size_t elementsproj, 
+																					glm::mat3* d_rotations, 
+																					tfloat3* d_shifts,
+																					float* d_globalweights,
+																					uint rmax, 
+																					int rmax2)
 	{
 		d_proj += elementsproj * blockIdx.y;
 
@@ -86,6 +140,8 @@ namespace gtom
 		uint dimft = ElementsFFT1(dimproj);
 
 		glm::mat3 rotation = d_rotations[blockIdx.y];
+		tfloat3 shift = d_shifts[blockIdx.y];
+		float globalweight = d_globalweights[blockIdx.y];
 
 		for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < elementsproj; id += gridDim.x * TpB)
 		{
@@ -161,11 +217,26 @@ namespace gtom
 
 			val.y *= is_neg_x;
 
+			float phase = ndims == 3 ? -(x * shift.x + y * shift.y + z * shift.z) : -(x * shift.x + y * shift.y);
+			val = cmul(val, make_float2(__cosf(phase), __sinf(phase)));
+
+			val *= globalweight;
+
 			d_proj[id] = val;
 		}
 	}
 
-	template<uint ndims, uint TpB> __global__ void Project3DtoNDKernel(cudaTex t_volumeRe, cudaTex t_volumeIm, uint dimvolume, tcomplex* d_proj, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, uint rmax, int rmax2)
+	template<uint ndims, uint TpB> __global__ void ProjectShifted3DtoNDKernel(cudaTex t_volumeRe, 
+																				cudaTex t_volumeIm, 
+																				uint dimvolume, 
+																				tcomplex* d_proj, 
+																				uint dimproj, 
+																				size_t elementsproj, 
+																				glm::mat3* d_rotations,
+																				tfloat3* d_shifts,
+																				float* d_globalweights,
+																				uint rmax, 
+																				int rmax2)
 	{
 		d_proj += elementsproj * blockIdx.y;
 
@@ -176,6 +247,8 @@ namespace gtom
 		uint dimft = ElementsFFT1(dimproj);
 
 		glm::mat3 rotation = d_rotations[blockIdx.y];
+		tfloat3 shift = d_shifts[blockIdx.y];
+		float globalweight = d_globalweights[blockIdx.y];
 
 		for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < elementsproj; id += gridDim.x * TpB)
 		{
@@ -255,6 +328,11 @@ namespace gtom
 			val = lerp(dxy0, dxy1, pos.z);
 
 			val.y *= is_neg_x;
+
+			float phase = ndims == 3 ? -(x * shift.x + y * shift.y + z * shift.z) : -(x * shift.x + y * shift.y);
+			val = cmul(val, make_float2(__cosf(phase), __sinf(phase)));
+
+			val *= globalweight;
 
 			d_proj[id] = val;
 		}

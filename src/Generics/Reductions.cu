@@ -19,8 +19,8 @@ namespace gtom
 
 	template<class T> void d_ReduceAdd(T* d_input, T* d_output, int vectorlength, int nvectors, int batch)
 	{
-		int TpB = min(NextMultipleOf(nvectors, 32), 256);
-		dim3 grid = dim3(min(vectorlength, 2048), batch);
+		int TpB = min(NextMultipleOf(vectorlength, 32), 128);
+		dim3 grid = dim3(min((vectorlength + TpB - 1) / TpB, 1024), batch);
 		ReduceAddKernel<T> << <grid, TpB >> > (d_input, d_output, nvectors, vectorlength);
 	}
 	template void d_ReduceAdd<char>(char* d_input, char* d_output, int vectorlength, int nvectors, int batch);
@@ -34,6 +34,7 @@ namespace gtom
 	template<class T> __global__ void ReduceAddKernel(T* d_input, T* d_output, int nvectors, int vectorlength)
 	{
 		d_input += blockIdx.y * nvectors * vectorlength;
+		d_output += blockIdx.y * vectorlength;
 
 		for (int id = blockIdx.x * blockDim.x + threadIdx.x; id < vectorlength; id += gridDim.x * blockDim.x)
 		{
@@ -42,13 +43,14 @@ namespace gtom
 			for (int n = 0; n < nvectors; n++)
 				sum += d_input[n * vectorlength + id];
 
-			d_output[blockIdx.y * vectorlength + id] = sum;
+			d_output[id] = sum;
 		}
 	}
 
 	template<> __global__ void ReduceAddKernel<float2>(float2* d_input, float2* d_output, int nvectors, int vectorlength)
 	{
 		d_input += blockIdx.y * nvectors * vectorlength;
+		d_output += blockIdx.y * vectorlength;
 
 		for (int id = blockIdx.x * blockDim.x + threadIdx.x; id < vectorlength; id += gridDim.x * blockDim.x)
 		{
@@ -57,7 +59,7 @@ namespace gtom
 			for (int n = 0; n < nvectors; n++)
 				sum += d_input[n * vectorlength + id];
 
-			d_output[blockIdx.y * vectorlength + id] = sum;
+			d_output[id] = sum;
 		}
 	}
 

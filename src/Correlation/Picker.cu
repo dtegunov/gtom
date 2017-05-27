@@ -24,11 +24,13 @@ namespace gtom
 
 	Picker::Picker()
 	{
-
+		throw; // Needs to be corrected to use arrays instead of textures
 	}
 
 	void Picker::Initialize(tfloat* _d_ref, int3 _dimsref, tfloat* _d_refmask, int3 _dimsimage)
 	{
+		throw; // Needs to be corrected to use arrays instead of textures
+
 		dimsref = _dimsref;
 		ndims = DimensionCount(dimsref);
 		dimsimage = _dimsimage;
@@ -177,7 +179,14 @@ namespace gtom
 			glm::mat3* d_anglematrix = (glm::mat3*)CudaMallocFromHostArray(&anglematrix, sizeof(glm::mat3));
 
 			// Rotate reference, apply CTF, transform back into real space for padding
-			d_rlnProject(t_refRe, t_refIm, dimsref, d_refft, dimsref, dimsref.x / 2, d_anglematrix, 1);
+			
+			// BROKEN!!!!!!
+			//
+			//
+			//d_rlnProject(t_refRe, t_refIm, dimsref, d_refft, dimsref, dimsref.x / 2, d_anglematrix, 1);
+			//
+			//
+			
 			d_ComplexMultiplyByVector(d_refft, d_ctf, d_refft, ElementsFFT(dimsref));
 			d_IFFTC2R(d_refft, (tfloat*)d_refft, &planrefback, dimsref);
 			//d_WriteMRC((tfloat*)d_refft, dimsref, "d_refft.mrc");

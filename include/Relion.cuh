@@ -9,6 +9,10 @@ namespace gtom
 	void d_rlnBackproject(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, glm::mat3* d_matrices, uint batch);
 	void d_rlnBackproject(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, tfloat3* h_angles, float supersample, uint batch);
 
+	// BackprojectShifted.cu:
+	void d_rlnBackprojectShifted(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, tfloat3* h_angles, tfloat3* h_shifts, float* h_globalweights, float supersample, uint batch);
+	void d_rlnBackprojectShifted(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, glm::mat3* d_matrices, tfloat3* d_shifts, float* d_globalweights, uint batch);
+
 	// ConvertWeights.cu:
 	void d_rlnConvertWeightsDense(tfloat* d_weights, uint nparticles, uint nclasses, uint nrot, uint ntrans, tfloat* d_pdfrot, tfloat* d_pdftrans, tfloat* d_mindiff2);
 	void d_rlnConvertWeightsSparse(tfloat* d_weightsdense, tfloat* d_weightssparse, uint4* d_combinations, uint nsparse, uint nrot, uint ntrans, tfloat* d_pdfrot, tfloat* d_pdftrans, tfloat* d_mindiff2);
@@ -27,6 +31,12 @@ namespace gtom
 	void d_rlnProject(tcomplex* d_volumeft, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, uint rmax, glm::mat3* d_matrices, uint batch);
 	void d_rlnProject(cudaTex t_volumeRe, cudaTex t_volumeIm, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, tfloat3* h_angles, float supersample, uint batch);
 	void d_rlnProject(cudaTex t_volumeRe, cudaTex t_volumeIm, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, uint rmax, glm::mat3* d_matrices, uint batch);
+
+	// ProjectShifted.cu:
+	void d_rlnProjectShifted(tcomplex* d_volumeft, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, tfloat3* h_angles, tfloat3* h_shifts, float* h_globalweights, float supersample, uint batch);
+	void d_rlnProjectShifted(tcomplex* d_volumeft, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, uint rmax, glm::mat3* d_matrices, tfloat3* d_shifts, float* d_globalweights, uint batch);
+	void d_rlnProjectShifted(cudaTex t_volumeRe, cudaTex t_volumeIm, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, tfloat3* h_angles, tfloat3* h_shifts, float* h_globalweights, float supersample, uint batch);
+	void d_rlnProjectShifted(cudaTex t_volumeRe, cudaTex t_volumeIm, int3 dimsvolume, tcomplex* d_proj, int3 dimsproj, uint rmax, glm::mat3* d_matrices, tfloat3* d_shifts, float* d_globalweights, uint batch);
 
 	// SquaredDifferences.cu:
 	void d_rlnSquaredDifferences(tcomplex* d_particleft, tfloat* d_minvsigma2, tfloat* d_ctf, int3 dimsparticle, uint nparticles, tcomplex* d_precalcshifts, uint nshifts, tcomplex* d_refft, uint nrefs, uint tile, tfloat* d_diff2, bool dofirstitercc);

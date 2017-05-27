@@ -14,7 +14,7 @@
 namespace gtom
 {
 	__global__ void BatchComplexConjMultiplyKernel(tcomplex* d_input1, tcomplex* d_input2, tcomplex* d_output, uint vectorlength, uint batch);
-	__global__ void UpdateCorrelationKernel(tfloat* d_correlation, tfloat3* d_angles, uint vectorlength, uint batch, tfloat* d_bestcorrelation, tfloat* d_bestrot, tfloat* d_besttilt, tfloat* d_bestpsi);
+	__global__ void UpdateCorrelationKernel(tfloat* d_correlation, uint vectorlength, uint batch, int batchoffset, tfloat* d_bestcorrelation, float* d_bestangle);
 
 	void d_PickSubTomograms(tcomplex* d_projectordata,
 							tfloat projectoroversample,
@@ -27,18 +27,14 @@ namespace gtom
 							uint nangles,
 							tfloat maskradius,
 							tfloat* d_bestcorrelation,
-							tfloat* d_bestrot,
-							tfloat* d_besttilt,
-							tfloat* d_bestpsi)
+							float* d_bestangle)
 	{
 		uint batchsize = 64;
 		if (nvolumes > batchsize)
 			throw;
 
 		d_ValueFill(d_bestcorrelation, Elements(dimsvolume) * nvolumes, (tfloat)-1e30);
-		d_ValueFill(d_bestrot, Elements(dimsvolume) * nvolumes, (tfloat)0);
-		d_ValueFill(d_besttilt, Elements(dimsvolume) * nvolumes, (tfloat)0);
-		d_ValueFill(d_bestpsi, Elements(dimsvolume) * nvolumes, (tfloat)0);
+		d_ValueFill(d_bestangle, Elements(dimsvolume) * nvolumes, (float)0);
 
 		tfloat3* d_angles = (tfloat3*)CudaMallocFromHostArray(h_angles, nangles * sizeof(tfloat3));
 
@@ -46,6 +42,8 @@ namespace gtom
 		cudaMalloc((void**)&d_projectedft, ElementsFFT(dimsvolume) * batchsize * sizeof(tcomplex));
 		tcomplex* d_projectedftctf;
 		cudaMalloc((void**)&d_projectedftctf, ElementsFFT(dimsvolume) * batchsize * sizeof(tcomplex));
+		tcomplex* d_projectedftctfcorr;
+		cudaMalloc((void**)&d_projectedftctfcorr, ElementsFFT(dimsvolume) * batchsize * sizeof(tcomplex));
 		tfloat* d_projected;
 		cudaMalloc((void**)&d_projected, Elements(dimsvolume) * batchsize * sizeof(tfloat));
 
@@ -56,47 +54,37 @@ namespace gtom
 		{
 			uint curbatch = tmin(batchsize, nangles - b);
 
-			if (curbatch != batchsize)
-			{
-				cufftDestroy(planforw);
-				cufftDestroy(planback);
-				planforw = d_FFTR2CGetPlan(3, dimsvolume, curbatch);
-				planback = d_IFFTC2RGetPlan(3, dimsvolume, curbatch);
-			}
-
 			d_rlnProject(d_projectordata, dimsprojector, d_projectedft, dimsvolume, h_angles + b, projectoroversample, curbatch);
+
+			// Multiply by experimental CTF, norm in realspace, go back into Fourier space for convolution
+			d_ComplexMultiplyByVector(d_projectedft, d_ctf, d_projectedftctf, ElementsFFT(dimsvolume), curbatch);
+			d_IFFTC2R(d_projectedftctf, d_projected, &planback);
+			d_NormMonolithic(d_projected, d_projected, Elements(dimsvolume), T_NORM_MEAN01STD, curbatch);
+			//d_WriteMRC(d_projected, toInt3(dimsvolume.x, dimsvolume.y, dimsvolume.z * curbatch), "d_projected.mrc");
+			d_FFTR2C(d_projected, d_projectedftctf, &planforw);
 
 			for (uint v = 0; v < nvolumes; v++)
 			{
-				// Multiply by experimental CTF, norm in realspace, go back into Fourier space for convolution
-				d_ComplexMultiplyByVector(d_projectedft, d_ctf + ElementsFFT(dimsvolume) * v, d_projectedftctf, ElementsFFT(dimsvolume), curbatch);
-				d_IFFTC2R(d_projectedftctf, d_projected, &planback);
-				d_NormMonolithic(d_projected, d_projected, Elements(dimsvolume), T_NORM_MEAN01STD, curbatch);
-					//d_WriteMRC(d_projected, toInt3(dimsvolume.x, dimsvolume.y, dimsvolume.z * curbatch), "d_projected.mrc");
-				d_FFTR2C(d_projected, d_projectedftctf, &planforw);
-
 				// Multiply current experimental volume by conjugate references
 				{
 					int TpB = 128;
 					dim3 grid = dim3((ElementsFFT(dimsvolume) + TpB - 1) / TpB, 1, 1);
-					BatchComplexConjMultiplyKernel << <grid, TpB >> > (d_experimentalft + ElementsFFT(dimsvolume) * v, d_projectedftctf, d_projectedftctf, ElementsFFT(dimsvolume), curbatch);
+					BatchComplexConjMultiplyKernel << <grid, TpB >> > (d_experimentalft + ElementsFFT(dimsvolume) * v, d_projectedftctf, d_projectedftctfcorr, ElementsFFT(dimsvolume), curbatch);
 				}
 
-				d_IFFTC2R(d_projectedftctf, d_projected, &planback);
-					//d_WriteMRC(d_projected, toInt3(dimsvolume.x, dimsvolume.y, dimsvolume.z * curbatch), "d_correlation_individual.mrc");
+				d_IFFTC2R(d_projectedftctfcorr, d_projected, &planback);
+				//d_WriteMRC(d_projected, toInt3(dimsvolume.x, dimsvolume.y, dimsvolume.z * curbatch), "d_correlation_individual.mrc");
 
 				// Update correlation and angles with best values
 				{
 					int TpB = 128;
 					dim3 grid = dim3((ElementsFFT(dimsvolume) + TpB - 1) / TpB, 1, 1);
 					UpdateCorrelationKernel <<<grid, TpB>>> (d_projected, 
-															d_angles + b, 
 															Elements(dimsvolume), 
 															curbatch, 
+															b,
 															d_bestcorrelation + Elements(dimsvolume) * v, 
-															d_bestrot + Elements(dimsvolume) * v, 
-															d_besttilt + Elements(dimsvolume) * v, 
-															d_bestpsi + Elements(dimsvolume) * v);
+															d_bestangle + Elements(dimsvolume) * v);
 				}
 				
 				//d_WriteMRC(d_bestcorrelation + Elements(dimsvolume) * v, dimsvolume, "d_correlation_best.mrc");
@@ -108,9 +96,15 @@ namespace gtom
 
 		// Normalize correlation by local standard deviation
 		{
-			d_IFFTC2R(d_experimentalft, d_projected, 3, dimsvolume, nvolumes);
+			d_IFFTC2R(d_experimentalft, d_projected, 3, dimsvolume, nvolumes, false);
+			cufftHandle planforwstd = d_FFTR2CGetPlan(3, dimsvolume);
+			cufftHandle planbackstd = d_IFFTC2RGetPlan(3, dimsvolume);
+
 			for (uint v = 0; v < nvolumes; v++)
-				d_LocalStd(d_projected + Elements(dimsvolume) * v, dimsvolume, maskradius, d_projected + Elements(dimsvolume) * v);
+				d_LocalStd(d_projected + Elements(dimsvolume) * v, dimsvolume, maskradius, d_projected + Elements(dimsvolume) * v, NULL, planforwstd, planbackstd);
+
+			cufftDestroy(planbackstd);
+			cufftDestroy(planforwstd);
 
 			//d_WriteMRC(d_projected, toInt3(dimsvolume.x, dimsvolume.y, dimsvolume.z * nvolumes), "d_localstd.mrc");
 
@@ -118,6 +112,7 @@ namespace gtom
 		}
 
 		cudaFree(d_projected);
+		cudaFree(d_projectedftctfcorr);
 		cudaFree(d_projectedftctf);
 		cudaFree(d_projectedft);
 		cudaFree(d_angles);
@@ -134,16 +129,12 @@ namespace gtom
 		}
 	}
 
-	__global__ void UpdateCorrelationKernel(tfloat* d_correlation, tfloat3* d_angles, uint vectorlength, uint batch, tfloat* d_bestcorrelation, tfloat* d_bestrot, tfloat* d_besttilt, tfloat* d_bestpsi)
+	__global__ void UpdateCorrelationKernel(tfloat* d_correlation, uint vectorlength, uint batch, int batchoffset, tfloat* d_bestcorrelation, float* d_bestangle)
 	{
-		__shared__ tfloat3 s_angles[512];
-		for (uint i = threadIdx.x; i < batch; i += blockDim.x)
-			s_angles[i] = d_angles[i];
-
 		for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < vectorlength; id += gridDim.x * blockDim.x)
 		{
 			tfloat bestcorrelation = d_bestcorrelation[id];
-			tfloat3 bestangle = tfloat3(d_bestrot[id], d_besttilt[id], d_bestpsi[id]);
+			float bestangle = d_bestangle[id];
 
 			for (uint b = 0; b < batch; b++)
 			{
@@ -151,14 +142,12 @@ namespace gtom
 				if (newcorrelation > bestcorrelation)
 				{
 					bestcorrelation = newcorrelation;
-					bestangle = s_angles[b];
+					bestangle = b + batchoffset;
 				}
 			}
 
 			d_bestcorrelation[id] = bestcorrelation;
-			d_bestrot[id] = bestangle.x;
-			d_besttilt[id] = bestangle.y;
-			d_bestpsi[id] = bestangle.z;
+			d_bestangle[id] = bestangle;
 		}
 	}
 }

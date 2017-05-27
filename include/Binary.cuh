@@ -19,6 +19,15 @@ namespace gtom
 	template <class T> void d_Dilate(T* d_input, T* d_output, int3 dims, int batch = 1);
 
 	/**
+	* \brief Calculates the distance between an unmasked voxel and the closest masked voxel
+	* \param[in] d_input	Array with binary input data
+	* \param[in] d_output	Array that will contain the distance values
+	* \param[in] dims	Array dimensions
+	* \param[in] maxiterations	Number of iterations to run the algorithm, usually the expected maximum distance for that volume
+	*/
+	void d_DistanceMap(tfloat* d_input, tfloat* d_output, int3 dims, int maxiterations);
+
+	/**
 	* \brief Converts floating point data to binary by applying a threshold; value >= threshold is set to 1, otherwise 0; binary data type can be char or int
 	* \param[in] d_input	Array with input data
 	* \param[in] d_output	Array that will contain the binarized data

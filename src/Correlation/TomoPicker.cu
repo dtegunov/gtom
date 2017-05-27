@@ -20,11 +20,13 @@ namespace gtom
 
 	TomoPicker::TomoPicker()
 	{
-
+		throw; // Needs to be corrected to use arrays instead of textures
 	}
 
 	void TomoPicker::Initialize(tfloat* _d_ref, int3 _dimsref, tfloat* _d_refmask, bool _ismaskcircular, int2 _dimsimage, uint _nimages)
 	{
+		throw; // Needs to be corrected to use arrays instead of textures
+
 		dimsref = _dimsref;
 		dimsrefpadded = _dimsref * 2;
 		dimsimage = _dimsimage;
@@ -217,7 +219,15 @@ namespace gtom
 			if (a == 0 || !ismaskcircular)
 			{
 				//d_rlnProject(t_maskRe, t_maskIm, dimsrefpadded, d_maskrotated, dimsrefpadded, &angle, 1);
-				d_rlnProject(t_maskRe, t_maskIm, dimsrefpadded, d_mask2dft, toInt3(toInt2(dimsrefpadded)), dimsrefpadded.x / 2, d_matrices, nimages);
+				
+				// BROKEN!!!!!!!
+				//
+				//
+				//d_rlnProject(t_maskRe, t_maskIm, dimsrefpadded, d_mask2dft, toInt3(toInt2(dimsrefpadded)), dimsrefpadded.x / 2, d_matrices, nimages);
+				//
+				//
+				//
+
 				d_IFFTC2R(d_mask2dft, d_mask2d, &planrefback, toInt3(toInt2(dimsrefpadded)), nimages);
 				d_FFTFullCrop(d_mask2d, d_mask2d, toInt3(toInt2(dimsrefpadded)), toInt3(toInt2(dimsref)), nimages);
 				//d_WriteMRC(d_mask2d, toInt3(dimsref.x, dimsref.x, nimages), "d_mask2d.mrc");
@@ -250,7 +260,14 @@ namespace gtom
 
 			// Project reference at tilt angles
 			//d_rlnProject(t_refRe, t_refIm, dimsrefpadded, d_refrotated, dimsrefpadded, &angle, 1);
-			d_rlnProject(t_refRe, t_refIm, dimsrefpadded, d_ref2dft, toInt3(toInt2(dimsrefpadded)), dimsrefpadded.x / 2, d_matrices, nimages);
+
+			// BROKEN!!!!!
+			//
+			//
+			//d_rlnProject(t_refRe, t_refIm, dimsrefpadded, d_ref2dft, toInt3(toInt2(dimsrefpadded)), dimsrefpadded.x / 2, d_matrices, nimages);
+			//
+			//
+
 			cudaFree(d_matrices);
 			d_IFFTC2R(d_ref2dft, d_ref2d, &planrefback);
 			d_FFTFullCrop(d_ref2d, d_ref2d, toInt3(toInt2(dimsrefpadded)), toInt3(toInt2(dimsref)), nimages);

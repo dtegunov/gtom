@@ -487,6 +487,21 @@
     <CudaCompile Include="src\Correlation\SubTomograms.cu">
       <Filter>Correlation</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\Projection\PseudoAtoms.cu">
+      <Filter>Projection</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\BinaryManipulation\DistanceMap.cu">
+      <Filter>BinaryManipulation</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Relion\BackprojectShifted.cu">
+      <Filter>Relion</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Resolution\LocalFilter.cu">
+      <Filter>Resolution</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Relion\ProjectShifted.cu">
+      <Filter>Relion</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\IO\em.cpp">

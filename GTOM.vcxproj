@@ -48,6 +48,7 @@
     <CudaCompile Include="src\Alignment\Align3D.cu" />
     <CudaCompile Include="src\BinaryManipulation\Binarize.cu" />
     <CudaCompile Include="src\BinaryManipulation\Dilate.cu" />
+    <CudaCompile Include="src\BinaryManipulation\DistanceMap.cu" />
     <CudaCompile Include="src\Correlation\CCF.cu" />
     <CudaCompile Include="src\Correlation\Picker.cu" />
     <CudaCompile Include="src\Correlation\Realspace.cu" />
@@ -129,19 +130,23 @@
     <CudaCompile Include="src\PCA\NIPALS.cu" />
     <CudaCompile Include="src\Projection\Backward.cu" />
     <CudaCompile Include="src\Projection\Forward.cu" />
+    <CudaCompile Include="src\Projection\PseudoAtoms.cu" />
     <CudaCompile Include="src\Projection\RaySum.cu" />
     <CudaCompile Include="src\Projection\Weighting.cu" />
     <CudaCompile Include="src\Reconstruction\RecFourier.cu" />
     <CudaCompile Include="src\Reconstruction\RecFourierAdd.cu" />
     <CudaCompile Include="src\Relion\Backproject.cu" />
+    <CudaCompile Include="src\Relion\BackprojectShifted.cu" />
     <CudaCompile Include="src\Relion\DiffRemap.cu" />
     <CudaCompile Include="src\Relion\Misc.cu" />
     <CudaCompile Include="src\Relion\Project.cu" />
+    <CudaCompile Include="src\Relion\ProjectShifted.cu" />
     <CudaCompile Include="src\Relion\SquaredDifferences.cu" />
     <CudaCompile Include="src\Relion\ConvertWeights.cu" />
     <CudaCompile Include="src\Relion\StoreWeights.cu" />
     <CudaCompile Include="src\Resolution\AnisotropicFSC.cu" />
     <CudaCompile Include="src\Resolution\FSC.cu" />
+    <CudaCompile Include="src\Resolution\LocalFilter.cu" />
     <CudaCompile Include="src\Resolution\LocalFSC.cu" />
     <CudaCompile Include="src\Resolution\LocalFSCBFac.cu" />
     <CudaCompile Include="src\Transformation\FitMagAnisotropy.cu" />
@@ -237,7 +242,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_35,sm_35</CodeGeneration>
+      <CodeGeneration>compute_52,sm_52</CodeGeneration>
       <PtxAsOptionV>true</PtxAsOptionV>
       <GenerateLineInfo>true</GenerateLineInfo>
       <GPUDebugInfo>false</GPUDebugInfo>

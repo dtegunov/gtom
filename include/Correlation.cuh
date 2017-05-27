@@ -99,9 +99,7 @@ namespace gtom
 							uint nangles,
 							tfloat maskradius,
 							tfloat* d_bestcorrelation,
-							tfloat* d_bestrot,
-							tfloat* d_besttilt,
-							tfloat* d_bestpsi);
+							float* d_bestangle);
 
 	//Picker.cu:
 

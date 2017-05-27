@@ -28,6 +28,16 @@ namespace gtom
 		tfloat* d_outdenominators2 = NULL,
 		int batch = 1);
 
+	//LocalFilter.cu:
+	void d_LocalFilter(tfloat* d_input,
+						tfloat* d_filtered,
+						int3 dimsvolume,
+						tfloat* d_resolution,
+						tfloat* d_bfactors,
+						int windowsize,
+						tfloat angpix,
+						tfloat mtfslope);
+
 	//LocalFSC.cu:
 	void d_LocalFSC(tfloat* d_volume1, tfloat* d_volume2, int3 dimsvolume, uint nvolumes, tfloat* d_resolution, int windowsize, int maxradius, tfloat threshold);
 
@@ -41,12 +51,15 @@ namespace gtom
 						tfloat* d_unsharpened,
 						int windowsize,
 						tfloat fscthreshold,
+						bool dolocalbfac,
+						tfloat globalbfac,
 						tfloat minresbfac,
 						tfloat angpix,
 						tfloat minbfac,
 						tfloat bfacbias,
 						tfloat mtfslope,
-						bool doanisotropy);
+						bool doanisotropy,
+						bool dofilterhalfmaps);
 
 	//AnisotropicFSC:
 	void d_AnisotropicFSC(tcomplex* d_volumeft1,

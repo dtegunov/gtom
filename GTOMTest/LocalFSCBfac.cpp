@@ -29,7 +29,7 @@ TEST(Resolution, LocalFSCBfac)
 
 		float Pixelsize = 3.42f; // header.pixelsize.x / header.dimensions.x;
 
-		d_LocalFSCBfac(d_input1, d_input2, dimsvolume, d_resolution, d_bfac, d_corrected, d_unsharpened, windowsize, 0.3f, 15, Pixelsize, 0, 0, -1.34f, false);
+		d_LocalFSCBfac(d_input1, d_input2, dimsvolume, d_resolution, d_bfac, d_corrected, d_unsharpened, windowsize, 0.3f, false, -40, 10, Pixelsize, -200, 0, -1.34f, false, false);
 
 		tfloat* d_stdunsharp;
 		cudaMalloc((void**)&d_stdunsharp, Elements(dimsvolume) * sizeof(tfloat));

@@ -1,0 +1,138 @@
+#include "Prerequisites.cuh"
+#include "Angles.cuh"
+#include "CubicInterp.cuh"
+#include "DeviceFunctions.cuh"
+#include "FFT.cuh"
+#include "Generics.cuh"
+#include "Helper.cuh"
+#include "Transformation.cuh"
+
+namespace gtom
+{
+	////////////////////////////
+	//CUDA kernel declarations//
+	////////////////////////////
+
+	__global__ void DistanceMapKernel(tfloat* d_olddistance, tfloat* d_newdistance, int* d_upstreamneighbor, int3 dims);
+	__global__ void DistanceMapFinalizeKernel(tfloat* d_olddistance, tfloat* d_newdistance, int* d_upstreamneighbor, int3 dims);
+
+
+	///////////////////////////////////////////
+	//Compute distance map for a binary input//
+	///////////////////////////////////////////
+
+	void d_DistanceMap(tfloat* d_input, tfloat* d_output, int3 dims, int maxiterations)
+	{
+		tfloat* d_distance;
+		cudaMalloc((void**)&d_distance, Elements(dims) * sizeof(tfloat));
+		tfloat* d_newdistance;
+		cudaMalloc((void**)&d_newdistance, Elements(dims) * sizeof(tfloat));
+		int* d_upstreamneighbor = CudaMallocValueFilled(Elements(dims), -1);
+
+		d_OneMinus(d_input, d_distance, Elements(dims));
+		d_MultiplyByScalar(d_distance, d_distance, Elements(dims), (tfloat)(maxiterations * sqrt(3.0f))); // Squared to save the extra sqrt() later
+		cudaMemcpy(d_newdistance, d_distance, Elements(dims) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+
+		dim3 grid = dim3((dims.x - 2 + 31) / 32, (dims.y - 2 + 3) / 4, dims.z - 2);
+		dim3 TpB = dim3(32, 4, 1);
+
+		for (int i = 0; i < maxiterations; i++)
+		{
+			DistanceMapKernel <<<grid, TpB>>> (d_distance, d_newdistance, d_upstreamneighbor, dims);
+
+			tfloat* d_temp = d_newdistance;
+			d_newdistance = d_distance;
+			d_distance = d_temp;
+		}
+
+		//DistanceMapFinalizeKernel <<<grid, TpB>>> (d_distance, d_newdistance, d_upstreamneighbor, dims);
+		//d_Sqrt(d_distance, d_distance, Elements(dims));
+
+		cudaMemcpy(d_output, d_distance, Elements(dims) * sizeof(tfloat), cudaMemcpyDeviceToDevice);
+
+		cudaFree(d_upstreamneighbor);
+		cudaFree(d_newdistance);
+		cudaFree(d_distance);
+	}
+
+
+	////////////////
+	//CUDA kernels//
+	////////////////
+
+	__global__ void DistanceMapKernel(tfloat* d_olddistance, tfloat* d_newdistance, int* d_upstreamneighbor, int3 dims)
+	{
+		int idx = blockIdx.x * blockDim.x + threadIdx.x + 1;
+		if (idx > dims.x - 2)
+			return;
+		int idy = blockIdx.y * blockDim.y + threadIdx.y + 1;
+		if (idy > dims.y - 2)
+			return;
+		int idz = blockIdx.z + 1;
+
+		tfloat bestdist = d_olddistance[(idz * dims.y + idy) * dims.x + idx];
+		int closestneighbor = d_upstreamneighbor[(idz * dims.y + idy) * dims.x + idx];
+
+		for (int z = -1; z <= 1; z++)
+		{
+			int zz = idz + z;
+			for (int y = -1; y <= 1; y++)
+			{
+				int yy = idy + y;
+				for (int x = -1; x <= 1; x++)
+				{
+					int xx = idx + x;
+					int neighbor = (zz * dims.y + yy) * dims.x + xx;
+
+					tfloat dist = d_olddistance[neighbor] + sqrtf(abs(x) + abs(y) + abs(z));	// Everything is in squared distances
+					if (dist < bestdist)
+					{
+						bestdist = dist;
+						closestneighbor = neighbor;
+					}
+				}
+			}
+		}
+
+		d_newdistance[(idz * dims.y + idy) * dims.x + idx] = bestdist;
+		d_upstreamneighbor[(idz * dims.y + idy) * dims.x + idx] = closestneighbor;
+	}
+
+	__global__ void DistanceMapFinalizeKernel(tfloat* d_olddistance, tfloat* d_newdistance, int* d_upstreamneighbor, int3 dims)
+	{
+		int idx = blockIdx.x * blockDim.x + threadIdx.x + 1;
+		if (idx > dims.x - 2)
+			return;
+		int idy = blockIdx.y * blockDim.y + threadIdx.y + 1;
+		if (idy > dims.y - 2)
+			return;
+		int idz = blockIdx.z + 1;
+		
+		int furthestneighbor = d_upstreamneighbor[(idz * dims.y + idy) * dims.x + idx];
+
+		if (furthestneighbor >= 0)
+		{
+			while (true)
+			{
+				int testneighbor = d_upstreamneighbor[furthestneighbor];
+				if (testneighbor >= 0)
+					furthestneighbor = testneighbor;
+				else
+					break;
+			}
+
+			int nz = furthestneighbor / (dims.y * dims.x);
+			int ny = furthestneighbor % (dims.y * dims.x) / dims.x;
+			int nx = furthestneighbor % dims.x;
+
+			int3 diff = make_int3(nx - idx, ny - idy, nz - idz);
+			tfloat distance = sqrt((tfloat)dotp(diff, diff)) + sqrt(d_olddistance[furthestneighbor]);
+
+			d_newdistance[(idz * dims.y + idy) * dims.x + idx] = distance;
+		}
+		else
+		{
+			d_newdistance[(idz * dims.y + idy) * dims.x + idx] = sqrt(d_olddistance[(idz * dims.y + idy) * dims.x + idx]);
+		}
+	}
+}
