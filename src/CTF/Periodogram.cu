@@ -39,52 +39,60 @@ namespace gtom
 		cudaFree(d_origins);
 	}
 
-	void d_CTFPeriodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, int2 dimsregion, int2 dimspadded, tfloat* d_output2d, bool dopost)
+	void d_CTFPeriodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, int2 dimsregion, int2 dimspadded, tfloat* d_output2d, bool dopost, cufftHandle planforw)
 	{
+		cufftHandle ownplanforw = planforw;
+		if (planforw == NULL)
+			ownplanforw = d_FFTR2CGetPlan(2, toInt3(dimspadded), norigins);
+
 		int memlimit = 128 << 20;
-		int batchsize = tmin(norigins, memlimit / (int)(Elements2(dimsregion) * 2 * sizeof(tfloat)));
+		int batchsize = norigins; // tmin(norigins, memlimit / (int)(Elements2(dimsregion) * 2 * sizeof(tfloat)));
 
 		tfloat* d_extracted;
-		cudaMalloc((void**)&d_extracted, batchsize * Elements2(dimspadded) * sizeof(tfloat));
+		cudaMalloc((void**)&d_extracted, norigins * Elements2(dimspadded) * sizeof(tfloat));
 		tcomplex* d_extractedft;
-		cudaMalloc((void**)&d_extractedft, batchsize * ElementsFFT2(dimspadded) * sizeof(tcomplex));
+		cudaMalloc((void**)&d_extractedft, norigins * ElementsFFT2(dimspadded) * sizeof(tcomplex));
+				
+		d_ExtractMany(d_image, d_extracted, toInt3(dimsimage), toInt3(dimsregion), d_origins, norigins);
+		//d_WriteMRC(d_extracted, toInt3(dimsregion.x, dimsregion.y, curbatch), "d_extracted.mrc");
 
-		for (int b = 0; b < norigins; b += batchsize)
+		d_NormMonolithic(d_extracted, d_extracted, Elements2(dimsregion), T_NORM_MEAN01STD, norigins);
+		tfloat radius = dimsregion.x * 3 / 4.0f / 2;
+		d_SphereMask(d_extracted, d_extracted, toInt3(dimsregion), &radius, dimsregion.x * 1 / 4.0f / 2, NULL, norigins);
+		//d_HammingMask(d_extracted, d_extracted, toInt3(dimsregion), &radius, NULL, norigins);
+		//d_HammingMaskBorderDistance(d_extracted, d_extracted, toInt3(dimsregion), dimsregion.x / 4, curbatch);
+		if (dimsregion.x != dimspadded.x || dimsregion.y != dimspadded.y)
 		{
-			int curbatch = tmin(batchsize, norigins - b);
-
-			d_ExtractMany(d_image, d_extracted, toInt3(dimsimage), toInt3(dimsregion), d_origins + b, curbatch);
-			//d_WriteMRC(d_extracted, toInt3(dimsregion.x, dimsregion.y, curbatch), "d_extracted.mrc");
-
-			d_NormMonolithic(d_extracted, d_extracted, Elements2(dimsregion), T_NORM_MEAN01STD, curbatch);
-			d_HammingMask(d_extracted, d_extracted, toInt3(dimsregion), NULL, NULL, curbatch);
-			//d_HammingMaskBorderDistance(d_extracted, d_extracted, toInt3(dimsregion), dimsregion.x / 4, curbatch);
-			if (dimsregion.x != dimspadded.x || dimsregion.y != dimspadded.y)
-			{
-				d_Pad(d_extracted, (tfloat*)d_extractedft, toInt3(dimsregion), toInt3(dimspadded), T_PAD_VALUE, (tfloat)0, curbatch);
-				d_NormMonolithic((tfloat*)d_extractedft, d_extracted, Elements2(dimspadded), T_NORM_MEAN01STD, curbatch);
-			}
-			else
-			{
-				d_NormMonolithic(d_extracted, d_extracted, Elements2(dimspadded), T_NORM_MEAN01STD, curbatch);
-			}
-			//d_WriteMRC(d_extracted, toInt3(dimspadded.x, dimspadded.y, curbatch), "d_extracted.mrc");
-			d_FFTR2C(d_extracted, d_extractedft, 2, toInt3(dimspadded), curbatch);
-			d_Abs(d_extractedft, d_extracted, curbatch * ElementsFFT2(dimspadded));
-			//d_WriteMRC(d_extracted, toInt3(dimspadded.x / 2 + 1, dimspadded.y, curbatch), "d_extractedft.mrc");
-
-			if (dopost)
-			{
-				d_AddScalar(d_extracted, d_extracted, curbatch * ElementsFFT2(dimspadded), (tfloat)1e-6);
-				d_Log(d_extracted, d_extracted, curbatch * ElementsFFT2(dimspadded));
-				d_MultiplyByVector(d_extracted, d_extracted, d_extracted, ElementsFFT2(dimspadded) * curbatch);
-			}
-
-			d_RemapHalfFFT2Half(d_extracted, d_output2d + b * ElementsFFT2(dimspadded), toInt3(dimspadded), curbatch);
-			//d_WriteMRC(d_output2d + b * ElementsFFT2(dimspadded), toInt3(dimspadded.x / 2 + 1, dimspadded.y, curbatch), "d_extractedoutput.mrc");
+			d_Pad(d_extracted, (tfloat*)d_extractedft, toInt3(dimsregion), toInt3(dimspadded), T_PAD_VALUE, (tfloat)0, norigins);
+			//d_NormMonolithic((tfloat*)d_extractedft, d_extracted, Elements2(dimspadded), T_NORM_MEAN01STD, curbatch);
 		}
+		else
+		{
+			//d_NormMonolithic(d_extracted, d_extracted, Elements2(dimspadded), T_NORM_MEAN01STD, curbatch);
+		}
+		//d_WriteMRC(d_extracted, toInt3(dimspadded.x, dimspadded.y, norigins), "d_extracted.mrc");
+		d_FFTR2C(d_extracted, d_extractedft, &ownplanforw);
+		//d_WriteMRC(d_extracted, toInt3(dimspadded.x / 2 + 1, dimspadded.y, curbatch), "d_extractedft.mrc");
+
+		if (dopost)
+		{
+			d_Abs(d_extractedft, d_extracted, norigins * ElementsFFT2(dimspadded));
+			d_AddScalar(d_extracted, d_extracted, norigins * ElementsFFT2(dimspadded), (tfloat)1e-6);
+			d_Log(d_extracted, d_extracted, norigins * ElementsFFT2(dimspadded));
+			d_MultiplyByVector(d_extracted, d_extracted, d_extracted, ElementsFFT2(dimspadded) * norigins);
+		}
+		else
+		{
+			d_Abs(d_extractedft, d_output2d, norigins * ElementsFFT2(dimspadded));
+		}
+
+		//d_RemapHalfFFT2Half(d_extracted, d_output2d, toInt3(dimspadded), norigins);
+		//d_WriteMRC(d_output2d, toInt3(dimspadded.x / 2 + 1, dimspadded.y, norigins), "d_extractedoutput.mrc");
 
 		cudaFree(d_extractedft);
 		cudaFree(d_extracted);
+
+		if (planforw == NULL)
+			cufftDestroy(ownplanforw);
 	}
 }

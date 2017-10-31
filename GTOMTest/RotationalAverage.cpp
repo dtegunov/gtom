@@ -69,7 +69,7 @@ TEST(CTF, RotationalAverage)
 
 		tfloat* d_average = CudaMallocValueFilled(dims.x / 2, 0.0f);
 
-		d_CTFRotationalAverageToTarget(d_input, d_coords, Elements2(dims), dims.x, h_source, target, d_average, 0, dims.x / 2, NULL, batch);
+		d_CTFRotationalAverageToTarget(d_input, d_coords, Elements2(dims), dims.x, h_source, target, d_average, 0, dims.x / 2, batch);
 
 		d_WriteMRC(d_average, toInt3(dims.x / 2, 1, 1), "d_rotationalaverage.mrc");
 

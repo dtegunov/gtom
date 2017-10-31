@@ -14,12 +14,12 @@ TEST(Transformation, Shift)
 		tcomplex* d_inputft;
 		cudaMalloc((void**)&d_inputft, ElementsFFT(dims) * sizeof(tcomplex));
 		d_FFTR2C(d_input, d_inputft, 2, dims);
-		d_RemapHalfFFT2Half(d_inputft, d_inputft, dims);
+		//d_RemapHalfFFT2Half(d_inputft, d_inputft, dims);
 
-		tfloat3 delta = tfloat3(1, 1, 0);
-		d_Shift(d_inputft, d_inputft, dims, &delta, true);
+		tfloat3 delta = tfloat3(0, 1, 0);
+		d_Shift(d_inputft, d_inputft, dims, &delta, false);
 
-		d_RemapHalf2HalfFFT(d_inputft, d_inputft, dims);
+		//d_RemapHalf2HalfFFT(d_inputft, d_inputft, dims);
 		d_IFFTC2R(d_inputft, d_input, 2, dims);
 
 		tfloat* h_output = (tfloat*)MallocFromDeviceArray(d_input, Elements(dims) * sizeof(tfloat));

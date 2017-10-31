@@ -26,6 +26,8 @@ namespace gtom
 
 	__global__ void Mean0MonoKernel(tfloat* d_input, tfloat* d_output, size_t elements);
 
+	__global__ void NormFTMonoKernel(tcomplex* d_input, tcomplex* d_output, size_t elements);
+
 
 	///////////////////////////////////////
 	//Equivalent of TOM's tom_norm method//
@@ -76,14 +78,14 @@ namespace gtom
 		if (elements > 256)
 			for (int b = 0; b < batch; b += 32768)
 			{
-				dim3 grid = dim3(min(batch - b, 32768));
+				dim3 grid = dim3(tmin(batch - b, 32768));
 				NormMeanStdDevMonoKernel<false> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, NULL, elements);
 			}
 		else
 			for (int b = 0; b < batch; b += 32768)
 			{
 				dim3 TpB = dim3(32, 6);
-				dim3 grid = dim3((min(batch - b, 32768) + 5) / 6);
+				dim3 grid = dim3((tmin(batch - b, 32768) + 5) / 6);
 				NormMeanStdDevWarpMonoKernel<false> << <grid, TpB >> > (d_input + elements * b, d_output + elements * b, NULL, elements, min(batch - b, 32768));
 			}
 	}
@@ -92,7 +94,7 @@ namespace gtom
 	{
 		for (int b = 0; b < batch; b += 32768)
 		{
-			dim3 grid = dim3(min(batch - b, 32768));
+			dim3 grid = dim3(tmin(batch - b, 32768));
 			NormMeanStdDevMonoKernel<true> << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, d_mu + b, elements);
 		}
 	}
@@ -137,8 +139,17 @@ namespace gtom
 	{
 		for (int b = 0; b < batch; b += 32768)
 		{
-			dim3 grid = dim3(min(batch - b, 32768));
+			dim3 grid = dim3(tmin(batch - b, 32768));
 			Mean0MonoKernel << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, elements);
+		}
+	}
+
+	void d_NormFTMonolithic(tcomplex* d_input, tcomplex* d_output, size_t elements, int batch)
+	{
+		for (int b = 0; b < batch; b += 32768)
+		{
+			dim3 grid = dim3(tmin(batch - b, 32768));
+			NormFTMonoKernel << <grid, MonoTpB >> > (d_input + elements * b, d_output + elements * b, elements);
 		}
 	}
 
@@ -175,7 +186,7 @@ namespace gtom
 		for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
 			id < elements;
 			id += blockDim.x * gridDim.x)
-			d_output[id + offset] = max(min(d_input[id + offset], upper), lower) - mean;
+			d_output[id + offset] = tmax(tmin(d_input[id + offset], upper), lower) - mean;
 	}
 
 	__global__ void NormMeanStdDevKernel(tfloat* d_input, tfloat* d_output, imgstats5* d_imagestats, size_t elements)
@@ -460,5 +471,40 @@ namespace gtom
 
 		for (int i = threadIdx.x; i < elements; i += blockDim.x)
 			d_output[i] = d_input[i] - mean;
+	}
+
+	__global__ void NormFTMonoKernel(tcomplex* d_input, tcomplex* d_output, size_t elements)
+	{
+		__shared__ tfloat s_sums[MonoTpB];
+		__shared__ tfloat s_mean;
+
+		d_input += elements * blockIdx.x;
+		d_output += elements * blockIdx.x;
+
+		double sum = 0.0;
+
+		for (int i = threadIdx.x; i < elements; i += blockDim.x)
+		{
+			tcomplex val = d_input[i];
+			sum += dotp2(val, val);
+		}
+		s_sums[threadIdx.x] = sum;
+		__syncthreads();
+
+		if (threadIdx.x == 0)
+		{
+			for (int i = 1; i < MonoTpB; i++)
+				sum += s_sums[i];
+
+			s_mean = sqrt(sum / elements);
+		}
+		__syncthreads();
+
+		tfloat mean = s_mean;
+		mean = tmax(mean, 1e-20f);
+		mean = 1 / mean;
+
+		for (int i = threadIdx.x; i < elements; i += blockDim.x)
+			d_output[i] = d_input[i] * mean;
 	}
 }

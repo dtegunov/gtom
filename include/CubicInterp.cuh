@@ -246,7 +246,7 @@ namespace gtom
 		{
 			tfloat bsplineX = bspline(x - fraction);
 			tfloat u = index + x;
-			result += bsplineX * tex1D<T>(tex, u);
+			result += bsplineX * tex3D<T>(tex, u, 0.5f, 0.5f);
 		}
 		return result;
 	}

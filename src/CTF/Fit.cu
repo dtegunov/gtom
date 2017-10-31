@@ -411,9 +411,9 @@ namespace gtom
 
 			// Create CTFParams around the 5 best matches of this iteration, to be explored in the next one
 			std::vector<std::pair<tfloat, CTFParams> > v_paramsNew;
-			for (int i = 0; i < tmin(20, (int)v_params.size()); i++)
+			for (int j = 0; j < tmin(10, (int)v_params.size()); j++)
 			{
-				CTFParams fit = v_params[i].second;
+				CTFParams fit = v_params[j].second;
 				CTFFitParams pNew = p;
 				tfloat3* h_p = (tfloat3*)&pNew;
 				tfloat* h_f = (tfloat*)&fit;

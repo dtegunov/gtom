@@ -239,7 +239,9 @@ namespace gtom
 	template <class T> void d_RemapFullFFT2Full(T* d_input, T* d_output, int3 dims, int batch = 1);
 	template <class T> void d_RemapFull2FullFFT(T* d_input, T* d_output, int3 dims, int batch = 1);
 	template <class T> void d_RemapHalfFFT2Half(T* d_input, T* d_output, int3 dims, int batch = 1);
-	template <class T> void d_RemapHalf2HalfFFT(T* d_input, T* d_output, int3 dims, int batch = 1);
+	template <class T> void d_RemapHalf2HalfFFT(T* d_input, T* d_output, int3 dims, int batch = 1); 
+	template <class T> void d_RemapFullFFT2HalfFFT(T* d_input, T* d_output, int3 dims, int batch = 1);
+	template <class T> void d_RemapHalfFFT2FullFFT(T* d_input, T* d_output, int3 dims, int batch = 1);
 
 	//FFTResize.cu:
 	template <class T> void d_FFTCrop(T* d_input, T* d_output, int3 olddims, int3 newdims, int batch = 1);

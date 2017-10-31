@@ -111,8 +111,8 @@ namespace gtom
 		int x, y, z;
 		if (!iszerocentered)
 		{
-			y = FFTShift(idy, dims.y) - dims.y / 2;
-			z = FFTShift(idz, dims.z) - dims.z / 2;
+			y = idy > dims.y / 2 ? idy - dims.y : idy;
+			z = idz > dims.z / 2 ? idz - dims.z : idz;
 		}
 		else
 		{
@@ -127,12 +127,12 @@ namespace gtom
 		for (int idx = threadIdx.x; idx <= dims.x / 2; idx += blockDim.x)
 		{
 			if (!iszerocentered)
-				x = FFTShift(idx, dims.x) - dims.x / 2;
+				x = idx;
 			else
 				x = dims.x / 2 - idx;
 
-			tfloat factor = (delta.x * (tfloat)x + delta.y * (tfloat)y + (ndims > 2 ? delta.z * (tfloat)z : (tfloat)0)) * (tfloat)PI2;
-			tcomplex multiplicator = make_cuComplex(cos(factor), sin(-factor));
+			tfloat factor = -(delta.x * (tfloat)x + delta.y * (tfloat)y + (ndims > 2 ? delta.z * (tfloat)z : (tfloat)0)) * (tfloat)PI2;
+			tcomplex multiplicator = make_cuComplex(cos(factor), sin(factor));
 
 			d_output[idx] = cmul(d_input[idx], multiplicator);
 		}

@@ -65,6 +65,8 @@ namespace gtom
 	void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, T_PEAK_MODE mode, cufftHandle* planforw = (cufftHandle*)NULL, cufftHandle* planback = (cufftHandle*)NULL, int batch = 1);
 
 
+	//LocalPeaks.cu:
+
 	/**
 	* \brief Detects multiple local peaks in a map
 	* \param[in] d_input	Array with input data
@@ -76,9 +78,11 @@ namespace gtom
 	*/
 	void d_LocalPeaks(tfloat* d_input, int3** h_peaks, int* h_peaksnum, int3 dims, int localextent, tfloat threshold, int batch = 1);
 
+	void d_SubpixelMax(tfloat* d_input, tfloat* d_output, int3 dims, int subpixsteps);
+
 	//Realspace.cu:
 
-	void d_CorrelateRealspace(tfloat* d_image, tfloat* d_sum1, tfloat* d_sum2, int2 dimsimage, tfloat* d_template, tfloat* d_mask, int2 dimstemplate, tfloat* d_samples, tfloat* d_corr, uint nimages);
+	void d_CorrelateRealspace(tfloat* d_image1, tfloat* d_image2, int3 dims, tfloat* d_mask, tfloat* d_corr, uint batch);
 
 	//SimilarityMatrix.cu:
 
@@ -88,7 +92,8 @@ namespace gtom
 
 	// SubTomograms.cu:
 
-	void d_PickSubTomograms(tcomplex* d_projectordata,
+	void d_PickSubTomograms(cudaTex t_projectordataRe,
+							cudaTex t_projectordataIm,
 							tfloat projectoroversample,
 							int3 dimsprojector,
 							tcomplex* d_experimentalft,
@@ -100,6 +105,20 @@ namespace gtom
 							tfloat maskradius,
 							tfloat* d_bestcorrelation,
 							float* d_bestangle);
+
+	void d_PickSubTomogramsDiff2(cudaTex t_projectordataRe,
+								cudaTex t_projectordataIm,
+								tfloat projectoroversample,
+								int3 dimsprojector,
+								tcomplex* d_experimentalft,
+								tfloat* d_ctf,
+								int3 dimsvolume,
+								uint nvolumes,
+								int3 dimsrelevant,
+								tfloat3* h_angles,
+								uint nangles,
+								tfloat* d_bestdiff2,
+								float* d_bestangle);
 
 	//Picker.cu:
 

@@ -55,7 +55,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(SolutionDir)..\liblion;$(SolutionDir)GoogleTest\include;$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)..\liblion\x64\Debug;$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\liblion\x64\Debug;..\liblion\fftw;$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DLL|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -81,7 +81,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib;liblion.lib;cufftw.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib;liblion.lib;libfftw3f-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy "$(ProjectDir)Data" "$(TargetDir)Data" /e /d /y</Command>

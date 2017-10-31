@@ -4,6 +4,20 @@
 
 TEST(Relion, Liblion)
 {
+	relion::MultidimArray<float> Input;
+	relion::MultidimArray<relion::Complex > Output;
+
+	relion::FourierTransformer transformer;
+	//transformer.setThreadsNumber(nthreads);
+
+	Input.initZeros(512, 1024, 1024);
+
+	transformer.FourierTransform(Input, Output, false);
+
+	transformer.cleanup();
+
+	return;
+
 	cudaDeviceReset();
 
 	//Case 1:

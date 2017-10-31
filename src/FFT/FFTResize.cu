@@ -130,6 +130,9 @@ namespace gtom
 			int z = blockIdx.y;
 			int zz = z < newdims.z / 2 + 1 ? z : z - newdims.z + olddims.z;
 
+			/*yy = tmax(0, tmin(yy, olddims.y - 1));
+			zz = tmax(0, tmin(zz, olddims.z - 1));*/
+
 			d_output[(z * newdims.y + y) * (newdims.x / 2 + 1) + x] = d_input[(zz * olddims.y + yy) * (olddims.x / 2 + 1) + x];
 		}
 	}

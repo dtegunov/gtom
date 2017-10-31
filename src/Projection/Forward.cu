@@ -157,11 +157,11 @@ namespace gtom
 		glm::mat4* h_raytransforms = (glm::mat4*)malloc(batch * sizeof(glm::mat4));
 		for (int n = 0; n < batch; n++)
 			h_raytransforms[n] = Matrix4Translation(tfloat3(dimsvolume.x / 2 + 0.5f, dimsvolume.y / 2 + 0.5f, dimsvolume.z / 2 + 0.5f)) *
-			Matrix4Translation(tfloat3(-volumeoffset.x, -volumeoffset.y, -volumeoffset.z)) *
-			Matrix4Euler(h_angles[n]) *
-			Matrix4Translation(tfloat3(h_offsets[n].x * supersample, h_offsets[n].y * supersample, 0.0f)) *
-			Matrix4Scale(tfloat3(h_scales[n].x, h_scales[n].y, 1.0f)) *
-			Matrix4Translation(tfloat3(-dimsproj.x / 2, -dimsproj.y / 2, 0));
+								Matrix4Translation(tfloat3(-volumeoffset.x, -volumeoffset.y, -volumeoffset.z)) *
+								Matrix4Euler(h_angles[n]) *
+								Matrix4Translation(tfloat3(h_offsets[n].x * supersample, h_offsets[n].y * supersample, 0.0f)) *
+								Matrix4Scale(tfloat3(h_scales[n].x, h_scales[n].y, 1.0f)) *
+								Matrix4Translation(tfloat3(-dimsproj.x / 2, -dimsproj.y / 2, 0));
 
 		tfloat3 boxmin = tfloat3(0, 0, 0);
 		tfloat3 boxmax = tfloat3(dimsvolume.x,

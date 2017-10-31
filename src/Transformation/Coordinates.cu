@@ -240,15 +240,20 @@ namespace gtom
 			return;
 		int idx = blockIdx.y;
 
-		tfloat r = (tfloat)idx + innerradius;
-		tfloat phi = (tfloat)(idy) / (tfloat)polardims.y * PI + PIHALF;
+		float r = (float)idx + innerradius;
+		float phi = (float)(idy) / polardims.y * PI;
+		float2 pos = make_float2(cos(phi), sin(phi)) * r;
+		if (pos.x < 0)
+			pos *= -1;
+
+		if (pos.y < 0)
+			pos.y += dims.y;
 
 		tfloat val;
-		float center = dims.x / 2 + 0.5f;
 		if (cubicinterp)
-			val = cubicTex2D(t_input[blockIdx.z], cos(phi) * r + center, sin(phi) * r + center);
+			val = cubicTex2D(t_input[blockIdx.z], pos.x + 0.5f, pos.y + 0.5f);
 		else
-			val = tex2D<tfloat>(t_input[blockIdx.z], cos(phi) * r + center, sin(phi) * r + center);
+			val = tex2D<tfloat>(t_input[blockIdx.z], pos.x + 0.5f, pos.y + 0.5f);
 
 		d_output[Elements2(polardims) * blockIdx.z + idy * polardims.x + idx] = val;
 	}

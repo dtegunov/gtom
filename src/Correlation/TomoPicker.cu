@@ -278,7 +278,7 @@ namespace gtom
 			//d_WriteMRC(d_ref2d, toInt3(dimsref.x, dimsref.y, nimages), "d_ref2d.mrc");
 
 			// Correlate reference projections with tomographic tilt series
-			d_CorrelateRealspace(d_image, d_imagesum1, d_imagesum2, dimsimage, d_ref2d, d_mask2d, toInt2(dimsref), d_masksum, d_imagecorr, nimages);
+			//d_CorrelateRealspace(d_image, d_imagesum1, d_imagesum2, dimsimage, d_ref2d, d_mask2d, toInt2(dimsref), d_masksum, d_imagecorr, nimages); BROKEN!!!!!
 			//d_WriteMRC(d_imagecorr, toInt3(dimsimage.x, dimsimage.y, nimages), "d_imagecorr.mrc");
 			
 			// Back-project correlation values into tomographic volume

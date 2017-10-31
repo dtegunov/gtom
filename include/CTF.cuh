@@ -203,7 +203,7 @@ namespace gtom
 			retval *= __expf(p.K4 * r2);
 
 		if (ampsquared)
-			retval = retval * retval;
+			retval = abs(retval);
 
 		retval *= p.scale;
 
@@ -236,7 +236,7 @@ namespace gtom
 
 	//Periodogram.cu:
 	void d_CTFPeriodogram(tfloat* d_image, int2 dimsimage, float overlapfraction, int2 dimsregion, int2 dimspadded, tfloat* d_output2d, bool dopost = true);
-	void d_CTFPeriodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, int2 dimsregion, int2 dimspadded, tfloat* d_output2d, bool dopost = true);
+	void d_CTFPeriodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, int2 dimsregion, int2 dimspadded, tfloat* d_output2d, bool dopost = true, cufftHandle planforw = NULL);
 
 	//RotationalAverage.cu:
 	void d_CTFRotationalAverage(tfloat* d_re, 
@@ -264,7 +264,6 @@ namespace gtom
 														tfloat* d_average, 
 														ushort freqlow, 
 														ushort freqhigh, 
-														int* h_consider, 
 														int batch = 1);
 	void d_CTFRotationalAverageToTargetDeterministic(tfloat* d_input,
 													float2* d_inputcoords,
@@ -275,7 +274,6 @@ namespace gtom
 													tfloat* d_average,
 													ushort freqlow,
 													ushort freqhigh,
-													int* h_consider,
 													int batch);
 
 	//Simulate.cu:

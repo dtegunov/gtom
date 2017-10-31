@@ -99,7 +99,7 @@ namespace gtom
 		free(h_lean);
 	}
 	
-	template<class T> void d_CTFRotationalAverageToTarget(T* d_input, float2* d_inputcoords, uint inputlength, uint sidelength, CTFParams* h_params, CTFParams targetparams, tfloat* d_average, ushort freqlow, ushort freqhigh, int* h_consider, int batch)
+	template<class T> void d_CTFRotationalAverageToTarget(T* d_input, float2* d_inputcoords, uint inputlength, uint sidelength, CTFParams* h_params, CTFParams targetparams, tfloat* d_average, ushort freqlow, ushort freqhigh, int batch)
 	{
 		uint numbins = freqhigh - freqlow;
 
@@ -128,44 +128,17 @@ namespace gtom
 		else
 			throw;
 
-		if (h_consider != NULL)
-		{
-			std::vector<int> positions;
-			for (int i = 0; i < batch; i++)
-				if (h_consider[i] > 0)
-					positions.push_back(i);
-
-			tfloat* d_densebins;
-			cudaMalloc((void**)&d_densebins, numbins * grid.x * positions.size() * sizeof(tfloat));
-			tfloat* d_denseweights;
-			cudaMalloc((void**)&d_denseweights, numbins * grid.x * positions.size() * sizeof(tfloat));
-
-			for (int i = 0; i < positions.size(); i++)
-			{
-				cudaMemcpy(d_densebins + numbins * grid.x * i, d_tempbins + numbins * grid.x * positions[i], numbins * grid.x * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-				cudaMemcpy(d_denseweights + numbins * grid.x * i, d_tempweights + numbins * grid.x * positions[i], numbins * grid.x * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-			}
-
-			d_ReduceMeanWeighted(d_densebins, d_denseweights, d_average, numbins, grid.x * positions.size(), 1);
-
-			cudaFree(d_densebins);
-			cudaFree(d_denseweights);
-		}
-		else
-		{
-			d_ReduceMeanWeighted(d_tempbins, d_tempweights, d_average, numbins, grid.x * batch, 1);
-			//cudaMemcpy(d_average, d_tempbins, numbins * batch * sizeof(tfloat), cudaMemcpyDeviceToDevice);
-		}
+		d_ReduceMeanWeighted(d_tempbins, d_tempweights, d_average, numbins, grid.x * batch, 1);
 
 		cudaFree(d_tempweights);
 		cudaFree(d_tempbins);
 		cudaFree(d_lean);
 		free(h_lean);
 	}
-	template void d_CTFRotationalAverageToTarget<tfloat>(tfloat* d_input, float2* d_inputcoords, uint inputlength, uint sidelength, CTFParams* h_params, CTFParams targetparams, tfloat* d_average, ushort freqlow, ushort freqhigh, int* h_consider, int batch);
-	template void d_CTFRotationalAverageToTarget<tcomplex>(tcomplex* d_input, float2* d_inputcoords, uint inputlength, uint sidelength, CTFParams* h_params, CTFParams targetparams, tfloat* d_average, ushort freqlow, ushort freqhigh, int* h_consider, int batch);
+	template void d_CTFRotationalAverageToTarget<tfloat>(tfloat* d_input, float2* d_inputcoords, uint inputlength, uint sidelength, CTFParams* h_params, CTFParams targetparams, tfloat* d_average, ushort freqlow, ushort freqhigh, int batch);
+	template void d_CTFRotationalAverageToTarget<tcomplex>(tcomplex* d_input, float2* d_inputcoords, uint inputlength, uint sidelength, CTFParams* h_params, CTFParams targetparams, tfloat* d_average, ushort freqlow, ushort freqhigh, int batch);
 
-	void d_CTFRotationalAverageToTargetDeterministic(tfloat* d_input, float2* d_inputcoords, uint inputlength, uint sidelength, CTFParams* h_params, CTFParams targetparams, tfloat* d_average, ushort freqlow, ushort freqhigh, int* h_consider, int batch)
+	void d_CTFRotationalAverageToTargetDeterministic(tfloat* d_input, float2* d_inputcoords, uint inputlength, uint sidelength, CTFParams* h_params, CTFParams targetparams, tfloat* d_average, ushort freqlow, ushort freqhigh, int batch)
 	{
 		uint numbins = freqhigh - freqlow;
 

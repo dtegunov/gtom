@@ -7,7 +7,7 @@
 
 namespace gtom
 {
-	void d_LocalStd(tfloat* d_map, int3 dimsmap, tfloat localradius, tfloat* d_std, tfloat* d_mean, cufftHandle planforw, cufftHandle planback)
+	void d_LocalStd(tfloat* d_map, int3 dimsmap, tfloat* d_fouriermask, tfloat localradius, tfloat* d_std, tfloat* d_mean, cufftHandle planforw, cufftHandle planback)
 	{
 		cufftHandle localplanforw = planforw;
 		if (planforw == NULL)
@@ -21,15 +21,35 @@ namespace gtom
 
 		// Create spherical mask, calculate its sum, and pre-FFT it for convolution
 		{
-			d_SphereMask((tfloat*)d_maskft, (tfloat*)d_maskft, dimsmap, &localradius, 0, NULL);
+			d_SphereMask((tfloat*)d_maskft, (tfloat*)d_maskft, dimsmap, &localradius, 1, NULL);
 			d_RemapFull2FullFFT((tfloat*)d_maskft, (tfloat*)d_maskft, dimsmap);
 
-			tfloat* d_sum = CudaMallocValueFilled(1, (tfloat)0);
-			d_Sum((tfloat*)d_maskft, d_sum, Elements(dimsmap));
-			cudaMemcpy(&masksum, d_sum, sizeof(tfloat), cudaMemcpyDeviceToHost);
-			cudaFree(d_sum);
+			if (d_fouriermask == NULL)
+			{
+				tfloat* d_sum = CudaMallocValueFilled(1, (tfloat)0);
+				d_Sum((tfloat*)d_maskft, d_sum, Elements(dimsmap));
+				cudaMemcpy(&masksum, d_sum, sizeof(tfloat), cudaMemcpyDeviceToHost);
+				cudaFree(d_sum);
+			}
 
 			d_FFTR2C((tfloat*)d_maskft, d_maskft, &localplanforw);
+
+			if (d_fouriermask != NULL)
+			{
+				d_ComplexMultiplyByVector(d_maskft, d_fouriermask, d_maskft, ElementsFFT(dimsmap));
+
+				tfloat* d_maskconv;
+				cudaMalloc((void**)&d_maskconv, Elements(dimsmap) * sizeof(tfloat));
+
+				d_IFFTC2R(d_maskft, d_maskconv, DimensionCount(dimsmap), dimsmap, 1, true);
+				
+				tfloat* d_sum = CudaMallocValueFilled(1, (tfloat)0);
+				d_Sum((tfloat*)d_maskft, d_sum, Elements(dimsmap));
+				cudaMemcpy(&masksum, d_sum, sizeof(tfloat), cudaMemcpyDeviceToHost);
+				cudaFree(d_sum);
+
+				cudaFree(d_maskconv);
+			}
 		}
 
 		tcomplex* d_mapft;
