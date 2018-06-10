@@ -1,6 +1,8 @@
 #ifndef PREREQUISITES_CUH
 #define PREREQUISITES_CUH
 
+//#define CUDA_API_PER_THREAD_DEFAULT_STREAM
+
 #define tmin(a, b) (((a) < (b)) ? (a) : (b))
 #define tmax(a, b) (((a) > (b)) ? (a) : (b))
 

@@ -100,7 +100,7 @@ namespace gtom
 				if (dimsvolume.z == 1)
 					x = -cos(phi);
 
-				d_AnisotropicFSC(d_volumeft1, d_volumeft2, dimsvolume, d_curve, maxradius, make_float3(x, y, z), min(ToRad(85.0f), min(phistep * 2.0f, thetastep * 2.0f)), NULL, NULL, NULL, batch);
+				d_AnisotropicFSC(d_volumeft1, d_volumeft2, dimsvolume, d_curve, maxradius, make_float3(x, y, z), tmin(ToRad(85.0f), tmin(phistep * 2.0f, thetastep * 2.0f)), NULL, NULL, NULL, batch);
 
 				/*tfloat* d_masktemp = CudaMallocValueFilled(ElementsFFT(dimsvolume), (tfloat)1);
 				d_ConeMaskFT(d_masktemp, d_masktemp, dimsvolume, make_float3(x, y, z), min(phistep / 2.0f, thetastep / 2.0f));

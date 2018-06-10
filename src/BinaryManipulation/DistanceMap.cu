@@ -15,6 +15,7 @@ namespace gtom
 
 	__global__ void DistanceMapKernel(tfloat* d_olddistance, tfloat* d_newdistance, int* d_upstreamneighbor, int3 dims);
 	__global__ void DistanceMapFinalizeKernel(tfloat* d_olddistance, tfloat* d_newdistance, int* d_upstreamneighbor, int3 dims);
+	__global__ void DistanceMapExactKernel(tfloat* d_input, tfloat* d_output, int3 dims, int maxdistance);
 
 
 	///////////////////////////////////////////
@@ -53,6 +54,14 @@ namespace gtom
 		cudaFree(d_upstreamneighbor);
 		cudaFree(d_newdistance);
 		cudaFree(d_distance);
+	}
+
+	void d_DistanceMapExact(tfloat* d_input, tfloat* d_output, int3 dims, int maxdistance)
+	{
+		dim3 grid = dim3((dims.x + 31) / 32, (dims.y + 3) / 4, dims.z);
+		dim3 TpB = dim3(32, 4, 1);
+
+		DistanceMapExactKernel <<<grid, TpB>>> (d_input, d_output, dims, maxdistance);
 	}
 
 
@@ -134,5 +143,62 @@ namespace gtom
 		{
 			d_newdistance[(idz * dims.y + idy) * dims.x + idx] = sqrt(d_olddistance[(idz * dims.y + idy) * dims.x + idx]);
 		}
+	}
+
+	__global__ void DistanceMapExactKernel(tfloat* d_input, tfloat* d_output, int3 dims, int maxdistance)
+	{
+		int idx = blockIdx.x * blockDim.x + threadIdx.x;
+		if (idx >= dims.x)
+			return;
+		int idy = blockIdx.y * blockDim.y + threadIdx.y;
+		if (idy >= dims.y)
+			return;
+		int idz = blockIdx.z;
+
+		int startx = tmax(0, idx - maxdistance);
+		int endx = tmin(idx + maxdistance, dims.x - 1);
+		int starty = tmax(0, idy - maxdistance);
+		int endy = tmin(idy + maxdistance, dims.y - 1);
+		int startz = tmax(0, idz - maxdistance);
+		int endz = tmin(idz + maxdistance, dims.z - 1);
+
+		int mindistance2 = maxdistance * maxdistance;
+		if (d_input[(idz * dims.y + idy) * dims.x + idx] == 1)
+		{
+			mindistance2 = 0;
+		}
+		else
+		{
+			for (int z = startz; z <= endz; z++)
+			{
+				int zz = z - idz;
+				zz *= zz;
+
+				for (int y = starty; y <= endy; y++)
+				{
+					int yy = y - idy;
+					yy *= yy;
+
+					for (int x = startx; x <= endx; x++)
+					{
+						int xx = idx - x;
+						xx *= xx;
+
+						if (d_input[(z * dims.y + y) * dims.x + x] == 1)
+						{
+							mindistance2 = tmin(xx + yy + zz, mindistance2);
+							if (mindistance2 <= 1)
+								break;
+						}
+					}
+					if (mindistance2 <= 1)
+						break;
+				}
+				if (mindistance2 <= 1)
+					break;
+			}
+		}
+
+		d_output[(idz * dims.y + idy) * dims.x + idx] = sqrt((float)mindistance2);
 	}
 }

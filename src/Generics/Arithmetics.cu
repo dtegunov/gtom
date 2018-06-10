@@ -49,6 +49,8 @@ namespace gtom
 	template <class T> __global__ void ExpKernel(T* d_input, T* d_output, size_t elements);
 	template <class T> __global__ void OneMinusKernel(T* d_input, T* d_output, size_t elements);
 	template <class T> __global__ void SignKernel(T* d_input, T* d_output, size_t elements);
+	template <class T> __global__ void CosKernel(T* d_input, T* d_output, size_t elements); 
+	template <class T> __global__ void SinKernel(T* d_input, T* d_output, size_t elements);
 	template <class T> __global__ void MultiplyAddKernel(T* d_mult1, T* d_mult2, T* d_summand, T* d_output, size_t elements);
 
 	__global__ void ComplexPolarToCartKernel(tcomplex* d_polar, tcomplex* d_cart, size_t elements);
@@ -968,6 +970,47 @@ namespace gtom
 			id < elements;
 			id += blockDim.x * gridDim.x)
 			d_output[id] = sgn(d_input[id]);
+	}
+
+
+	////////////////
+	//Trigonometry//
+	////////////////
+
+	template <class T> void d_Cos(T* d_input, T* d_output, size_t elements)
+	{
+		size_t TpB = tmin((size_t)256, elements);
+		size_t totalblocks = tmin((elements + TpB - 1) / TpB, (size_t)8192);
+		dim3 grid = dim3((uint)totalblocks);
+		CosKernel<T> << <grid, (uint)TpB >> > (d_input, d_output, elements);
+	}
+	template void d_Cos<float>(float* d_input, float* d_output, size_t elements);
+	template void d_Cos<double>(double* d_input, double* d_output, size_t elements);
+
+	template <class T> __global__ void CosKernel(T* d_input, T* d_output, size_t elements)
+	{
+		for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+			id < elements;
+			id += blockDim.x * gridDim.x)
+			d_output[id] = cos(d_input[id]);
+	}
+
+	template <class T> void d_Sin(T* d_input, T* d_output, size_t elements)
+	{
+		size_t TpB = tmin((size_t)256, elements);
+		size_t totalblocks = tmin((elements + TpB - 1) / TpB, (size_t)8192);
+		dim3 grid = dim3((uint)totalblocks);
+		SinKernel<T> << <grid, (uint)TpB >> > (d_input, d_output, elements);
+	}
+	template void d_Sin<float>(float* d_input, float* d_output, size_t elements);
+	template void d_Sin<double>(double* d_input, double* d_output, size_t elements);
+
+	template <class T> __global__ void SinKernel(T* d_input, T* d_output, size_t elements)
+	{
+		for (size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+			id < elements;
+			id += blockDim.x * gridDim.x)
+			d_output[id] = sin(d_input[id]);
 	}
 
 

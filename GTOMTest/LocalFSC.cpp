@@ -20,9 +20,11 @@ TEST(Resolution, LocalFSC)
 		tfloat* d_input1 = MixedToDeviceTfloat(h_mrcraw1, header.mode, Elements(dimsvolume) * nvolumes);
 		tfloat* d_input2 = MixedToDeviceTfloat(h_mrcraw2, header.mode, Elements(dimsvolume) * nvolumes);
 
+        tfloat* d_mask = CudaMallocValueFilled(Elements(dimsvolume) * nvolumes, (tfloat)1);
+
 		tfloat* d_resolution = (tfloat*)CudaMallocValueFilled(Elements(dimsvolume), (tfloat)0);
 		
-		d_LocalFSC(d_input1, d_input2, dimsvolume, nvolumes, d_resolution, windowsize, shells, (tfloat)0.143);
+		d_LocalFSC(d_input1, d_input2, d_mask, dimsvolume, d_resolution, windowsize, 1, (tfloat)0.143, 1);
 
 		d_WriteMRC(d_resolution, dimsvolume, "d_resolution.mrc");
 		

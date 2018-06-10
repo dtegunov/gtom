@@ -273,7 +273,7 @@ namespace gtom
 		z -= dim / 2;
 		z *= z;
 
-		for (int x = 0; x < dim; x++)
+		for (int x = threadIdx.x; x < dim; x += blockDim.x)
 		{
 			float xx = x - dim / 2;
 

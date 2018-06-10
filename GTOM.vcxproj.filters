@@ -502,6 +502,9 @@
     <CudaCompile Include="src\Relion\ProjectShifted.cu">
       <Filter>Relion</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\ImageManipulation\Distort.cu">
+      <Filter>Image Manipulation</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\IO\em.cpp">

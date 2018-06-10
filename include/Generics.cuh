@@ -332,6 +332,22 @@ namespace gtom
 	template <class T> void d_Sign(T* d_input, T* d_output, size_t elements);
 
 	/**
+	* \brief Computes cos(x) for every input element x
+	* \param[in] d_input	Array with input values
+	* \param[in] d_output	Array that will contain the result; d_output == d_input is valid
+	* \param[in] elements	Number of elements
+	*/
+	template <class T> void d_Cos(T* d_input, T* d_output, size_t elements);
+
+	/**
+	* \brief Computes sin(x) for every input element x
+	* \param[in] d_input	Array with input values
+	* \param[in] d_output	Array that will contain the result; d_output == d_input is valid
+	* \param[in] elements	Number of elements
+	*/
+	template <class T> void d_Sin(T* d_input, T* d_output, size_t elements);
+
+	/**
 	* \brief Computes a * b + c for every input
 	* \param[in] d_mult1	Array with a
 	* \param[in] d_mult2	Array with b

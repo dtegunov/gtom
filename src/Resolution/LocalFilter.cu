@@ -13,14 +13,14 @@ namespace gtom
 	///////////////////////////
 
 	__global__ void LocalFilterKernel(tcomplex* d_input,
-									tcomplex* d_output,
-									uint sidelength,
-									uint sidelengthft,
-									tfloat angpix,
-									tfloat mtfslope,
-									tfloat* d_resolution,
-									tfloat* d_bfactors,
-									tfloat* d_debugfsc);
+										tcomplex* d_output,
+										uint sidelength,
+										uint sidelengthft,
+										tfloat angpix,
+										tfloat* d_resolution,
+										tfloat* d_filterramps,
+										int rampsoversample,
+										tfloat* d_debugfsc);
 
 	///////////////////////////////////
 	//Local Fourier Shell Correlation//
@@ -30,10 +30,10 @@ namespace gtom
 						tfloat* d_filtered,
 						int3 dimsvolume,
 						tfloat* d_resolution,
-						tfloat* d_bfactors,
 						int windowsize,
 						tfloat angpix,
-						tfloat mtfslope)
+						tfloat* d_filterramps,
+						int rampsoversample)
 	{
 		// dimsvolume sans the region where window around position of interest would exceed the volume
 		int3 dimsaccessiblevolume = toInt3(dimsvolume.x - windowsize, dimsvolume.y - windowsize, dimsvolume.z - windowsize);
@@ -44,11 +44,9 @@ namespace gtom
 		uint batchsize = batchmemory / windowmemory;
 
 		tfloat* d_accessibleresolution = CudaMallocValueFilled(Elements(dimsaccessiblevolume), (tfloat)0);
-		tfloat* d_accessiblebfactors = CudaMallocValueFilled(Elements(dimsaccessiblevolume), (tfloat)0);
 		tfloat* d_accessiblecorrected = CudaMallocValueFilled(Elements(dimsaccessiblevolume), (tfloat)0);
 
 		d_Pad(d_resolution, d_accessibleresolution, dimsvolume, dimsaccessiblevolume, T_PAD_VALUE, (tfloat)0);
-		d_Pad(d_bfactors, d_accessiblebfactors, dimsvolume, dimsaccessiblevolume, T_PAD_VALUE, (tfloat)0);
 
 		// Allocate buffers for batch window extraction
 		tfloat *d_extracts1, *d_extracts2;
@@ -115,9 +113,9 @@ namespace gtom
 												windowsize,
 												windowsize / 2 + 1,
 												angpix,
-												mtfslope,
 												d_accessibleresolution + i,
-												d_accessiblebfactors + i,
+												d_filterramps,
+												rampsoversample,
 												NULL);
 
 			// Low-pass and sharpened
@@ -144,7 +142,6 @@ namespace gtom
 
 		cudaFree(d_accessiblecorrected);
 		cudaFree(d_accessibleresolution);
-		cudaFree(d_accessiblebfactors);
 		cudaFree(d_extractorigins);
 		cudaFree(d_mask);
 		cudaFree(d_extractsft1);
@@ -158,18 +155,13 @@ __global__ void LocalFilterKernel(tcomplex* d_input,
 									uint sidelength,
 									uint sidelengthft,
 									tfloat angpix,
-									tfloat mtfslope,
 									tfloat* d_resolution,
-									tfloat* d_bfactors,
+									tfloat* d_filterramps,
+									int rampsoversample,
 									tfloat* d_debugfsc)
 	{
-		__shared__ float cutoffshell, bfactor;
-		if (threadIdx.x == 0)
-		{
-			cutoffshell = d_resolution[blockIdx.x];
-			bfactor = d_bfactors[blockIdx.x];
-		}
-		__syncthreads();
+		float cutoffshell;
+		cutoffshell = d_resolution[blockIdx.x];
 
 		uint elementsslice = sidelengthft * sidelength;
 		uint elementscube = elementsslice * sidelength;
@@ -191,16 +183,28 @@ __global__ void LocalFilterKernel(tcomplex* d_input,
 				tfloat ry = idy <= sidelengthhalf ? idy : idy - (int)sidelength;
 				tfloat rz = idz <= sidelengthhalf ? idz : idz - (int)sidelength;
 				tfloat radius = sqrt(rx * rx + ry * ry + rz * rz);
-				uint ri = tmin((uint)(radius + 0.5f), sidelengthhalf - 1);
+
+				int sidehalf = sidelength / 2;
+
+				if (radius >= sidehalf)
+				{
+					d_output[id] = make_cuComplex(0, 0);
+					continue;
+				}
+
+				tfloat ramp00 = d_filterramps[(int)(cutoffshell * rampsoversample) * sidehalf + (int)radius];
+				tfloat ramp01 = d_filterramps[(int)(cutoffshell * rampsoversample) * sidehalf + tmin((int)radius + 1, sidehalf - 1)];
+
+				tfloat ramp10 = d_filterramps[tmin((int)(cutoffshell * rampsoversample) + 1, sidehalf * rampsoversample - 1) * sidehalf + (int)radius];
+				tfloat ramp11 = d_filterramps[tmin((int)(cutoffshell * rampsoversample) + 1, sidehalf * rampsoversample - 1) * sidehalf + tmin((int)radius + 1, sidelength / 2 - 1)];
+
+				tfloat ramp0 = lerp(ramp00, ramp01, radius - floor(radius));
+				tfloat ramp1 = lerp(ramp10, ramp11, radius - floor(radius));
+
+				tfloat ramp = lerp(ramp0, ramp1, cutoffshell * rampsoversample - floor(cutoffshell * rampsoversample));
 
 				tcomplex val = d_input[id];
-
-				val *= 1 - tmax(0, tmin(1, radius - cutoffshell));
-
-				tfloat res = radius / (sidelength * angpix);
-				tfloat bfaccorr = exp(-bfactor * 0.25f * res * res);
-
-				val *= bfaccorr;
+				val *= ramp;
 
 				if (isnan(val.x))
 					val.x = 0;

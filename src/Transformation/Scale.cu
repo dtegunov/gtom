@@ -27,10 +27,14 @@ namespace gtom
 
 		//All new dimensions must be either bigger than the old or smaller, not mixed
 		int biggerdims = 0;
+        int equaldims = 0;
 		for (int i = 0; i < ndims; i++)
-			if (((int*)&newdims)[i] >= ((int*)&olddims)[i])
+			if (((int*)&newdims)[i] > ((int*)&olddims)[i])
 				biggerdims++;
-		if (biggerdims != 0 && biggerdims != ndims)
+            else if (((int*)&newdims)[i] == ((int*)&olddims)[i])
+                equaldims++;
+
+		if (biggerdims != 0 && biggerdims != (ndims - equaldims))
 			throw;
 
 		if (mode == T_INTERP_LINEAR || mode == T_INTERP_CUBIC)
@@ -109,7 +113,7 @@ namespace gtom
 			else
 				d_FFTR2C(d_input, d_inputFFT, planforw);
 
-			if (newdims.x > olddims.x)
+			if (biggerdims > 0)
 				d_FFTPad(d_inputFFT, d_outputFFT, olddims, newdims, batch);
 			else
 				d_FFTCrop(d_inputFFT, d_outputFFT, olddims, newdims, batch);

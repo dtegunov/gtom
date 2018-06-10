@@ -19,7 +19,7 @@ TEST(Generics, LocalStd)
 		tfloat* d_std = CudaMallocValueFilled(Elements(dimsmap), (tfloat)0);
 		tfloat* d_mean = CudaMallocValueFilled(Elements(dimsmap), (tfloat)0);
 
-		d_LocalStd(d_input, dimsmap, 32, d_std, d_mean);
+		d_LocalStd(d_input, dimsmap, NULL, 32, d_std, d_mean);
 
 		tfloat* h_std = (tfloat*)MallocFromDeviceArray(d_std, Elements(dimsmap) * sizeof(tfloat));
 		tfloat* h_mean = (tfloat*)MallocFromDeviceArray(d_mean, Elements(dimsmap) * sizeof(tfloat));

@@ -63,15 +63,11 @@ namespace gtom
 
 	template<uint TpB> __global__ void __launch_bounds__(TpB) MagAnisotropyCorrectKernel(cudaTex t_image, uint dimimage, tfloat* d_scaled, uint dimscaled, glm::mat2 transform)
 	{
-		float fx, fy;
-		float x0, x1, y0, y1;
-		tfloat d00, d01, d10, d11, dx0, dx1;
-
 		d_scaled += dimscaled * dimscaled * blockIdx.y;
 		float zcoord = blockIdx.y + 0.5f;
 		int imagecenter = dimimage / 2;
 
-		for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < dimscaled * dimscaled; id += blockDim.x * TpB)
+		for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < dimscaled * dimscaled; id += gridDim.x * TpB)
 		{
 			uint idx = id % dimscaled;
 			uint idy = id / dimscaled;

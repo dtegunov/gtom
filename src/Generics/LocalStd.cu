@@ -21,18 +21,20 @@ namespace gtom
 
 		// Create spherical mask, calculate its sum, and pre-FFT it for convolution
 		{
-			d_SphereMask((tfloat*)d_maskft, (tfloat*)d_maskft, dimsmap, &localradius, 1, NULL);
-			d_RemapFull2FullFFT((tfloat*)d_maskft, (tfloat*)d_maskft, dimsmap);
+			tfloat* d_mask = CudaMallocValueFilled(Elements(dimsmap), (tfloat)1);
+			d_SphereMask(d_mask, d_mask, dimsmap, &localradius, 1, NULL);
+			d_RemapFull2FullFFT(d_mask, d_mask, dimsmap);
 
 			if (d_fouriermask == NULL)
 			{
 				tfloat* d_sum = CudaMallocValueFilled(1, (tfloat)0);
-				d_Sum((tfloat*)d_maskft, d_sum, Elements(dimsmap));
+				d_Sum(d_mask, d_sum, Elements(dimsmap));
 				cudaMemcpy(&masksum, d_sum, sizeof(tfloat), cudaMemcpyDeviceToHost);
 				cudaFree(d_sum);
 			}
 
-			d_FFTR2C((tfloat*)d_maskft, d_maskft, &localplanforw);
+			d_FFTR2C(d_mask, d_maskft, &localplanforw);
+			cudaFree(d_mask);
 
 			if (d_fouriermask != NULL)
 			{
@@ -44,7 +46,7 @@ namespace gtom
 				d_IFFTC2R(d_maskft, d_maskconv, DimensionCount(dimsmap), dimsmap, 1, true);
 				
 				tfloat* d_sum = CudaMallocValueFilled(1, (tfloat)0);
-				d_Sum((tfloat*)d_maskft, d_sum, Elements(dimsmap));
+				d_Sum(d_maskconv, d_sum, Elements(dimsmap));
 				cudaMemcpy(&masksum, d_sum, sizeof(tfloat), cudaMemcpyDeviceToHost);
 				cudaFree(d_sum);
 
@@ -61,41 +63,53 @@ namespace gtom
 		{
 			d_FFTR2C(d_map, d_mapft, &localplanforw);
 
-			d_Square(d_map, (tfloat*)d_map2ft, Elements(dimsmap));
-			d_FFTR2C((tfloat*)d_map2ft, d_map2ft, &localplanforw);
+			tfloat* d_map2;
+			cudaMalloc((void**)&d_map2, Elements(dimsmap) * sizeof(tfloat));
+			d_Square(d_map, d_map2, Elements(dimsmap));
+			d_FFTR2C(d_map2, d_map2ft, &localplanforw);
+
+			cudaFree(d_map2);
 		}
 
-		// Convolute
+		tfloat* d_mapconv;
+		tfloat* d_map2conv;
+
+		// Convolve
 		{
 			d_ComplexMultiplyByConjVector(d_mapft, d_maskft, d_mapft, ElementsFFT(dimsmap));
 			d_ComplexMultiplyByConjVector(d_map2ft, d_maskft, d_map2ft, ElementsFFT(dimsmap));
+			cudaFree(d_maskft);
 
-			d_IFFTC2R(d_mapft, (tfloat*)d_mapft, &localplanback, dimsmap);
-			d_IFFTC2R(d_map2ft, (tfloat*)d_map2ft, &localplanback, dimsmap);
+			cudaMalloc((void**)&d_mapconv, Elements(dimsmap) * sizeof(tfloat));
+			d_IFFTC2R(d_mapft, d_mapconv, &localplanback, dimsmap);
+			cudaFree(d_mapft);
+
+			cudaMalloc((void**)&d_map2conv, Elements(dimsmap) * sizeof(tfloat));
+			d_IFFTC2R(d_map2ft, d_map2conv, &localplanback, dimsmap);
+			cudaFree(d_map2ft);
 		}
 
 		// Optionally, also output local mean
 		if (d_mean != NULL)
 		{
-			d_DivideByScalar((tfloat*)d_mapft, d_mean, Elements(dimsmap), masksum);
+			d_DivideByScalar(d_mapconv, d_mean, Elements(dimsmap), masksum);
 		}
 
 		// std = sqrt(max(0, masksum * conv2 - conv1^2)) / masksum
 		{
-			d_MultiplyByScalar((tfloat*)d_map2ft, (tfloat*)d_map2ft, Elements(dimsmap), masksum);
-			d_Square((tfloat*)d_mapft, (tfloat*)d_mapft, Elements(dimsmap));
+			d_MultiplyByScalar(d_map2conv, d_map2conv, Elements(dimsmap), masksum);
+			d_Square(d_mapconv, d_mapconv, Elements(dimsmap));
 
-			d_SubtractVector((tfloat*)d_map2ft, (tfloat*)d_mapft, (tfloat*)d_map2ft, Elements(dimsmap));
-			d_MaxOp((tfloat*)d_map2ft, (tfloat)0, (tfloat*)d_map2ft, Elements(dimsmap));
+			d_SubtractVector(d_map2conv, d_mapconv, d_map2conv, Elements(dimsmap));
+			d_MaxOp(d_map2conv, (tfloat)0, d_map2conv, Elements(dimsmap));
 
-			d_Sqrt((tfloat*)d_map2ft, (tfloat*)d_map2ft, Elements(dimsmap));
+			d_Sqrt(d_map2conv, d_map2conv, Elements(dimsmap));
 
-			d_DivideByScalar((tfloat*)d_map2ft, d_std, Elements(dimsmap), masksum);
+			d_DivideByScalar(d_map2conv, d_std, Elements(dimsmap), masksum);
 		}
 
-		cudaFree(d_map2ft);
-		cudaFree(d_mapft);
-		cudaFree(d_maskft);
+		cudaFree(d_mapconv);
+		cudaFree(d_map2conv);
 
 		if (planforw == NULL)
 			cufftDestroy(localplanforw);

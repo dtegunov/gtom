@@ -25,7 +25,7 @@ namespace gtom
 			NULL, 1, 0,
 			direction, batch);
 
-		cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE);
+		//cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_DEFAULT);
 
 		return plan;
 	}
@@ -62,7 +62,7 @@ namespace gtom
 			NULL, 1, 0,
 			direction, batch);
 
-		cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE);
+		//cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE);
 #ifdef GTOM_DOUBLE
 		cufftExecZ2Z(plan, d_input, d_output);
 #else
