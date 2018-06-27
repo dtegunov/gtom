@@ -8,7 +8,7 @@
 
 namespace gtom
 {
-	__global__ void BandpassNonCubicKernel(tcomplex* d_inputft, tcomplex* d_outputft, int3 dims, tfloat nyquistlow, tfloat nyquisthigh);
+	__global__ void BandpassNonCubicKernel(tcomplex* d_inputft, tcomplex* d_outputft, int3 dims, tfloat nyquistlow, tfloat nyquisthigh, tfloat nyquistsoftedge);
 
 	///////////////////////////////////////////
 	//Equivalent of TOM's tom_bandpass method//
@@ -80,20 +80,20 @@ namespace gtom
 			cudaFree(d_localmask);
 	}
 
-	void d_BandpassNonCubic(tfloat* d_input, tfloat* d_output, int3 dims, tfloat nyquistlow, tfloat nyquisthigh, uint batch)
+	void d_BandpassNonCubic(tfloat* d_input, tfloat* d_output, int3 dims, tfloat nyquistlow, tfloat nyquisthigh, tfloat nyquistsoftedge, uint batch)
 	{
 		tcomplex* d_inputft;
 		cudaMalloc((void**)&d_inputft, ElementsFFT(dims) * batch * sizeof(tcomplex));
 		d_FFTR2C(d_input, d_inputft, DimensionCount(dims), dims, batch);
 
 		dim3 grid = dim3(dims.y, dims.z, batch);
-		BandpassNonCubicKernel <<<grid, 128>>> (d_inputft, d_inputft, dims, nyquistlow * nyquistlow, nyquisthigh * nyquisthigh);
+		BandpassNonCubicKernel <<<grid, 128>>> (d_inputft, d_inputft, dims, nyquistlow, nyquisthigh, nyquistsoftedge);
 
 		d_IFFTC2R(d_inputft, d_output, DimensionCount(dims), dims, batch);
 		cudaFree(d_inputft);
 	}
 
-	__global__ void BandpassNonCubicKernel(tcomplex* d_inputft, tcomplex* d_outputft, int3 dims, tfloat nyquistlow, tfloat nyquisthigh)
+	__global__ void BandpassNonCubicKernel(tcomplex* d_inputft, tcomplex* d_outputft, int3 dims, tfloat nyquistlow, tfloat nyquisthigh, tfloat nyquistsoftedge)
 	{
 		int y = blockIdx.x;
 		int z = blockIdx.y;
@@ -114,11 +114,21 @@ namespace gtom
 			xx /= dims.x / 2.0f;
 			xx *= xx;
 
-			float r = xx + yy + zz;
-			if (r >= nyquistlow && r < nyquisthigh)
-				d_outputft[x] = d_inputft[x];
-			else
-				d_outputft[x] = make_cuComplex(0, 0);
+			float r = sqrt(xx + yy + zz);
+
+            float filter = 1;
+            if (nyquistsoftedge > 0)
+            {
+                float edgelow = cos(tmin(1, tmax(0, nyquistlow - r) / nyquistsoftedge) * PI) * 0.5f + 0.5f;
+                float edgehigh = cos(tmin(1, tmax(0, (r - nyquisthigh) / nyquistsoftedge)) * PI) * 0.5f + 0.5f;
+                filter = edgelow * edgehigh;
+            }
+            else
+            {
+                filter = (r >= nyquistlow && r <= nyquisthigh) ? 1 : 0;
+            }
+
+			d_outputft[x] = d_inputft[x] * filter;
 		}
 	}
 }

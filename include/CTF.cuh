@@ -236,7 +236,7 @@ namespace gtom
 
 	//Periodogram.cu:
 	void d_CTFPeriodogram(tfloat* d_image, int2 dimsimage, float overlapfraction, int2 dimsregion, int2 dimspadded, tfloat* d_output2d, bool dopost = true);
-	void d_CTFPeriodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, int2 dimsregion, int2 dimspadded, tfloat* d_output2d, bool dopost = true, cufftHandle planforw = NULL);
+	void d_CTFPeriodogram(tfloat* d_image, int2 dimsimage, int3* d_origins, int norigins, int2 dimsregion, int2 dimspadded, tfloat* d_output2d, bool dopost = true, cufftHandle planforw = NULL, tfloat* d_extracted = NULL, tcomplex* d_extractedft = NULL);
 
 	//RotationalAverage.cu:
 	void d_CTFRotationalAverage(tfloat* d_re, 

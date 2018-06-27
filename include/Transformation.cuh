@@ -1,5 +1,6 @@
 #include "cufft.h"
 #include "Prerequisites.cuh"
+#include "Angles.cuh"
 
 #ifndef TRANSFORMATION_CUH
 #define TRANSFORMATION_CUH
@@ -46,6 +47,8 @@ namespace gtom
 	void d_Rotate2D(cudaTex* t_input, tfloat* d_output, int2 dims, tfloat* h_angles, T_INTERP_MODE mode, bool isoutputzerocentered, uint batch = 1);
 	void d_Rotate3D(tfloat* d_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, uint nangles, T_INTERP_MODE mode, bool outputzerocentered);
 	void d_Rotate3D(cudaTex t_volume, tfloat* d_output, int3 dims, tfloat3* h_angles, uint nangles, T_INTERP_MODE mode, bool outputzerocentered);
+    void d_Rotate3DExtractAt(cudaTex t_volume, int3 dimsvolume, tfloat* d_proj, int3 dimsproj, tfloat3* h_angles, tfloat3* h_positions, T_INTERP_MODE mode, uint batch);
+    void d_Rotate3DExtractAt(cudaTex t_volume, int3 dimsvolume, tfloat* d_proj, int3 dimsproj, glm::mat3* d_matrices, tfloat3* d_positions, T_INTERP_MODE mode, uint batch);
 	void d_Rotate2DFT(tcomplex* d_input, tcomplex* d_output, int3 dims, tfloat* angles, tfloat maxfreq, T_INTERP_MODE mode, bool isoutputzerocentered, int batch = 1);
 	void d_Rotate2DFT(cudaTex t_inputRe, cudaTex t_inputIm, tcomplex* d_output, int3 dims, tfloat angle, tfloat maxfreq, T_INTERP_MODE mode, bool isoutputzerocentered);
 	void d_Rotate3DFT(tcomplex* d_volume, tcomplex* d_output, int3 dims, tfloat3* h_angles, int nangles, T_INTERP_MODE mode, bool outputzerocentered);

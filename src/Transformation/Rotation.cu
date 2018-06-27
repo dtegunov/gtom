@@ -15,6 +15,7 @@ namespace gtom
 	////////////////////////////
 
 	template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate3DKernel(cudaTex t_input, tfloat* d_output, int3 dims, glm::mat4* d_transforms, uint nangles);
+    template<bool cubicinterp> __global__ void Rotate3DExtractAt(cudaTex t_input, int dimvolume, tfloat* d_proj, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, tfloat3* d_positions);
 	template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate2DKernel(cudaTex* t_input, tfloat* d_output, int2 dims, glm::mat2* d_transforms);
 	template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate2DFTKernel(cudaTex t_Re, cudaTex t_Im, tcomplex* d_output, int3 dims, glm::mat2 transform, tfloat maxfreq);
 	template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate3DFTKernel(cudaTex t_Re, cudaTex t_Im, tcomplex* d_output, int3 dims, glm::mat4* d_transform, float maxfreq2);
@@ -82,6 +83,48 @@ namespace gtom
 
 		cudaFree(d_transforms);
 	}
+
+
+    ////////////////////////////
+    //Rotate 3D and extract at//
+    ////////////////////////////
+
+    void d_Rotate3DExtractAt(cudaTex t_volume, int3 dimsvolume, tfloat* d_proj, int3 dimsproj, tfloat3* h_angles, tfloat3* h_positions, T_INTERP_MODE mode, uint batch)
+    {
+        glm::mat3* h_matrices = (glm::mat3*)malloc(sizeof(glm::mat3) * batch);
+        for (int i = 0; i < batch; i++)
+            h_matrices[i] = glm::transpose(Matrix3Euler(h_angles[i]));
+        glm::mat3* d_matrices = (glm::mat3*)CudaMallocFromHostArray(h_matrices, sizeof(glm::mat3) * batch);
+        free(h_matrices);
+
+        tfloat3* d_positions = (tfloat3*)CudaMallocFromHostArray(h_positions, batch * sizeof(tfloat3));
+
+        d_Rotate3DExtractAt(t_volume, dimsvolume, d_proj, dimsproj, d_matrices, d_positions, mode, batch);
+
+        cudaFree(d_matrices);
+        cudaFree(d_positions);
+    }
+
+    void d_Rotate3DExtractAt(cudaTex t_volume, int3 dimsvolume, tfloat* d_proj, int3 dimsproj, glm::mat3* d_matrices, tfloat3* d_positions, T_INTERP_MODE mode, uint batch)
+    {
+        uint ndimsvolume = DimensionCount(dimsvolume);
+        uint ndimsproj = DimensionCount(dimsproj);
+        if (ndimsvolume < ndimsproj)
+            throw;
+
+        uint elements = Elements(dimsproj);
+        dim3 grid = dim3(tmin(128, (elements + 127) / 128), batch, 1);
+
+        if (ndimsproj == 3)
+        {
+            if (mode == T_INTERP_CUBIC)
+                Rotate3DExtractAt<true> << <grid, 128 >> > (t_volume, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, d_positions);
+            else
+                Rotate3DExtractAt<false> << <grid, 128 >> > (t_volume, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, d_positions);
+        }
+        else
+            throw;
+    }
 
 
 	/////////////
@@ -372,6 +415,39 @@ namespace gtom
 			d_output[(b * dims.z + (idz * dims.y + idy)) * dims.x + idx] = value;
 		}
 	}
+
+    template<bool cubicinterp> __global__ void Rotate3DExtractAt(cudaTex t_input, int dimvolume, tfloat* d_proj, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, tfloat3* d_positions)
+    {
+        d_proj += elementsproj * blockIdx.y;
+        
+        uint slice = dimproj * dimproj;
+
+        glm::mat3 rotation = d_rotations[blockIdx.y];
+        glm::vec3 position = glm::vec3(d_positions[blockIdx.y].x, d_positions[blockIdx.y].y, d_positions[blockIdx.y].z);
+        int centervolume = dimproj / 2;
+
+        for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < elementsproj; id += gridDim.x * blockDim.x)
+        {
+            uint idx = id % dimproj;
+            uint idy = (id % slice) / dimproj;
+            uint idz = id / slice;
+
+            int x = idx;
+            int y = idy;
+            int z = idz;
+
+            glm::vec3 pos = glm::vec3(x - centervolume, y - centervolume, z - centervolume);
+
+            pos = rotation * pos;
+            pos += position;
+            pos += 0.5f;
+
+            if (cubicinterp)
+                d_proj[id] = cubicTex3DSimple<tfloat>(t_input, pos.x, pos.y, pos.z);
+            else
+                d_proj[id] = tex3D<tfloat>(t_input, pos.x, pos.y, pos.z);
+        }
+    }
 
 	template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate2DKernel(cudaTex* t_input, tfloat* d_output, int2 dims, glm::mat2* d_transforms)
 	{
