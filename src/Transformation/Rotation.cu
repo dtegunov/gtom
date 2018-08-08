@@ -15,7 +15,7 @@ namespace gtom
 	////////////////////////////
 
 	template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate3DKernel(cudaTex t_input, tfloat* d_output, int3 dims, glm::mat4* d_transforms, uint nangles);
-    template<bool cubicinterp> __global__ void Rotate3DExtractAt(cudaTex t_input, int dimvolume, tfloat* d_proj, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, tfloat3* d_positions);
+    template<bool cubicinterp> __global__ void Rotate3DExtractAt(cudaTex t_input, int3 dimvolume, tfloat* d_proj, int3 dimproj, size_t elementsproj, glm::mat3* d_rotations, tfloat3* d_positions);
 	template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate2DKernel(cudaTex* t_input, tfloat* d_output, int2 dims, glm::mat2* d_transforms);
 	template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate2DFTKernel(cudaTex t_Re, cudaTex t_Im, tcomplex* d_output, int3 dims, glm::mat2 transform, tfloat maxfreq);
 	template<bool cubicinterp, bool outputzerocentered> __global__ void Rotate3DFTKernel(cudaTex t_Re, cudaTex t_Im, tcomplex* d_output, int3 dims, glm::mat4* d_transform, float maxfreq2);
@@ -115,12 +115,12 @@ namespace gtom
         uint elements = Elements(dimsproj);
         dim3 grid = dim3(tmin(128, (elements + 127) / 128), batch, 1);
 
-        if (ndimsproj == 3)
+        if (ndimsproj >= 2)
         {
             if (mode == T_INTERP_CUBIC)
-                Rotate3DExtractAt<true> << <grid, 128 >> > (t_volume, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, d_positions);
+                Rotate3DExtractAt<true> << <grid, 128 >> > (t_volume, dimsvolume, d_proj, dimsproj, elements, d_matrices, d_positions);
             else
-                Rotate3DExtractAt<false> << <grid, 128 >> > (t_volume, dimsvolume.x, d_proj, dimsproj.x, elements, d_matrices, d_positions);
+                Rotate3DExtractAt<false> << <grid, 128 >> > (t_volume, dimsvolume, d_proj, dimsproj, elements, d_matrices, d_positions);
         }
         else
             throw;
@@ -416,27 +416,28 @@ namespace gtom
 		}
 	}
 
-    template<bool cubicinterp> __global__ void Rotate3DExtractAt(cudaTex t_input, int dimvolume, tfloat* d_proj, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, tfloat3* d_positions)
+    template<bool cubicinterp> __global__ void Rotate3DExtractAt(cudaTex t_input, int3 dimvolume, tfloat* d_proj, int3 dimproj, size_t elementsproj, glm::mat3* d_rotations, tfloat3* d_positions)
     {
         d_proj += elementsproj * blockIdx.y;
-        
-        uint slice = dimproj * dimproj;
+
+        uint line = dimproj.x;
+        uint slice = Elements2(dimproj);
 
         glm::mat3 rotation = d_rotations[blockIdx.y];
         glm::vec3 position = glm::vec3(d_positions[blockIdx.y].x, d_positions[blockIdx.y].y, d_positions[blockIdx.y].z);
-        int centervolume = dimproj / 2;
+        int3 centervolume = dimproj / 2;
 
         for (uint id = blockIdx.x * blockDim.x + threadIdx.x; id < elementsproj; id += gridDim.x * blockDim.x)
         {
-            uint idx = id % dimproj;
-            uint idy = (id % slice) / dimproj;
+            uint idx = id % line;
+            uint idy = (id % slice) / line;
             uint idz = id / slice;
 
             int x = idx;
             int y = idy;
             int z = idz;
 
-            glm::vec3 pos = glm::vec3(x - centervolume, y - centervolume, z - centervolume);
+            glm::vec3 pos = glm::vec3(x - centervolume.x, y - centervolume.y, z - centervolume.z);
 
             pos = rotation * pos;
             pos += position;
