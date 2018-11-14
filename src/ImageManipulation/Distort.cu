@@ -100,34 +100,36 @@ namespace gtom
 
 
             //tfloat val = tex3D<tfloat>(t_image, pos.x + 0.5f, pos.y + 0.5f, zcoord);
-            tfloat val = 0;
+            tfloat val = 0, weights = 0;
 
-            for (int y = -4; y <= 4; y++)
-            {
-                float yy = floor(pos.y) + y;
-                float sincy = sinc(pos.y - yy);
-                float yy2 = pos.y - yy;
-                yy2 *= yy2;
-                yy += 0.5f;
+			for (int y = -8; y <= 8; y++)
+			{
+				float yy = floor(pos.y) + y;
+				float sincy = sinc(pos.y - yy) * sinc((pos.y - yy) / 8);
+				float yy2 = pos.y - yy;
+				yy2 *= yy2;
+				yy += 0.5f;
 
-                for (int x = -4; x <= 4; x++)
-                {
-                    float xx = floor(pos.x) + x;
-                    float sincx = sinc(pos.x - xx);
-                    float xx2 = pos.x - xx;
-                    xx2 *= xx2;
-                    float r2 = xx2 + yy2;
+				for (int x = -8; x <= 8; x++)
+				{
+					float xx = floor(pos.x) + x;
+					float sincx = sinc(pos.x - xx) * sinc((pos.x - xx) / 8);
+					float xx2 = pos.x - xx;
+					xx2 *= xx2;
+					/*float r2 = xx2 + yy2;
 
-                    if (r2 > 16)
-                        continue;
+					if (r2 > 64)
+					continue;
 
-                    float hanning = 1.0f + cos(PI * sqrt(r2) / 4);
+					float hanning = 1.0f + cos(PI * sqrt(r2) / 8);*/	// Let's try Lanczos instead
 
-                    val += tex3D<tfloat>(t_image, xx + 0.5f, yy, zcoord) * sincy * sincx * hanning;
-                }
-            }
+					tfloat weight = sincy * sincx;
+					val += tex2D<tfloat>(t_image, xx + 0.5f, yy) * weight;// *hanning;
+					weights += weight;
+				}
+			}
 
-            d_output[id] = val * 0.5f;
+            d_output[id] = val / weights;
         }
     }
 
@@ -146,12 +148,12 @@ namespace gtom
                                      posy - tex2D<tfloat>(t_warpy, warppos.x, warppos.y));
 
             //tfloat val = tex3D<tfloat>(t_image, pos.x + 0.5f, pos.y + 0.5f, zcoord);
-            tfloat val = 0;
+			tfloat val = 0, weights = 0;
 
             for (int y = -8; y <= 8; y++)
             {
                 float yy = floor(pos.y) + y;
-                float sincy = sinc(pos.y - yy);
+                float sincy = sinc(pos.y - yy) * sinc((pos.y - yy) / 8);
                 float yy2 = pos.y - yy;
                 yy2 *= yy2;
                 yy += 0.5f;
@@ -159,21 +161,23 @@ namespace gtom
                 for (int x = -8; x <= 8; x++)
                 {
                     float xx = floor(pos.x) + x;
-                    float sincx = sinc(pos.x - xx);
+                    float sincx = sinc(pos.x - xx) * sinc((pos.x - xx) / 8);
                     float xx2 = pos.x - xx;
                     xx2 *= xx2;
-                    float r2 = xx2 + yy2;
+                    /*float r2 = xx2 + yy2;
 
                     if (r2 > 64)
                         continue;
 
-                    float hanning = 1.0f + cos(PI * sqrt(r2) / 8);
+                    float hanning = 1.0f + cos(PI * sqrt(r2) / 8);*/	// Let's try Lanczos instead
 
-                    val += tex2D<tfloat>(t_image, xx + 0.5f, yy) * sincy * sincx * hanning;
+					tfloat weight = sincy * sincx;
+					val += tex2D<tfloat>(t_image, xx + 0.5f, yy) * weight;// *hanning;
+					weights += weight;
                 }
             }
 
-            d_output[id] = val * 0.5f;
+            d_output[id] = val / weights;
         }
     }
 }

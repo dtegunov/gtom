@@ -505,6 +505,12 @@
     <CudaCompile Include="src\ImageManipulation\Distort.cu">
       <Filter>Image Manipulation</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\Relion\BackprojectTomo.cu">
+      <Filter>Relion</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\Generics\Insertion.cu">
+      <Filter>Generics</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\IO\em.cpp">

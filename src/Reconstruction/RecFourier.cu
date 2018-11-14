@@ -281,7 +281,7 @@ namespace gtom
 			r /= oripadded;
 
 			if (r > 0)
-				d_volume[x] /= sqrt(abs(sinc(r)));// *sinc(r);
+				d_volume[x] /= sinc(r) * sinc(r);
 		}
 	}
 }

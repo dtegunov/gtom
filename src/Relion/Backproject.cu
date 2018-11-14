@@ -6,9 +6,9 @@
 namespace gtom
 {
 	//template<uint TpB> __global__ void Project2Dto2DKernel(cudaTex t_volumeRe, cudaTex t_volumeIm, uint dimvolume, tcomplex* d_proj, uint dimproj, uint rmax, uint rmax2);
-	template<uint ndims, uint TpB> __global__ void Backproject3DtoNDKernel(tcomplex* d_volumeft, tfloat* d_volumeweights, uint dimvolume, tcomplex* d_projft, tfloat* d_projweights, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, uint rmax, int rmax2);
+	template<uint ndims, bool decentered> __global__ void Backproject3DtoNDKernel(tcomplex* d_volumeft, tfloat* d_volumeweights, uint dimvolume, tcomplex* d_projft, tfloat* d_projweights, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, uint rmax, int rmax2);
 
-	void d_rlnBackproject(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, tfloat3* h_angles, float supersample, uint batch)
+	void d_rlnBackproject(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, tfloat3* h_angles, float supersample, bool outputdecentered, uint batch)
 	{
 		glm::mat3* d_matrices;
 
@@ -20,14 +20,14 @@ namespace gtom
 			free(h_matrices);
 		}
 
-		d_rlnBackproject(d_volumeft, d_volumeweights, dimsvolume, d_projft, d_projweights, dimsproj, rmax, d_matrices, batch);
+		d_rlnBackproject(d_volumeft, d_volumeweights, dimsvolume, d_projft, d_projweights, dimsproj, rmax, d_matrices, outputdecentered, batch);
 
 		{
 			cudaFree(d_matrices);
 		}
 	}
 
-	void d_rlnBackproject(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, glm::mat3* d_matrices, uint batch)
+	void d_rlnBackproject(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, glm::mat3* d_matrices, bool outputdecentered, uint batch)
 	{
 		uint ndimsvolume = DimensionCount(dimsvolume);
 		uint ndimsproj = DimensionCount(dimsproj);
@@ -42,9 +42,19 @@ namespace gtom
 			uint elements = ElementsFFT(dimsproj);
 
 			if (ndimsproj == 2)
-				Backproject3DtoNDKernel<2, 128> << <grid, 128 >> > (d_volumeft, d_volumeweights, dimsvolume.x, d_projft, d_projweights, dimsproj.x, elements, d_matrices, rmax, rmax * rmax);
+			{
+				if (outputdecentered)
+					Backproject3DtoNDKernel<2, true> << <grid, 128 >> > (d_volumeft, d_volumeweights, dimsvolume.x, d_projft, d_projweights, dimsproj.x, elements, d_matrices, rmax, rmax * rmax);
+				else
+					Backproject3DtoNDKernel<2, false> << <grid, 128 >> > (d_volumeft, d_volumeweights, dimsvolume.x, d_projft, d_projweights, dimsproj.x, elements, d_matrices, rmax, rmax * rmax);
+			}
 			else if (ndimsproj == 3)
-				Backproject3DtoNDKernel<3, 128> << <grid, 128 >> > (d_volumeft, d_volumeweights, dimsvolume.x, d_projft, d_projweights, dimsproj.x, elements, d_matrices, rmax, rmax * rmax);
+			{
+				if (outputdecentered)
+					Backproject3DtoNDKernel<3, true> << <grid, 128 >> > (d_volumeft, d_volumeweights, dimsvolume.x, d_projft, d_projweights, dimsproj.x, elements, d_matrices, rmax, rmax * rmax);
+				else
+					Backproject3DtoNDKernel<3, false> << <grid, 128 >> > (d_volumeft, d_volumeweights, dimsvolume.x, d_projft, d_projweights, dimsproj.x, elements, d_matrices, rmax, rmax * rmax);
+			}
 		}
 		else
 		{
@@ -67,7 +77,7 @@ namespace gtom
 		}
 	}
 
-	template<uint ndims, uint TpB> __global__ void Backproject3DtoNDKernel(tcomplex* d_volumeft, tfloat* d_volumeweights, uint dimvolume, tcomplex* d_projft, tfloat* d_projweights, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, uint rmax, int rmax2)
+	template<uint ndims, bool decentered> __global__ void Backproject3DtoNDKernel(tcomplex* d_volumeft, tfloat* d_volumeweights, uint dimvolume, tcomplex* d_projft, tfloat* d_projweights, uint dimproj, size_t elementsproj, glm::mat3* d_rotations, uint rmax, int rmax2)
 	{
 		d_projft += elementsproj * blockIdx.y;
 		d_projweights += elementsproj * blockIdx.y;
@@ -78,15 +88,15 @@ namespace gtom
 
 		glm::mat3 rotation = d_rotations[blockIdx.y];
 
-		for (uint id = threadIdx.x; id < elementsproj; id += TpB)
+		for (uint id = threadIdx.x; id < elementsproj; id += blockDim.x)
 		{
 			uint idx = id % dimft;
 			uint idy = (ndims == 3 ? id % slice : id) / dimft;
 			uint idz = ndims == 3 ? id / slice : 0;
 
 			int x = idx;
-			int y = idy <= rmax ? idy : (int)idy - (int)dimproj;
-			int z = ndims == 3 ? (idz <= rmax ? idz : (int)idz - (int)dimproj) : 0;
+			int y = idy <= dimproj / 2 ? idy : (int)idy - (int)dimproj;
+			int z = ndims == 3 ? (idz <= dimproj / 2 ? idz : (int)idz - (int)dimproj) : 0;
 			int r2 = ndims == 3 ? z * z + y * y + x * x : y * y + x * x;
 			if (r2 > rmax2)
 				continue;
@@ -140,6 +150,21 @@ namespace gtom
 			tcomplex val = d_projft[id];
 			val.y *= is_neg_x;
 			tfloat weight = d_projweights[id];
+
+			if (decentered)
+			{
+				/*z0 = z0 < dimvolume / 2 ? z0 + dimvolume / 2 : z0 - dimvolume / 2;
+				z1 = z1 < dimvolume / 2 ? z1 + dimvolume / 2 : z1 - dimvolume / 2;
+
+				y0 = y0 < dimvolume / 2 ? y0 + dimvolume / 2 : y0 - dimvolume / 2;
+				y1 = y1 < dimvolume / 2 ? y1 + dimvolume / 2 : y1 - dimvolume / 2;*/
+
+				z0 = (z0 + dimvolume / 2) % dimvolume;
+				z1 = (z1 + dimvolume / 2) % dimvolume;
+
+				y0 = (y0 + dimvolume / 2) % dimvolume;
+				y1 = (y1 + dimvolume / 2) % dimvolume;
+			}
 
 			atomicAdd((tfloat*)(d_volumeft + (z0 * dimvolume + y0) * dimvolumeft + x0), c000 * val.x);
 			atomicAdd((tfloat*)(d_volumeft + (z0 * dimvolume + y0) * dimvolumeft + x0) + 1, c000 * val.y);

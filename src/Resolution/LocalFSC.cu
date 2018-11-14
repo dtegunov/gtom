@@ -96,7 +96,7 @@ namespace gtom
 			//WriteMRC(h_masksums, dimsvolume, "d_masksums.mrc");
 		}
 
-		tfloat* d_accessibleresolution = CudaMallocValueFilled(Elements(dimsaccessiblevolume), windowsize * angpix / 2);
+		tfloat* d_accessibleresolution = CudaMallocValueFilled(Elements(dimsaccessiblevolume), windowsize * angpix);
 
 		// Allocate buffers for batch window extraction
 		tfloat *d_extracts1, *d_extracts2;
@@ -222,7 +222,7 @@ namespace gtom
 		//d_MultiplyByScalar(d_accessibleresolution, d_accessibleresolution, Elements(dimsaccessiblevolume), windowsize * angpix);
 
 		//d_WriteMRC(d_accessibleresolution, dimsaccessiblevolume, "d_accessibleresolution.mrc");
-		d_Pad(d_accessibleresolution, d_resolution, dimsaccessiblevolume, dimsvolume, T_PAD_VALUE, (tfloat)windowsize * angpix / 2);
+		d_Pad(d_accessibleresolution, d_resolution, dimsaccessiblevolume, dimsvolume, T_PAD_VALUE, (tfloat)windowsize * angpix);
 
 		cufftDestroy(planback);
 		cufftDestroy(planforw);
@@ -355,7 +355,7 @@ namespace gtom
 			for (i = 1; i < sidelengthhalf; i++)
 			{
 				float n = 1.0f / (2 * PI * (i * i) * masksum);
-				currentthreshold = tmin(0.95f, fscthreshold.x + fscthreshold.y * n / (fscthreshold.z + fscthreshold.w * n));
+				currentthreshold = tmin(0.95f, (fscthreshold.x + fscthreshold.y * n) / (fscthreshold.z + fscthreshold.w * n));
 				if (s_nums[i] < currentthreshold)
 					break;
 			}

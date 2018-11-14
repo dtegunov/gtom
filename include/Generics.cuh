@@ -753,6 +753,10 @@ namespace gtom
 	 */
 	void d_Extract2DTransformed(tfloat* d_input, tfloat* d_output, int2 sourcedims, int2 regiondims, tfloat2* h_scale, tfloat* h_rotation, tfloat2* h_translation, T_INTERP_MODE mode, int batch = 1);
 
+	//Insertion.cu:
+
+	void d_InsertAdditive(tfloat* d_input, tfloat* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+
 	//LocalStd.cu:
 
 	/**

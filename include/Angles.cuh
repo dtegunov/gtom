@@ -1,12 +1,12 @@
-#ifndef ANGLES_CUH
-#define ANGLES_CUH
-
 #include "Prerequisites.cuh"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_INLINE
 #define GLM_FORCE_CUDA
 #include "glm/glm.hpp"
+
+#ifndef ANGLES_CUH
+#define ANGLES_CUH
 
 namespace gtom
 {
@@ -46,6 +46,5 @@ namespace gtom
 
 	tfloat3* GetEqualAngularSpacing(tfloat2 phirange, tfloat2 thetarange, tfloat2 psirange, tfloat increment, int &numangles);
 	std::vector<float3> GetEqualAngularSpacing(float2 phirange, float2 thetarange, float2 psirange, float increment);
-
 }
 #endif
