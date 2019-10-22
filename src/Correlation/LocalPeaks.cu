@@ -13,7 +13,7 @@ namespace gtom
 	//CUDA kernel declarations//
 	////////////////////////////
 
-	__global__ void LocalPeaksKernel(tfloat* d_input, float* d_output, int3 dims, int localextent, tfloat threshold);
+	__global__ void LocalPeaksKernel(tfloat* d_input, float* d_output, int3 dims, int localextent, tfloat threshold, int idz);
 	template<int ndims, int rad> __global__ void SubpixelMaxKernel(tfloat* d_input, tfloat* d_output, int3 dims, float3 s);
 
 
@@ -24,10 +24,9 @@ namespace gtom
 	void d_LocalPeaks(tfloat* d_input, int3** h_peaks, int* h_peaksnum, int3 dims, int localextent, tfloat threshold, int batch)
 	{
 		int TpB = tmin(128, NextMultipleOf(dims.x, 32));
-		dim3 grid = dim3(tmin((dims.x + TpB - 1) / TpB, 32768), dims.y, dims.z);
+		dim3 grid = dim3(tmin((dims.x + TpB - 1) / TpB, 32768), dims.y, 1);
 
-		float* h_output;
-		cudaMallocHost((void**)&h_output, Elements(dims) * sizeof(float));
+		float* h_output = (float*)malloc(Elements(dims) * sizeof(float));
 
 		std::vector<int3> peaks;
 
@@ -37,8 +36,8 @@ namespace gtom
 
 			float* d_output = CudaMallocValueFilled(Elements(dims), 0.0f);
 
-			LocalPeaksKernel << <grid, (uint)TpB >> > (d_input + Elements(dims) * b, d_output, dims, localextent, threshold);
-			cudaDeviceSynchronize();
+			for (int idz = 0; idz < dims.z; idz++)
+				LocalPeaksKernel << <grid, (uint)TpB >> > (d_input + Elements(dims) * b, d_output, dims, localextent, threshold, idz);
 
 			//d_WriteMRC(d_output, dims, "d_localpeaks.mrc");
 
@@ -59,7 +58,7 @@ namespace gtom
 			h_peaksnum[b] = peaks.size();
 		}
 
-		cudaFreeHost(h_output);
+		free(h_output);
 	}
 
 	void d_SubpixelMax(tfloat* d_input, tfloat* d_output, int3 dims, int subpixsteps)
@@ -96,14 +95,13 @@ namespace gtom
 	//CUDA kernels//
 	////////////////
 
-	__global__ void LocalPeaksKernel(tfloat* d_input, float* d_output, int3 dims, int localextent, tfloat threshold)
+	__global__ void LocalPeaksKernel(tfloat* d_input, float* d_output, int3 dims, int localextent, tfloat threshold, int idz)
 	{
 		int idx = blockIdx.x * blockDim.x + threadIdx.x;
 		if (idx >= dims.x)
 			return;
 
 		int idy = blockIdx.y;
-		int idz = blockIdx.z;
 
 		tfloat value = d_input[(idz * dims.y + idy) * dims.x + idx];
 		if (value < threshold)

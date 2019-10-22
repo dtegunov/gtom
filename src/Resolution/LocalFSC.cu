@@ -69,7 +69,7 @@ namespace gtom
 		{
 			d_mask = CudaMallocValueFilled(Elements(dimswindow), (tfloat)1);
 			tfloat maskradius = 0;
-			d_SphereMask(d_mask, d_mask, dimswindow, &maskradius, dimswindow.x / 2, NULL);
+			d_SphereMask(d_mask, d_mask, dimswindow, &maskradius, dimswindow.x / 2, NULL, false);
 			//d_WriteMRC(d_mask, dimswindow, "d_mask.mrc");
 
 			// Calculate all sub-mask sums

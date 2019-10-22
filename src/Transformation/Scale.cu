@@ -18,7 +18,7 @@ namespace gtom
 	//Combines the functionality of TOM's tom_rescale and MATLAB's interp* methods// 
 	////////////////////////////////////////////////////////////////////////////////
 
-	void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, cufftHandle* planforw, cufftHandle* planback, int batch)
+	void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, cufftHandle* planforw, cufftHandle* planback, int batch, tcomplex* d_inputfft, tcomplex* d_outputfft)
 	{
 		//Both sizes should have an equal number of dimensions
 		int ndims = DimensionCount(olddims);
@@ -101,32 +101,41 @@ namespace gtom
 		}
 		else if (mode == T_INTERP_FOURIER)
 		{
-			tcomplex* d_inputFFT;
-			cudaMalloc((void**)&d_inputFFT, ElementsFFT(olddims) * batch * sizeof(tcomplex));
-			tcomplex* d_outputFFT;
-			cudaMalloc((void**)&d_outputFFT, ElementsFFT(newdims) * batch * sizeof(tcomplex));
+			tcomplex* d_owninputFFT;
+			if (d_inputfft == NULL)
+				cudaMalloc((void**)& d_owninputFFT, ElementsFFT(olddims) * batch * sizeof(tcomplex));
+			else
+				d_owninputFFT = d_inputfft;
+
+			tcomplex* d_ownoutputFFT;
+			if (d_outputfft == NULL)
+				cudaMalloc((void**)& d_ownoutputFFT, ElementsFFT(newdims) * batch * sizeof(tcomplex));
+			else
+				d_ownoutputFFT = d_outputfft;
 
 			tfloat normfactor = (tfloat)1 / (tfloat)Elements(olddims);
 
 			if (planforw == NULL)
-				d_FFTR2C(d_input, d_inputFFT, ndims, olddims, batch);
+				d_FFTR2C(d_input, d_owninputFFT, ndims, olddims, batch);
 			else
-				d_FFTR2C(d_input, d_inputFFT, planforw);
+				d_FFTR2C(d_input, d_owninputFFT, planforw);
 
 			if (biggerdims > 0)
-				d_FFTPad(d_inputFFT, d_outputFFT, olddims, newdims, batch);
+				d_FFTPad(d_owninputFFT, d_ownoutputFFT, olddims, newdims, batch);
 			else
-				d_FFTCrop(d_inputFFT, d_outputFFT, olddims, newdims, batch);
+				d_FFTCrop(d_owninputFFT, d_ownoutputFFT, olddims, newdims, batch);
 
 			if (planback == NULL)
-				d_IFFTC2R(d_outputFFT, d_output, ndims, newdims, batch, false);
+				d_IFFTC2R(d_ownoutputFFT, d_output, ndims, newdims, batch, false);
 			else
-				d_IFFTC2R(d_outputFFT, d_output, planback);
+				d_IFFTC2R(d_ownoutputFFT, d_output, planback);
 
 			d_MultiplyByScalar(d_output, d_output, Elements(newdims) * batch, normfactor);
 
-			cudaFree(d_inputFFT);
-			cudaFree(d_outputFFT);
+			if (d_inputfft == NULL)
+				cudaFree(d_owninputFFT);
+			if (d_outputfft == NULL)
+				cudaFree(d_ownoutputFFT);
 		}
 	}
 

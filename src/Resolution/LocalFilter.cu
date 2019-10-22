@@ -192,8 +192,8 @@ __global__ void LocalFilterKernel(tcomplex* d_input,
 					continue;
 				}
 
-				tfloat ramp00 = d_filterramps[(int)(cutoffshell * rampsoversample) * sidehalf + (int)radius];
-				tfloat ramp01 = d_filterramps[(int)(cutoffshell * rampsoversample) * sidehalf + tmin((int)radius + 1, sidehalf - 1)];
+				tfloat ramp00 = d_filterramps[tmin((int)(cutoffshell * rampsoversample), sidehalf * rampsoversample - 1) * sidehalf + (int)radius];
+				tfloat ramp01 = d_filterramps[tmin((int)(cutoffshell * rampsoversample), sidehalf * rampsoversample - 1) * sidehalf + tmin((int)radius + 1, sidehalf - 1)];
 
 				tfloat ramp10 = d_filterramps[tmin((int)(cutoffshell * rampsoversample) + 1, sidehalf * rampsoversample - 1) * sidehalf + (int)radius];
 				tfloat ramp11 = d_filterramps[tmin((int)(cutoffshell * rampsoversample) + 1, sidehalf * rampsoversample - 1) * sidehalf + tmin((int)radius + 1, sidelength / 2 - 1)];

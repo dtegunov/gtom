@@ -176,13 +176,36 @@ namespace gtom
 			dim3 grid = dim3(dimsoripad.y, dimsoripad.z);
 			DecenterKernel<tcomplex> << <grid, TpB >> > (d_dataft, d_convft, dimsori * paddingfactor, dimspadded);
 		}
-		d_ComplexMultiplyByVector(d_convft, d_Fnewweight, d_convft, ElementsFFT(dimsoripad));
+
+		if (iterations == 0)
+		{
+			tcomplex* h_convft = (tcomplex*)MallocFromDeviceArray(d_convft, ElementsFFT(dimsoripad) * sizeof(tcomplex));
+			tfloat* h_Fweight = (tfloat*)MallocFromDeviceArray(d_Fweight, ElementsFFT(dimsoripad) * sizeof(tfloat));
+
+			for (size_t i = 0; i < ElementsFFT(dimsoripad); i++)
+			{
+				if (abs(h_Fweight[i]) > 1e-4f)
+				{
+					h_convft[i] *= 1 / h_Fweight[i];
+					//h_Fweight[i] *= 1 / h_Fweight[i];
+				}
+			}
+
+			cudaMemcpy(d_convft, h_convft, ElementsFFT(dimsoripad) * sizeof(tcomplex), cudaMemcpyHostToDevice);
+			cudaMemcpy(d_Fweight, h_Fweight, ElementsFFT(dimsoripad) * sizeof(tfloat), cudaMemcpyHostToDevice);
+			free(h_convft);
+			free(h_Fweight);
+		}
+		else
+		{
+			d_ComplexMultiplyByVector(d_convft, d_Fnewweight, d_convft, ElementsFFT(dimsoripad));
+		}
 
 		cudaFree(d_Fweight);
 		cudaFree(d_Fnewweight);
 		cudaFree(d_precompblob);
 
-		d_IFFTC2R(d_convft, d_conv, &planback, dimsoripad);
+		d_IFFTC2R(d_convft, d_conv, &planback);
 		//d_WriteMRC(d_conv, dimsori * paddingfactor, "d_reconstructed.mrc");
 		d_FFTFullCrop(d_conv, d_reconstructed, dimsoripad, dimsori);
 		d_RemapFullFFT2Full(d_reconstructed, d_reconstructed, dimsori);
@@ -202,6 +225,8 @@ namespace gtom
 		}
 		//d_DivideByScalar(d_reconstructed, d_reconstructed, Elements(dimsori), (tfloat)paddingfactor * paddingfactor * paddingfactor);
 		//d_WriteMRC(d_reconstructed, dimsori, "d_reconstructed.mrc");
+
+		d_MultiplyByScalar(d_reconstructed, d_reconstructed, Elements(dimsori), 1.0f / (paddingfactor * paddingfactor * paddingfactor * dimsori.x));
 
 		cudaFree(d_conv);
 		cudaFree(d_convft);
@@ -256,8 +281,16 @@ namespace gtom
 	{
 		for (uint i = blockIdx.x * blockDim.x + threadIdx.x; i < elements; i += gridDim.x * blockDim.x)
 		{
-			tfloat w = tmax(1e-6f, abs(d_convft[i].x));
-			d_Fnewweight[i] = tmin(1e20f, d_Fnewweight[i] / w);
+			//if (d_convft[i].x >= 0)
+			{
+				tfloat w = tmax(1e-4f, d_convft[i].x);
+				d_Fnewweight[i] = tmin(1e20f, d_Fnewweight[i] / w);
+			}
+			/*else
+			{
+				tfloat w = tmin(-1e-6f, d_convft[i].x);
+				d_Fnewweight[i] = tmin(1e20f, d_Fnewweight[i] / w);
+			}*/
 		}
 	}
 

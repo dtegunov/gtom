@@ -7,7 +7,7 @@ namespace gtom
 	//CUDA kernel declarations//
 	////////////////////////////
 
-	template <class T> __global__ void SphereMaskKernel(T* d_input, T* d_output, int3 size, tfloat radius, tfloat sigma, tfloat3 center);
+	template <class T> __global__ void SphereMaskKernel(T* d_input, T* d_output, int3 size, tfloat radius, tfloat sigma, tfloat3 center, bool decentered);
 	__global__ void SphereMaskFTKernel(tfloat* d_input, tfloat* d_output, int3 dims, int radius2);
 
 
@@ -21,6 +21,7 @@ namespace gtom
 										tfloat* radius,
 										tfloat sigma,
 										tfloat3* center,
+										bool decentered,
 										int batch)
 	{
 		tfloat _radius = radius != NULL ? *radius : min(min(size.x, size.y), size.z > 1 ? size.z : size.x) / 2;
@@ -28,10 +29,10 @@ namespace gtom
 
 		int TpB = 256;
 		dim3 grid = dim3(size.y, size.z, batch);
-		SphereMaskKernel<T> << <grid, TpB >> > (d_input, d_output, size, _radius, sigma, _center);
+		SphereMaskKernel<T> << <grid, TpB >> > (d_input, d_output, size, _radius, sigma, _center, decentered);
 	}
-	template void d_SphereMask<tfloat>(tfloat* d_input, tfloat* d_output, int3 size, tfloat* radius, tfloat sigma, tfloat3* center, int batch);
-	template void d_SphereMask<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 size, tfloat* radius, tfloat sigma, tfloat3* center, int batch);
+	template void d_SphereMask<tfloat>(tfloat* d_input, tfloat* d_output, int3 size, tfloat* radius, tfloat sigma, tfloat3* center, bool decentered, int batch);
+	template void d_SphereMask<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 size, tfloat* radius, tfloat sigma, tfloat3* center, bool decentered, int batch);
 
 	void d_SphereMaskFT(tfloat* d_input, tfloat* d_output, int3 dims, int radius, uint batch)
 	{
@@ -45,34 +46,45 @@ namespace gtom
 	//CUDA kernels//
 	////////////////
 
-	template <class T> __global__ void SphereMaskKernel(T* d_input, T* d_output, int3 size, tfloat radius, tfloat sigma, tfloat3 center)
+	template <class T> __global__ void SphereMaskKernel(T* d_input, T* d_output, int3 size, tfloat radius, tfloat sigma, tfloat3 center, bool decentered)
 	{
-		if (threadIdx.x >= size.x)
-			return;
-
 		//For batch mode
-		int offset = blockIdx.z * size.x * size.y * size.z + blockIdx.y * size.x * size.y + blockIdx.x * size.x;
+		int offset = ((blockIdx.z * size.z + blockIdx.y) * size.y + blockIdx.x) * size.x;
 
-		tfloat xsq, ysq, zsq, length;
+		int yy = blockIdx.x, zz = blockIdx.y;
 		T maskvalue;
 
-		//Squared y and z distance from center
-		ysq = (tfloat)blockIdx.x - center.y;
-		ysq *= ysq;
+		if (decentered)
+			yy = yy < size.y / 2 + 1 ? yy : yy - size.y;
+		else
+			yy = yy - center.y;
+
+		yy *= yy;
+
 		if (size.z > 1)
 		{
-			zsq = (tfloat)blockIdx.y - center.z;
-			zsq *= zsq;
+			if (decentered)
+				zz = zz < size.z / 2 + 1 ? zz : zz - size.z;
+			else
+				zz = zz - center.z;
+
+			zz *= zz;
 		}
 		else
-			zsq = 0;
+			zz = 0;
 
 		for (int x = threadIdx.x; x < size.x; x += blockDim.x)
 		{
-			xsq = (tfloat)x - center.x;
-			xsq *= xsq;
+			int xx = x;
+			if (decentered)
+				xx = xx < size.x / 2 + 1 ? xx : xx - size.x;
+			else
+				xx = xx - center.x;
+
+			xx *= xx;
+
 			//Distance from center
-			length = sqrt(xsq + ysq + zsq);
+			float length = sqrt((float)xx + yy + zz);
 
 			if (length < radius)
 				maskvalue = 1;
@@ -89,38 +101,49 @@ namespace gtom
 			}
 
 			//Write masked input to output
-			d_output[offset + x] = maskvalue * d_input[offset + x];
+			d_output[offset + x] = d_input[offset + x] * maskvalue;
 		}
 	}
 
-	template<> __global__ void SphereMaskKernel<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 size, tfloat radius, tfloat sigma, tfloat3 center)
+	template<> __global__ void SphereMaskKernel<tcomplex>(tcomplex* d_input, tcomplex* d_output, int3 size, tfloat radius, tfloat sigma, tfloat3 center, bool decentered)
 	{
-		if (threadIdx.x >= size.x)
-			return;
-
 		//For batch mode
-		int offset = blockIdx.z * size.x * size.y * size.z + blockIdx.y * size.x * size.y + blockIdx.x * size.x;
+		int offset = ((blockIdx.z * size.z + blockIdx.y) * size.y + blockIdx.x) * size.x;
 
-		tfloat xsq, ysq, zsq, length;
-		tfloat maskvalue;
+		int yy = blockIdx.x, zz = blockIdx.y;
+		float maskvalue;
 
-		//Squared y and z distance from center
-		ysq = (tfloat)(blockIdx.x + 1) - center.y;
-		ysq *= ysq;
+		if (decentered)
+			yy = yy < size.y / 2 + 1 ? yy : yy - size.y;
+		else
+			yy = yy - center.y;
+
+		yy *= yy;
+
 		if (size.z > 1)
 		{
-			zsq = (tfloat)(blockIdx.y + 1) - center.z;
-			zsq *= zsq;
+			if (decentered)
+				zz = zz < size.z / 2 + 1 ? zz : zz - size.z;
+			else
+				zz = zz - center.z;
+
+			zz *= zz;
 		}
 		else
-			zsq = 0;
+			zz = 0;
 
 		for (int x = threadIdx.x; x < size.x; x += blockDim.x)
 		{
-			xsq = (tfloat)(x + 1) - center.x;
-			xsq *= xsq;
+			int xx = x;
+			if (decentered)
+				xx = xx < size.x / 2 + 1 ? xx : xx - size.x;
+			else
+				xx = xx - center.x;
+
+			xx *= xx;
+
 			//Distance from center
-			length = sqrt(xsq + ysq + zsq);
+			float length = sqrt((float)xx + yy + zz);
 
 			if (length < radius)
 				maskvalue = 1;
@@ -129,9 +152,7 @@ namespace gtom
 				//Smooth border
 				if (sigma > (tfloat)0)
 				{
-					maskvalue = (cos(tmin(1.0f, (length - radius) / sigma) * PI) + 1.0f) * 0.5f;
-					if (maskvalue < (tfloat)0.1353)
-						maskvalue = 0;
+					maskvalue = tmax(0, (cos(tmin(1.0f, (length - radius) / sigma) * PI) + 1.0f) * 0.5f);
 				}
 				//Hard border
 				else
@@ -139,8 +160,7 @@ namespace gtom
 			}
 
 			//Write masked input to output
-			d_output[offset + x].x = maskvalue * d_input[offset + x].x;
-			d_output[offset + x].y = maskvalue * d_input[offset + x].y;
+			d_output[offset + x] = d_input[offset + x] * maskvalue;
 		}
 	}
 

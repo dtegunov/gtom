@@ -17,11 +17,11 @@ namespace gtom
 
 		tfloat* d_mask = CudaMallocValueFilled(Elements2(dimsimage) * nangles, (tfloat)1);
 		{
-			d_SphereMask(d_mask, d_mask, toInt3(dimsimage), &compareradius, 0, NULL);
+			d_SphereMask(d_mask, d_mask, toInt3(dimsimage), &compareradius, 0, NULL, false);
 
 			tfloat* d_maskinner = CudaMallocValueFilled(Elements2(dimsimage), (tfloat)1);
 			tfloat innerradius = 0;
-			d_SphereMask(d_maskinner, d_maskinner, toInt3(dimsimage), &innerradius, 0, NULL);
+			d_SphereMask(d_maskinner, d_maskinner, toInt3(dimsimage), &innerradius, 0, NULL, false);
 			d_SubtractVector(d_mask, d_maskinner, d_mask, Elements2(dimsimage));
 
 			CudaMemcpyMulti(d_mask + Elements2(dimsimage), d_mask, Elements2(dimsimage), nangles - 1);

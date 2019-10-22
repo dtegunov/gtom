@@ -22,7 +22,7 @@ namespace gtom
 		// Create spherical mask, calculate its sum, and pre-FFT it for convolution
 		{
 			tfloat* d_mask = CudaMallocValueFilled(Elements(dimsmap), (tfloat)1);
-			d_SphereMask(d_mask, d_mask, dimsmap, &localradius, 1, NULL);
+			d_SphereMask(d_mask, d_mask, dimsmap, &localradius, 1, NULL, false);
 			d_RemapFull2FullFFT(d_mask, d_mask, dimsmap);
 
 			if (d_fouriermask == NULL)

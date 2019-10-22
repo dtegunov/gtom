@@ -277,13 +277,19 @@ namespace gtom
 		d_input += ElementsFFT(dims) * blockIdx.z;
 		d_output += ElementsFFT(dims) * blockIdx.z;
 
+		int y = blockIdx.x;
+		int z = blockIdx.y;
+
+		int rz = z < dims.z / 2 + 1 ? z : z - dims.x;
+		rz += dims.z / 2;
+		int ry = y < dims.y / 2 + 1 ? y : y - dims.x;
+		ry += dims.y / 2;
+
 		for (uint x = threadIdx.x; x < dims.x / 2 + 1; x += blockDim.x)
 		{
-			uint rx = dims.x / 2 - x;
-			uint ry = dims.y - 1 - ((blockIdx.x + dims.y / 2 - 1) % dims.y);
-			uint rz = dims.z - 1 - ((blockIdx.y + dims.z / 2 - 1) % dims.z);
+			int rx = x;
 
-			d_output[(rz * dims.y + ry) * (dims.x / 2 + 1) + rx] = d_input[(blockIdx.y * dims.y + blockIdx.x) * (dims.x / 2 + 1) + x];
+			d_output[(blockIdx.y * dims.y + blockIdx.x) * (dims.x / 2 + 1) + x] = d_input[(rz * dims.y + ry) * (dims.x / 2 + 1) + rx];
 		}
 	}
 
@@ -292,13 +298,19 @@ namespace gtom
 		d_input += ElementsFFT(dims) * blockIdx.z;
 		d_output += ElementsFFT(dims) * blockIdx.z;
 
+		int y = blockIdx.x;
+		int z = blockIdx.y;
+
+		int rz = z < dims.z / 2 + 1 ? z : z - dims.x;
+		rz += dims.z / 2;
+		int ry = y < dims.y / 2 + 1 ? y : y - dims.x;
+		ry += dims.y / 2;
+
 		for (uint x = threadIdx.x; x < dims.x / 2 + 1; x += blockDim.x)
 		{
-			uint rx = dims.x / 2 - x;
-			uint ry = dims.y - 1 - ((blockIdx.x + (dims.y + 1) / 2 - 1) % dims.y);
-			uint rz = dims.z - 1 - ((blockIdx.y + (dims.z + 1) / 2 - 1) % dims.z);
+			int rx = x;
 
-			d_output[(rz * dims.y + ry) * (dims.x / 2 + 1) + rx] = d_input[(blockIdx.y * dims.y + blockIdx.x) * (dims.x / 2 + 1) + x];
+			d_output[(blockIdx.y * dims.y + blockIdx.x) * (dims.x / 2 + 1) + x] = d_input[(rz * dims.y + ry) * (dims.x / 2 + 1) + rx];
 		}
 	}
 }

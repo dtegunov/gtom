@@ -15,7 +15,7 @@ namespace gtom
 
 	__global__ void DistanceMapKernel(tfloat* d_olddistance, tfloat* d_newdistance, int* d_upstreamneighbor, int3 dims);
 	__global__ void DistanceMapFinalizeKernel(tfloat* d_olddistance, tfloat* d_newdistance, int* d_upstreamneighbor, int3 dims);
-	__global__ void DistanceMapExactKernel(tfloat* d_input, tfloat* d_output, int3 dims, int maxdistance);
+	__global__ void DistanceMapExactKernel(tfloat* d_input, tfloat* d_output, int3 dims, int maxdistance, int idz);
 
 
 	///////////////////////////////////////////
@@ -58,10 +58,13 @@ namespace gtom
 
 	void d_DistanceMapExact(tfloat* d_input, tfloat* d_output, int3 dims, int maxdistance)
 	{
-		dim3 grid = dim3((dims.x + 31) / 32, (dims.y + 3) / 4, dims.z);
-		dim3 TpB = dim3(32, 4, 1);
+		for (int idz = 0; idz < dims.z; idz++)
+		{
+			dim3 grid = dim3((dims.x + 31) / 32, (dims.y + 3) / 4, 1);
+			dim3 TpB = dim3(32, 4, 1);
 
-		DistanceMapExactKernel <<<grid, TpB>>> (d_input, d_output, dims, maxdistance);
+			DistanceMapExactKernel <<<grid, TpB>>> (d_input, d_output, dims, maxdistance, idz);
+		}
 	}
 
 
@@ -145,7 +148,7 @@ namespace gtom
 		}
 	}
 
-	__global__ void DistanceMapExactKernel(tfloat* d_input, tfloat* d_output, int3 dims, int maxdistance)
+	__global__ void DistanceMapExactKernel(tfloat* d_input, tfloat* d_output, int3 dims, int maxdistance, int idz)
 	{
 		int idx = blockIdx.x * blockDim.x + threadIdx.x;
 		if (idx >= dims.x)
@@ -153,7 +156,7 @@ namespace gtom
 		int idy = blockIdx.y * blockDim.y + threadIdx.y;
 		if (idy >= dims.y)
 			return;
-		int idz = blockIdx.z;
+		//int idz = blockIdx.z;
 
 		int startx = tmax(0, idx - maxdistance);
 		int endx = tmin(idx + maxdistance, dims.x - 1);

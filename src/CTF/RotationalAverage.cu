@@ -398,6 +398,8 @@ namespace gtom
 			tfloat val = d_input[id];
 			short lowbin = floor(targetx), highbin = lowbin + 1;
 			tfloat lowweight = (tfloat)(1 + lowbin) - targetx, highweight = (tfloat)1 - lowweight;
+			lowweight *= p.scale;
+			highweight *= p.scale;
 
 			if (lowbin >= freqlow && lowbin < freqhigh)
 			{

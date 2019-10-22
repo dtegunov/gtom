@@ -782,8 +782,10 @@ namespace gtom
 		T_PAD_MIRROR = 2,
 		/**Pad by repeating data*/
 		T_PAD_TILE = 3,
+		/**Pad by clamping coordinates**/
+		T_PAD_CLAMP = 4,
 		/**Leave memory contents unchanged within pad*/
-		T_PAD_NOTHING = 4
+		T_PAD_NOTHING = 5
 	};
 
 	/**

@@ -24,7 +24,8 @@ namespace gtom
 
     //Distort.cu:
     void d_DistortImages(tfloat* d_input, int2 dimsinput, tfloat* d_output, int2 dimsoutput, float2* h_offsets, float* h_rotations, float3* h_scales, uint batch = 1);
-    void d_WarpImage(tfloat* d_input, tfloat* d_output, int2 dims, tfloat* h_warpx, tfloat* h_warpy, int2 dimswarp);
+	void d_DistortImages(tfloat* d_input, int2 dimsinput, tfloat* d_output, int2 dimsoutput, float2* h_offsets, float4* h_distortions, uint batch = 1);
+    void d_WarpImage(tfloat* d_input, tfloat* d_output, int2 dims, tfloat* h_warpx, tfloat* h_warpy, int2 dimswarp, cudaArray_t a_input);
 
 	//Dose.cu:
 	void d_DoseFilter(tfloat* d_freq, tfloat* d_output, uint length, float2* h_doserange, tfloat3 nikoconst, float voltagescaling, uint batch = 1);

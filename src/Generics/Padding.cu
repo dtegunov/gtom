@@ -12,6 +12,7 @@ namespace gtom
 	template <class T> __global__ void PadValueKernel(T* d_input, T* d_output, int3 inputdims, int3 outputdims, int3 offset, T value, uint batch);
 	template <class T> __global__ void PadMirrorKernel(T* d_input, T* d_output, int3 inputdims, int3 outputdims, int3 offset, uint batch);
 	template <class T> __global__ void PadTileKernel(T* d_input, T* d_output, int3 inputdims, int3 outputdims, int3 offset, uint batch);
+	template <class T> __global__ void PadClampKernel(T* d_input, T* d_output, int3 inputdims, int3 outputdims, int3 offset, uint batch);
 
 
 	/////////////////////////////////////////////////////////////////////
@@ -34,6 +35,8 @@ namespace gtom
 			PadMirrorKernel << <grid, (int)TpB >> > (d_input, d_output, inputdims, outputdims, offset, batch);
 		else if (mode == T_PAD_TILE)
 			PadTileKernel << <grid, (int)TpB >> > (d_input, d_output, inputdims, outputdims, offset, batch);
+		else if (mode == T_PAD_CLAMP)
+			PadClampKernel << <grid, (int)TpB >> > (d_input, d_output, inputdims, outputdims, offset, batch);
 		else if (mode == T_PAD_NOTHING)
 			PadNothingKernel << <grid, (int)TpB >> > (d_input, d_output, inputdims, outputdims, offset, batch);
 	}
@@ -185,5 +188,35 @@ namespace gtom
 		for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < outputdims.x; idx += blockDim.x * gridDim.x)
 			for (uint b = 0; b < batch; b++)
 				d_output[b * elementsoutput + idx] = d_input[b * elementsinput + (offset.x + idx + inputdims.x * 99999) % inputdims.x];
+	}
+
+	template <class T> __global__ void PadClampKernel(T* d_input, T* d_output, int3 inputdims, int3 outputdims, int3 offset, uint batch)
+	{
+		int idy = blockIdx.y;
+		int idz = blockIdx.z;
+
+		int oy, oz, ox;
+
+		oy = offset.y + idy;
+		oy = tmax(0, tmin(inputdims.y - 1, oy));
+
+		oz = offset.z + idz;
+		oz = tmax(0, tmin(inputdims.z - 1, oz));
+
+		d_output += (idz * outputdims.y + idy) * outputdims.x;
+		d_input += (oz * inputdims.y + oy) * inputdims.x;
+		size_t elementsinput = Elements(inputdims);
+		size_t elementsoutput = Elements(outputdims);
+
+		for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < outputdims.x; idx += blockDim.x * gridDim.x)
+		{
+			for (uint b = 0; b < batch; b++)
+			{
+				ox = offset.x + idx;
+				ox = tmax(0, tmin(inputdims.x - 1, ox));
+
+				d_output[b * elementsoutput + idx] = d_input[b * elementsinput + ox];
+			}
+		}
 	}
 }

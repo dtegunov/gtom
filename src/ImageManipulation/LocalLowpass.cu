@@ -64,7 +64,7 @@ namespace gtom
 			tfloat freq = (tfloat)dims.x / res;
 
 			d_ValueFill(d_mask, Elements(dims), (tfloat)1);
-			d_SphereMask(d_mask, d_mask, dims, &freq, 0, NULL);
+			d_SphereMask(d_mask, d_mask, dims, &freq, 0, NULL, false);
 			d_RemapFull2HalfFFT(d_mask, d_maskhalf, dims);
 
 			d_ComplexMultiplyByVector(d_inputft, d_maskhalf, d_maskedft, ElementsFFT(dims));

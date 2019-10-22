@@ -179,7 +179,7 @@
     <ProjectGuid>{C5083A95-7B41-47E7-99A5-FE08DC0ECDB1}</ProjectGuid>
     <RootNamespace>GTOM</RootNamespace>
     <ProjectName>GTOM</ProjectName>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -226,7 +226,7 @@
       <PreprocessorDefinitions>WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
       <MinimalRebuild>true</MinimalRebuild>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -244,6 +244,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <GenerateLineInfo>true</GenerateLineInfo>
       <GPUDebugInfo>false</GPUDebugInfo>
       <HostDebugInfo>false</HostDebugInfo>
+      <AdditionalCompilerOptions>/FS</AdditionalCompilerOptions>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -275,6 +276,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <PtxAsOptionV>true</PtxAsOptionV>
       <FastMath>false</FastMath>
       <Optimization>Od</Optimization>
+      <AdditionalCompilerOptions>/FS</AdditionalCompilerOptions>
     </CudaCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

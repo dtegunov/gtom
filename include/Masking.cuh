@@ -17,7 +17,7 @@ namespace gtom
 	template <class T> void d_IrregularSphereMask(T* d_input, T* d_output, int3 dims, tfloat* radiusmap, int2 anglesteps, tfloat sigma, tfloat3* center, int batch = 1);
 
 	//SphereMask.cu:
-	template <class T> void d_SphereMask(T* d_input, T* d_output, int3 size, tfloat* radius, tfloat sigma, tfloat3* center, int batch = 1);
+	template <class T> void d_SphereMask(T* d_input, T* d_output, int3 size, tfloat* radius, tfloat sigma, tfloat3* center, bool decentered, int batch = 1);
 	void d_SphereMaskFT(tfloat* d_input, tfloat* d_output, int3 dims, int radius, uint batch = 1);
 
 	//RectangleMask.cu:

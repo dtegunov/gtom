@@ -66,7 +66,7 @@ namespace gtom
 		cudaMalloc((void**)&d_maskpolar, polardims.y * polarboost * sizeof(tfloat));
 		{
 			tfloat fmaxtranslation = (tfloat)(maxtranslation + 1);
-			d_SphereMask(d_maskcart, d_maskcart, effdims, &fmaxtranslation, (tfloat)1, (tfloat3*)NULL);
+			d_SphereMask(d_maskcart, d_maskcart, effdims, &fmaxtranslation, (tfloat)1, (tfloat3*)NULL, false);
 
 			tfloat* h_maskpolar = MallocValueFilled(polardims.y * polarboost, (tfloat)0);
 			h_maskpolar[0] = (tfloat)1;

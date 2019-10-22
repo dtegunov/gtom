@@ -203,7 +203,7 @@ namespace gtom
 			// Create circular mask for comparison in real space, calc number of samples
 			{
 				d_mask = CudaMallocValueFilled(Elements(dimsvolume), (tfloat)1);
-				d_SphereMask(d_mask, d_mask, dimsvolume, &maskradius, 0, NULL);
+				d_SphereMask(d_mask, d_mask, dimsvolume, &maskradius, 0, NULL, false);
 				tfloat* d_masksum = CudaMallocValueFilled(1, (tfloat)0);
 				d_Sum(d_mask, d_masksum, Elements(dimsvolume), 1);
 				cudaMemcpy(&masksum, d_masksum, sizeof(tfloat), cudaMemcpyDeviceToHost);

@@ -94,7 +94,7 @@ namespace gtom
 			usevolumemask = false;
 
 			d_mask = CudaMallocValueFilled(Elements(dimsvolume), (tfloat)1);
-			d_SphereMask(d_mask, d_mask, dimsvolume, NULL, 0, NULL);
+			d_SphereMask(d_mask, d_mask, dimsvolume, NULL, 0, NULL, false);
 			d_RemapFull2HalfFFT(d_mask, d_mask, dimsvolume);
 			d_RemapHalf2HalfFFT(d_volumespsf, d_buffer3, dimsvolume, nvolumes);
 			d_MultiplyByVector(d_buffer3, d_mask, d_volumespsfsphere, ElementsFFT(dimsvolume), nvolumes);

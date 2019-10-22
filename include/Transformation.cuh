@@ -62,7 +62,7 @@ namespace gtom
 	void d_MotionBlur(tfloat* d_output, int3 dims, float3* h_shifts, uint nshifts, bool iszerocentered, uint batch = 1);
 
 	//Scale.cu:
-	void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, int batch = 1);
+	void d_Scale(tfloat* d_input, tfloat* d_output, int3 olddims, int3 newdims, T_INTERP_MODE mode, cufftHandle* planforw = NULL, cufftHandle* planback = NULL, int batch = 1, tcomplex* d_inputfft = NULL, tcomplex* d_outputfft = NULL);
 
 	//Warp2D.cu:
 	void d_Warp2D(tfloat* d_image, int2 dimsimage, tfloat2* d_grid, int2 dimsgrid, tfloat* d_output, uint batch = 1);

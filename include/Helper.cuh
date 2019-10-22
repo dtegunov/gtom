@@ -508,6 +508,7 @@ namespace gtom
 	//TextureObject.cu:
 
 	void d_BindTextureToArray(tfloat* d_input, cudaArray_t &createdarray, cudaTex &createdtexture, int2 dims, cudaTextureFilterMode filtermode, bool normalizedcoords);
+	void d_BindTextureToArray(cudaArray_t a_input, cudaTex& createdtexture, int2 dims, cudaTextureFilterMode filtermode, bool normalizedcoords);
 	void d_BindTextureToArray(tfloat* d_input, cudaArray_t* &h_createdarrays, cudaTex* &h_createdtextures, int2 dims, cudaTextureFilterMode filtermode, bool normalizedcoords, int nimages);
 	void d_BindTextureTo3DArray(tfloat* d_input, cudaArray_t &createdarray, cudaTex &createdtexture, int3 dims, cudaTextureFilterMode filtermode, bool normalizedcoords);
 	void d_BindTextureTo3DArray(tfloat* d_input, cudaArray_t* &h_createdarrays, cudaTex* &h_createdtextures, int3 dims, cudaTextureFilterMode filtermode, bool normalizedcoords, int nvolumes);
