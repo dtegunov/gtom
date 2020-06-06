@@ -7,6 +7,7 @@
 #include "Helper.cuh"
 #include "Masking.cuh"
 #include "Reconstruction.cuh"
+#include "Transformation.cuh"
 
 
 namespace gtom
@@ -179,22 +180,26 @@ namespace gtom
 
 		if (iterations == 0)
 		{
-			tcomplex* h_convft = (tcomplex*)MallocFromDeviceArray(d_convft, ElementsFFT(dimsoripad) * sizeof(tcomplex));
-			tfloat* h_Fweight = (tfloat*)MallocFromDeviceArray(d_Fweight, ElementsFFT(dimsoripad) * sizeof(tfloat));
+			//tcomplex* h_convft = (tcomplex*)MallocFromDeviceArray(d_convft, ElementsFFT(dimsoripad) * sizeof(tcomplex));
+			//tfloat* h_Fweight = (tfloat*)MallocFromDeviceArray(d_Fweight, ElementsFFT(dimsoripad) * sizeof(tfloat));
 
-			for (size_t i = 0; i < ElementsFFT(dimsoripad); i++)
-			{
-				if (abs(h_Fweight[i]) > 1e-4f)
-				{
-					h_convft[i] *= 1 / h_Fweight[i];
-					//h_Fweight[i] *= 1 / h_Fweight[i];
-				}
-			}
+			//for (size_t i = 0; i < ElementsFFT(dimsoripad); i++)
+			//{
+			//	if (abs(h_Fweight[i]) > 1e-4f)
+			//	{
+			//		h_convft[i] *= 1 / h_Fweight[i];
+			//		//h_Fweight[i] *= 1 / h_Fweight[i];
+			//	}
+			//}
 
-			cudaMemcpy(d_convft, h_convft, ElementsFFT(dimsoripad) * sizeof(tcomplex), cudaMemcpyHostToDevice);
-			cudaMemcpy(d_Fweight, h_Fweight, ElementsFFT(dimsoripad) * sizeof(tfloat), cudaMemcpyHostToDevice);
-			free(h_convft);
-			free(h_Fweight);
+			//cudaMemcpy(d_convft, h_convft, ElementsFFT(dimsoripad) * sizeof(tcomplex), cudaMemcpyHostToDevice);
+			////cudaMemcpy(d_Fweight, h_Fweight, ElementsFFT(dimsoripad) * sizeof(tfloat), cudaMemcpyHostToDevice);
+			//free(h_convft);
+			//free(h_Fweight);
+
+			d_Abs(d_Fweight, d_Fweight, ElementsFFT(dimsoripad));
+			d_MaxOp(d_Fweight, 1e-4f, d_Fweight, ElementsFFT(dimsoripad));
+			d_ComplexDivideByVector(d_convft, d_Fweight, d_convft, ElementsFFT(dimsoripad), 1);
 		}
 		else
 		{
@@ -205,10 +210,13 @@ namespace gtom
 		cudaFree(d_Fnewweight);
 		cudaFree(d_precompblob);
 
+		tfloat3 decenter_shift[] = { tfloat3(dimsoripad.x / 2) };
+		d_Shift(d_convft, d_convft, dimsoripad, decenter_shift);
+
 		d_IFFTC2R(d_convft, d_conv, &planback);
 		//d_WriteMRC(d_conv, dimsori * paddingfactor, "d_reconstructed.mrc");
-		d_FFTFullCrop(d_conv, d_reconstructed, dimsoripad, dimsori);
-		d_RemapFullFFT2Full(d_reconstructed, d_reconstructed, dimsori);
+		d_Pad(d_conv, d_reconstructed, dimsoripad, dimsori, T_PAD_MODE::T_PAD_VALUE, (tfloat)0);
+		//d_RemapFullFFT2Full(d_reconstructed, d_reconstructed, dimsori);
 
 		if (pre_planforw <= NULL)
 			cufftDestroy(planforw);

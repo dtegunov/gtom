@@ -329,7 +329,7 @@ namespace gtom
 					// Simulate CTF
 					tfloat* d_ctfsim;
 					cudaMalloc((void**)&d_ctfsim, dimspolar.x * v_params.size() * sizeof(tfloat));
-					d_CTFSimulate(h_params, d_ps1dcoords, d_ctfsim, dimspolar.x, true, false, v_params.size());
+					d_CTFSimulate(h_params, d_ps1dcoords, NULL, d_ctfsim, dimspolar.x, true, false, v_params.size());
 					d_NormMonolithic(d_ctfsim, d_ctfsim, dimspolar.x, T_NORM_MEAN01STD, v_params.size());
 					//CudaWriteToBinaryFile("d_ctfsim.bin", d_ctfsim, dimspolar.x * v_params.size() * sizeof(tfloat));
 					free(h_params);

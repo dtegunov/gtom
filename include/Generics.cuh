@@ -740,6 +740,18 @@ namespace gtom
 	template <class T> void d_ExtractMany(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch = 1);
 
 	/**
+	 * \brief Extracts rectangular portions from a set of images/volumes stored in separate memory locations at different positions
+	 * \param[in] d_input	Array with pointers to input data
+	 * \param[in] d_output	Array that will contain the extracted images/volumes; d_output == d_input is not valid
+	 * \param[in] sourcedims	Dimensions of original image/volume
+	 * \param[in] regiondims	Dimensions of extracted portion
+	 * \param[in] d_regionorigins	Coordinates of the upper left corner of the extracted portion
+	 * \param[in] nsources	Number of independently allocated source arrays, the selection in kernel is then ibatch % nsources
+	 * \param[in] batch	Number of images to be extracted
+	 */
+	template <class T> void d_ExtractManyMultisource(T** d_inputs, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int nsources, int batch = 1);
+
+	/**
 	 * \brief Extracts rectangular portions from the same image/volume at different positions, sampling it in a transformed reference frame
 	 * \param[in] d_input	Array with input data
 	 * \param[in] d_output	Array that will contain the extracted images/volumes; d_output == d_input is not valid

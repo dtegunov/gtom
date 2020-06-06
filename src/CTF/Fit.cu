@@ -465,7 +465,7 @@ namespace gtom
 			float pixelsize = params.pixelsize + params.pixeldelta * __cosf(2.0f * (simcoords.y - params.pixelangle));
 			simcoords.x /= pixelsize;
 
-			float val = d_GetCTF<true, false>(simcoords.x, simcoords.y, params);
+			float val = d_GetCTF<true, false>(simcoords.x, simcoords.y, 0, params);
 			d_sim[i] = __float2half(val);
 			sum1 += val;
 			sum2 += val * val;
@@ -538,7 +538,7 @@ namespace gtom
 			
 			p.defocusdelta = 0;
 			p.astigmatismangle = 0;
-			d_CTFSimulate(&p, d_ps2dcoords, d_ps1d + polardims.x, polardims.x, true);
+			d_CTFSimulate(&p, d_ps2dcoords, d_ps1d + polardims.x, NULL, polardims.x, true);
 
 			d_NormMonolithic(d_ps1d, d_ps1d, polardims.x, T_NORM_MEAN01STD, 2);
 			//CudaWriteToBinaryFile("d_ps1d.bin", d_ps1d, polardims.x * 2 * sizeof(tfloat));

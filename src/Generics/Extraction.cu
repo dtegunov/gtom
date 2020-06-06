@@ -14,6 +14,7 @@ namespace gtom
 	template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3 regionorigin);
 	template <class T> __global__ void ExtractKernel(T* d_input, T* d_output, int3 sourcedims, size_t sourceelements, int3 regiondims, size_t regionelements, int3* d_regionorigins);
 	template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, size_t regionelements, int3* d_regionorigins);
+	template <class T> __global__ void ExtractManyMultisourceKernel(T** d_inputs, T* d_output, int3 sourcedims, int3 regiondims, size_t regionelements, int3* d_regionorigins, uint nsources);
 	template <bool cubicinterp> __global__ void Extract2DTransformedKernel(cudaTex t_input, tfloat* d_output, int2 sourcedims, int2 regiondims, glm::mat3* d_transforms);
 
 
@@ -64,6 +65,19 @@ namespace gtom
 	template void d_ExtractMany<double>(double* d_input, double* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 	template void d_ExtractMany<int>(int* d_input, int* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
 	template void d_ExtractMany<char>(char* d_input, char* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch);
+
+	template <class T> void d_ExtractManyMultisource(T** d_inputs, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int nsources, int batch)
+	{
+		size_t TpB = min(256, NextMultipleOf(regiondims.x, 32));
+		dim3 grid = dim3(regiondims.y, regiondims.z, batch);
+		ExtractManyMultisourceKernel << <grid, (int)TpB >> > (d_inputs, d_output, sourcedims, regiondims, Elements(regiondims), d_regionorigins, (uint)nsources);
+	}
+	template void d_ExtractManyMultisource<half>(half** d_inputs, half* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int nsources, int batch);
+	template void d_ExtractManyMultisource<float>(float** d_inputs, float* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int nsources, int batch);
+	template void d_ExtractManyMultisource<tcomplex>(tcomplex** d_inputs, tcomplex* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int nsources, int batch);
+	template void d_ExtractManyMultisource<double>(double** d_inputs, double* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int nsources, int batch);
+	template void d_ExtractManyMultisource<int>(int** d_inputs, int* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int nsources, int batch);
+	template void d_ExtractManyMultisource<char>(char** d_inputs, char* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int nsources, int batch);
 
 
 	/////////////////////////////////////////////////////////////////////////////////
@@ -142,6 +156,24 @@ namespace gtom
 
 	template <class T> __global__ void ExtractManyKernel(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, size_t regionelements, int3* d_regionorigins)
 	{
+		int3 regionorigin = d_regionorigins[blockIdx.z];
+		int idy = blockIdx.x;
+		int idz = blockIdx.y;
+
+		int oy = (idy + regionorigin.y + sourcedims.y * 999) % sourcedims.y;
+		int oz = (idz + regionorigin.z + sourcedims.z * 999) % sourcedims.z;
+
+		d_output += blockIdx.z * regionelements + (idz * regiondims.y + idy) * regiondims.x;
+		d_input += (oz * sourcedims.y + oy) * sourcedims.x;
+
+		for (int idx = threadIdx.x; idx < regiondims.x; idx += blockDim.x)
+			d_output[idx] = d_input[(idx + regionorigin.x + sourcedims.x * 999) % sourcedims.x];
+	}
+
+	template <class T> __global__ void ExtractManyMultisourceKernel(T** d_inputs, T* d_output, int3 sourcedims, int3 regiondims, size_t regionelements, int3* d_regionorigins, uint nsources)
+	{
+		T* d_input = d_inputs[blockIdx.z % nsources];
+
 		int3 regionorigin = d_regionorigins[blockIdx.z];
 		int idy = blockIdx.x;
 		int idz = blockIdx.y;

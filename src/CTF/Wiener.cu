@@ -132,7 +132,7 @@ namespace gtom
 
 		if (radius > 0)
 		{
-			amplitude = d_GetCTF<false, false>(k, angle, p);
+			amplitude = d_GetCTF<false, false>(k, angle, 0, p);
 
 			if (fscweighted)
 			{
