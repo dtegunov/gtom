@@ -16,6 +16,8 @@ namespace gtom
 	template<int nsamples> __global__ void SincMax1DKernel(tfloat* d_input, tfloat2* d_output);
 	template<int ndims> __global__ void SincEvalMaxKernel(tfloat* d_input, uint nsamples, tfloat3* d_positions, tfloat* d_values);
 
+	__global__ void PeakOne2DKernel(tfloat* d_input, float3* d_positions, tfloat* d_values, int2 dims, int2 dimsregion, bool subtractcenter);
+
 
 	///////////////////////////////////////
 	//Equivalent of TOM's tom_peak method//
@@ -214,6 +216,14 @@ namespace gtom
 		cudaFree(d_integerindices);
 	}
 
+	void d_PeakOne2D(tfloat* d_input, float3* d_positions, tfloat* d_values, int2 dims, int2 dimsregion, bool subtractcenter, int batch)
+	{
+		dim3 TpB = tmin(128, Elements2(dimsregion));
+		dim3 grid = batch;
+
+		PeakOne2DKernel << <grid, TpB >> > (d_input, d_positions, d_values, dims, dimsregion, subtractcenter);
+	}
+
 	////////////////
 	//CUDA kernels//
 	////////////////
@@ -385,6 +395,88 @@ namespace gtom
 		if (threadIdx.x == 0)
 		{
 			*d_values = s_sum[0] + s_sum[1];
+		}
+	}
+
+	__global__ void PeakOne2DKernel(tfloat* d_input, float3* d_positions, tfloat* d_values, int2 dims, int2 dimsregion, bool subtractcenter)
+	{
+		__shared__ tfloat s_maxval[128];
+		__shared__ int2 s_maxpos[128];
+
+		d_input += Elements2(dims) * blockIdx.x;
+
+		int2 regionoffset = dims - dimsregion;
+		regionoffset.x /= 2;
+		regionoffset.y /= 2;
+
+		uint elements = Elements2(dimsregion);
+		tfloat maxval = -1e20;
+		int2 maxpos = make_int2(0, 0);
+
+		for (uint id = threadIdx.x; id < elements; id += blockDim.x)
+		{
+			uint y = id / dimsregion.x;
+			uint x = id - y * dimsregion.x;
+
+			x += regionoffset.x;
+			y += regionoffset.y;
+
+			tfloat val = d_input[y * dims.x + x];
+			if (val > maxval)
+			{
+				maxval = val;
+				maxpos = make_int2((int)x, (int)y);
+			}
+		}
+
+		s_maxval[threadIdx.x] = maxval;
+		s_maxpos[threadIdx.x] = maxpos;
+
+		__syncthreads();
+
+		if (threadIdx.x == 0)
+		{
+			for (int i = 1; i < blockDim.x; i++)
+			{
+				if (s_maxval[i] > maxval)
+				{
+					maxval = s_maxval[i];
+					maxpos = s_maxpos[i];
+				}
+			}
+
+			float2 weightedcenter = make_float2(0, 0);
+			float sumweights = 0;
+
+			for (int y = -1; y <= 1; y++)
+			{
+				if (maxpos.y + y >= 0 && maxpos.y + y < dims.y)
+				{
+					for (int x = -1; x <= 1; x++)
+					{
+						if (maxpos.x + x >= 0 && maxpos.x + x < dims.x)
+						{
+							float val = (float)d_input[(maxpos.y + y) * dims.x + maxpos.x + x];
+							weightedcenter.x += val * x;
+							weightedcenter.y += val * y;
+							sumweights += val;
+						}
+					}
+				}
+			}
+
+			if (sumweights != 0)
+				weightedcenter /= sumweights;
+
+			float2 finalpos = make_float2(maxpos.x, maxpos.y) + weightedcenter;
+			if (subtractcenter)
+			{
+				finalpos.x -= dims.x / 2;
+				finalpos.y -= dims.y / 2;
+			}
+
+			d_positions[blockIdx.x] = make_float3(finalpos.x, finalpos.y, 0);
+			d_values[blockIdx.x] = maxval;
 		}
 	}
 }

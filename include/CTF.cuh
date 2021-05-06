@@ -317,6 +317,7 @@ namespace gtom
 	void d_CTFSimulate(CTFParams* h_params, float2* d_addresses, float* d_gammacorrection, tfloat* d_output, uint n, bool amplitudesquared = false, bool ignorefirstpeak = false, int batch = 1);
 	void d_CTFSimulate(CTFParams* h_params, half2* d_addresses, half* d_output, uint n, bool amplitudesquared = false, bool ignorefirstpeak = false, int batch = 1);
 	void d_CTFSimulateComplex(CTFParams* h_params, float2* d_addresses, float* d_gammacorrection, float2* d_output, uint n, bool reverse, int batch = 1);
+	void d_CTFSimulateEwaldWeights(CTFParams* h_params, float2* d_addresses, float* d_gammacorrection, float particlediameter, tfloat* d_output, uint n, int batch = 1);
 
 	//TiltCorrect.cu:
 	void d_CTFTiltCorrect(tfloat* d_image, int2 dimsimage, CTFTiltParams tiltparams, tfloat snr, tfloat* d_output);

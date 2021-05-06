@@ -11,7 +11,7 @@ namespace gtom
 		d_FFTR2C(d_input, d_output, &plan);
 
 		cufftDestroy(plan);
-		cudaStreamQuery(0);
+		cudaStreamSynchronize(cudaStreamDefault);
 	}
 
 	cufftHandle d_FFTR2CGetPlan(int const ndimensions, int3 const dimensions, int batch)
@@ -20,12 +20,14 @@ namespace gtom
 		cufftType direction = IS_TFLOAT_DOUBLE ? CUFFT_D2Z : CUFFT_R2C;
 		int n[3] = { dimensions.z, dimensions.y, dimensions.x };
 
-		cufftPlanMany(&plan, ndimensions, n + (3 - ndimensions),
-			NULL, 1, 0,
-			NULL, 1, 0,
-			direction, batch);
+		CHECK_CUFFT_ERRORS(cufftPlanMany(&plan, ndimensions, n + (3 - ndimensions),
+										 NULL, 1, 0,
+										 NULL, 1, 0,
+										 direction, batch));
 
 		//cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_DEFAULT);
+
+		cufftSetStream(plan, cudaStreamDefault);
 
 		return plan;
 	}
@@ -35,9 +37,9 @@ namespace gtom
 #ifdef GTOM_DOUBLE
 		cufftExecD2Z(*plan, d_input, d_output);
 #else
-		cufftExecR2C(*plan, d_input, d_output);
+		CHECK_CUFFT_ERRORS(cufftExecR2C(*plan, d_input, d_output));
 #endif
-		cudaStreamQuery(0);
+		//cudaStreamSynchronize(cudaStreamDefault);
 	}
 
 	void d_FFTR2CFull(tfloat* const d_input, tcomplex* const d_output, int const ndimensions, int3 const dimensions, int batch)

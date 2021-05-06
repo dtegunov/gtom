@@ -21,12 +21,14 @@ namespace gtom
 		cufftType direction = IS_TFLOAT_DOUBLE ? CUFFT_Z2D : CUFFT_C2R;
 		int n[3] = { dimensions.z, dimensions.y, dimensions.x };
 
-		cufftPlanMany(&plan, ndimensions, n + (3 - ndimensions),
-			NULL, 1, 0,
-			NULL, 1, 0,
-			direction, batch);
+		CHECK_CUFFT_ERRORS(cufftPlanMany(&plan, ndimensions, n + (3 - ndimensions),
+										 NULL, 1, 0,
+										 NULL, 1, 0,
+										 direction, batch));
 
 		//cufftSetCompatibilityMode(plan, CUFFT_COMPATIBILITY_NATIVE);
+
+		cufftSetStream(plan, cudaStreamDefault);
 
 		return plan;
 	}
@@ -36,8 +38,9 @@ namespace gtom
 #ifdef GTOM_DOUBLE
 		cufftExecZ2D(*plan, d_input, d_output);
 #else
-		cufftExecC2R(*plan, d_input, d_output);
+		CHECK_CUFFT_ERRORS(cufftExecC2R(*plan, d_input, d_output));
 #endif
+		cudaStreamSynchronize(cudaStreamDefault);
 
 		d_MultiplyByScalar(d_output, d_output, Elements(dimensions) * batch, 1.0f / (float)Elements(dimensions));
 	}
@@ -49,6 +52,7 @@ namespace gtom
 #else
 		cufftExecC2R(*plan, d_input, d_output);
 #endif
+		cudaStreamSynchronize(cudaStreamDefault);
 	}
 
 	void d_IFFTZ2D(cufftDoubleComplex* const d_input, double* const d_output, int const ndimensions, int3 const dimensions, int batch)

@@ -24,6 +24,14 @@ namespace gtom
 			return sin(x * 3.1415926535897932384626433832795) / (x * 3.1415926535897932384626433832795);
 	}
 
+	inline __device__ glm::mat2 d_Matrix2Rotation(tfloat angle)
+	{
+		double c = cos(angle);
+		double s = sin(angle);
+
+		return glm::mat2(c, s, -s, c);
+	}
+
 	inline __device__ glm::mat3 d_Matrix3Euler(float3 angles)
 	{
 		float alpha = angles.x;
@@ -165,6 +173,54 @@ namespace gtom
 		val.y *= is_neg_x;
 
 		return cmul(val, shiftmultiplicator);
+	}
+
+	inline __device__ float2 d_GetProjectionSliceFrom2D(cudaTex t_slicesRe, cudaTex t_slicesIm, int dim, glm::vec2 pos, glm::mat2 rotation, int slice)
+	{
+		pos = pos * rotation;	// vector * matrix uses the transposed version, which is exactly what is needed here
+
+		// Only asymmetric half is stored
+		float is_neg_x = 1.0f;
+		if (pos.x < -1e-5f)
+		{
+			// Get complex conjugated hermitian symmetry pair
+			pos.x = abs(pos.x);
+			pos.y = -pos.y;
+			is_neg_x = -1.0f;
+		}
+
+		// Trilinear interpolation (with physical coords)
+		float x0 = floor(pos.x + 1e-5f);
+		pos.x -= x0;
+		x0 += 0.5f;
+		float x1 = x0 + 1.0f;
+
+		float y0 = floor(pos.y);
+		pos.y -= y0;
+		float y1 = y0 + 1;
+		if (y0 < 0)
+			y0 += dim;
+		y0 += 0.5f;
+		if (y1 < 0)
+			y1 += dim;
+		y1 += 0.5f;
+
+		y0 += dim * slice;
+		y1 += dim * slice;
+
+		float2 d000 = make_cuComplex(tex2D<float>(t_slicesRe, x0, y0), tex2D<float>(t_slicesIm, x0, y0));
+		float2 d001 = make_cuComplex(tex2D<float>(t_slicesRe, x1, y0), tex2D<float>(t_slicesIm, x1, y0));
+		float2 d010 = make_cuComplex(tex2D<float>(t_slicesRe, x0, y1), tex2D<float>(t_slicesIm, x0, y1));
+		float2 d011 = make_cuComplex(tex2D<float>(t_slicesRe, x1, y1), tex2D<float>(t_slicesIm, x1, y1));
+
+		float2 dx00 = lerp(d000, d001, pos.x);
+		float2 dx01 = lerp(d010, d011, pos.x);
+
+		float2 val = lerp(dx00, dx01, pos.y);
+
+		val.y *= is_neg_x;
+
+		return val;
 	}
 }
 #endif

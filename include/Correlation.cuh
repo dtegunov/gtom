@@ -64,6 +64,8 @@ namespace gtom
 	*/
 	void d_Peak(tfloat* d_input, tfloat3* d_positions, tfloat* d_values, int3 dims, T_PEAK_MODE mode, cufftHandle* planforw = (cufftHandle*)NULL, cufftHandle* planback = (cufftHandle*)NULL, int batch = 1);
 
+	void d_PeakOne2D(tfloat* d_input, float3* d_positions, tfloat* d_values, int2 dims, int2 dimsregion, bool subtractcenter, int batch = 1);
+
 
 	//LocalPeaks.cu:
 

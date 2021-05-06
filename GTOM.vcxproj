@@ -200,7 +200,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.0.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.1.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -234,8 +234,7 @@
       <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
-copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
+      <Command>copy "$(CUDA_PATH)\bin\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
@@ -267,8 +266,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <AdditionalDependencies>cudart.lib;cufft.lib;cublas.lib;curand.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
-copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
+      <Command>copy "$(CUDA_PATH)\bin\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
@@ -281,6 +279,6 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.0.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.1.targets" />
   </ImportGroup>
 </Project>

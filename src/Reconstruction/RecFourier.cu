@@ -266,16 +266,21 @@ namespace gtom
 		int z = blockIdx.y;
 		int y = blockIdx.x;
 		
+		float r = 0;
 		int zp = z < newdims.z / 2 + 1 ? z : z - newdims.x;
+		r += zp * zp;
 		zp += olddims.z / 2;
 		int yp = y < newdims.y / 2 + 1 ? y : y - newdims.x;
+		r += yp * yp;
 		yp += olddims.y / 2;
 
 		for (int x = threadIdx.x; x < newdims.x / 2 + 1; x += blockDim.x)
 		{
 			int xp = x;
+			float rr = r + xp * xp;
+			float mask = rr < newdims.x * newdims.x / 4 ? 1 : 0;
 
-			d_output[(z * newdims.y + y) * (newdims.x / 2 + 1) + x] = d_input[(zp * olddims.y + yp) * (olddims.x / 2 + 1) + xp];
+			d_output[(z * newdims.y + y) * (newdims.x / 2 + 1) + x] = d_input[(zp * olddims.y + yp) * (olddims.x / 2 + 1) + xp] * mask;
 		}
 	}
 	
