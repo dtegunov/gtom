@@ -120,7 +120,8 @@ namespace gtom
 		{
 			int ivolume = d_ivolume[blockIdx.y];
 			d_volumeft += ElementsFFT1(dimvolume) * dimvolume * dimvolume * ivolume;
-			d_volumeweights += ElementsFFT1(dimvolume) * dimvolume * dimvolume * ivolume;
+			if (d_volumeweights != NULL)
+				d_volumeweights += ElementsFFT1(dimvolume) * dimvolume * dimvolume * ivolume;
 		}
 		
 		uint slice = ndims == 3 ? ElementsFFT1(dimproj) * dimproj : 1;
@@ -169,16 +170,22 @@ namespace gtom
 			int x0 = floor(pos.x + 1e-5f);
 			pos.x -= x0;
 			int x1 = x0 + 1;
+			x0 = tmin(dimvolume / 2, x0);
+			x1 = tmin(dimvolume / 2, x1);
 
 			int y0 = floor(pos.y);
 			pos.y -= y0;
 			y0 += dimvolume / 2;
 			int y1 = y0 + 1;
+			y0 = tmin(dimvolume - 1, y0);
+			y1 = tmin(dimvolume - 1, y1);
 
 			int z0 = floor(pos.z);
 			pos.z -= z0;
 			z0 += dimvolume / 2;
 			int z1 = z0 + 1;
+			z0 = tmin(dimvolume - 1, z0);
+			z1 = tmin(dimvolume - 1, z1);
 
 			float c0 = 1.0f - pos.z;
 			float c1 = pos.z;
@@ -199,7 +206,6 @@ namespace gtom
 
 			tcomplex val = d_projft[id];
 			val.y *= is_neg_x;
-			tfloat weight = d_projweights[id];
 
 			if (decentered)
 			{
@@ -218,35 +224,41 @@ namespace gtom
 
 			atomicAdd((tfloat*)(d_volumeft + (z0 * dimvolume + y0) * dimvolumeft + x0), c000 * val.x);
 			atomicAdd((tfloat*)(d_volumeft + (z0 * dimvolume + y0) * dimvolumeft + x0) + 1, c000 * val.y);
-			atomicAdd((tfloat*)(d_volumeweights + (z0 * dimvolume + y0) * dimvolumeft + x0), c000 * weight);
 
 			atomicAdd((tfloat*)(d_volumeft + (z0 * dimvolume + y0) * dimvolumeft + x1), c100 * val.x);
 			atomicAdd((tfloat*)(d_volumeft + (z0 * dimvolume + y0) * dimvolumeft + x1) + 1, c100 * val.y);
-			atomicAdd((tfloat*)(d_volumeweights + (z0 * dimvolume + y0) * dimvolumeft + x1), c100 * weight);
 
 			atomicAdd((tfloat*)(d_volumeft + (z0 * dimvolume + y1) * dimvolumeft + x0), c010 * val.x);
 			atomicAdd((tfloat*)(d_volumeft + (z0 * dimvolume + y1) * dimvolumeft + x0) + 1, c010 * val.y);
-			atomicAdd((tfloat*)(d_volumeweights + (z0 * dimvolume + y1) * dimvolumeft + x0), c010 * weight);
 
 			atomicAdd((tfloat*)(d_volumeft + (z0 * dimvolume + y1) * dimvolumeft + x1), c110 * val.x);
 			atomicAdd((tfloat*)(d_volumeft + (z0 * dimvolume + y1) * dimvolumeft + x1) + 1, c110 * val.y);
-			atomicAdd((tfloat*)(d_volumeweights + (z0 * dimvolume + y1) * dimvolumeft + x1), c110 * weight);
 
 			atomicAdd((tfloat*)(d_volumeft + (z1 * dimvolume + y0) * dimvolumeft + x0), c001 * val.x);
 			atomicAdd((tfloat*)(d_volumeft + (z1 * dimvolume + y0) * dimvolumeft + x0) + 1, c001 * val.y);
-			atomicAdd((tfloat*)(d_volumeweights + (z1 * dimvolume + y0) * dimvolumeft + x0), c001 * weight);
 
 			atomicAdd((tfloat*)(d_volumeft + (z1 * dimvolume + y0) * dimvolumeft + x1), c101 * val.x);
 			atomicAdd((tfloat*)(d_volumeft + (z1 * dimvolume + y0) * dimvolumeft + x1) + 1, c101 * val.y);
-			atomicAdd((tfloat*)(d_volumeweights + (z1 * dimvolume + y0) * dimvolumeft + x1), c101 * weight);
 
 			atomicAdd((tfloat*)(d_volumeft + (z1 * dimvolume + y1) * dimvolumeft + x0), c011 * val.x);
 			atomicAdd((tfloat*)(d_volumeft + (z1 * dimvolume + y1) * dimvolumeft + x0) + 1, c011 * val.y);
-			atomicAdd((tfloat*)(d_volumeweights + (z1 * dimvolume + y1) * dimvolumeft + x0), c011 * weight);
 
 			atomicAdd((tfloat*)(d_volumeft + (z1 * dimvolume + y1) * dimvolumeft + x1), c111 * val.x);
 			atomicAdd((tfloat*)(d_volumeft + (z1 * dimvolume + y1) * dimvolumeft + x1) + 1, c111 * val.y);
-			atomicAdd((tfloat*)(d_volumeweights + (z1 * dimvolume + y1) * dimvolumeft + x1), c111 * weight);
+
+			if (d_volumeweights != NULL)
+			{
+				tfloat weight = d_projweights[id];
+
+				atomicAdd((tfloat*)(d_volumeweights + (z0 * dimvolume + y0) * dimvolumeft + x0), c000 * weight);
+				atomicAdd((tfloat*)(d_volumeweights + (z0 * dimvolume + y0) * dimvolumeft + x1), c100 * weight);
+				atomicAdd((tfloat*)(d_volumeweights + (z0 * dimvolume + y1) * dimvolumeft + x0), c010 * weight);
+				atomicAdd((tfloat*)(d_volumeweights + (z0 * dimvolume + y1) * dimvolumeft + x1), c110 * weight);
+				atomicAdd((tfloat*)(d_volumeweights + (z1 * dimvolume + y0) * dimvolumeft + x0), c001 * weight);
+				atomicAdd((tfloat*)(d_volumeweights + (z1 * dimvolume + y0) * dimvolumeft + x1), c101 * weight);
+				atomicAdd((tfloat*)(d_volumeweights + (z1 * dimvolume + y1) * dimvolumeft + x0), c011 * weight);
+				atomicAdd((tfloat*)(d_volumeweights + (z1 * dimvolume + y1) * dimvolumeft + x1), c111 * weight);
+			}
 		}
 	}
 }
