@@ -20,7 +20,7 @@ namespace gtom
 		uint rmax,
 		int rmax2);
 
-	void d_rlnBackproject(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, tfloat3* h_angles, int* h_ivolume, float4 magnification, float ewaldradius, float supersample, bool outputdecentered, bool squareinterpweights, uint batch)
+	void d_rlnBackproject(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, tfloat3* h_angles, int* h_ivolume, float3 magnification, float ewaldradius, float supersample, bool outputdecentered, bool squareinterpweights, uint batch)
 	{
 		glm::mat3* d_matrices;
 		int* d_ivolume = NULL;
@@ -45,7 +45,7 @@ namespace gtom
 		}
 	}
 
-	void d_rlnBackproject(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, glm::mat3* d_matrices, int* d_ivolume, float4 magnification, float ewaldradiussuper, bool outputdecentered, bool squareinterpweights, uint batch)
+	void d_rlnBackproject(tcomplex* d_volumeft, tfloat* d_volumeweights, int3 dimsvolume, tcomplex* d_projft, tfloat* d_projweights, int3 dimsproj, uint rmax, glm::mat3* d_matrices, int* d_ivolume, float3 magnification, float ewaldradiussuper, bool outputdecentered, bool squareinterpweights, uint batch)
 	{
 		uint ndimsvolume = DimensionCount(dimsvolume);
 		uint ndimsproj = DimensionCount(dimsproj);
@@ -54,11 +54,7 @@ namespace gtom
 
 		rmax = tmin(rmax, dimsproj.x / 2);
 
-		glm::mat2 m_magnification;
-		m_magnification[0][0] = magnification.x;
-		m_magnification[0][1] = magnification.y;
-		m_magnification[1][0] = magnification.z;
-		m_magnification[1][1] = magnification.w;
+		glm::mat2 m_magnification = Matrix2Rotation(-magnification.z) * Matrix2Scale(tfloat2(magnification.x, magnification.y)) * Matrix2Rotation(magnification.z);
 
 		float ewalddiameterinv = ewaldradiussuper == 0 ? 0 : 1.0f / (2.0f * ewaldradiussuper);
 

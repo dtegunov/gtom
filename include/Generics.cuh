@@ -737,7 +737,7 @@ namespace gtom
 	 * \param[in] d_regionorigins	Coordinates of the upper left corner of the extracted portion
 	 * \param[in] batch	Number of images to be extracted
 	 */
-	template <class T> void d_ExtractMany(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, int batch = 1);
+	template <class T> void d_ExtractMany(T* d_input, T* d_output, int3 sourcedims, int3 regiondims, int3* d_regionorigins, bool zeropad, int batch = 1);
 
 	/**
 	 * \brief Extracts rectangular portions from a set of images/volumes stored in separate memory locations at different positions

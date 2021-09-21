@@ -19,16 +19,21 @@ LINK_DIRECTORIES(/usr/local/cuda/lib64)
 
 FILE(GLOB_RECURSE SOURCES "src/*.cu")
 LIST(APPEND SOURCES src/Helpers/KaiserBessel.cpp)
+LIST(APPEND SOURCES src/Helpers/Misc.cpp)
 LIST(APPEND SOURCES src/IO/em.cpp src/IO/mrc.cpp src/IO/raw.cpp)
 LIST(APPEND SOURCES src/Optimization/dlib/all/source.cpp)
 LIST(APPEND SOURCES src/Optimization/polynomials/Polynomial.cpp src/Optimization/polynomials/PolynomialRootFinder.cpp)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -w")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++1y -mavx -w")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 
 SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-w")
 SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-gencode arch=compute_52,code=sm_52")
+SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-gencode arch=compute_61,code=sm_61")
+SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-gencode arch=compute_75,code=sm_75")
+SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-gencode arch=compute_86,code=sm_86")
 SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-restrict")
+SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-use_fast_math")
 SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-lineinfo")
 SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-std=c++11")
 SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-cudart=static")
@@ -38,19 +43,3 @@ CUDA_ADD_LIBRARY(gtom STATIC ${SOURCES})
 
 TARGET_LINK_LIBRARIES(gtom libcudart.so libcufft.so libcublas.so libcurand.so ${CMAKE_THREAD_LIBS_INIT})
 
-
-#Google Test
-
-INCLUDE_DIRECTORIES(GoogleTest GoogleTest/include)
-SET(SOURCES "")
-LIST(APPEND SOURCES GoogleTest/src/gtest-all.cc GoogleTest/src/gtest_main.cc)
-ADD_LIBRARY(googletest STATIC ${SOURCES})
-TARGET_LINK_LIBRARIES(googletest ${CMAKE_THREAD_LIBS_INIT})
-
-
-#GTOM Test
-
-INCLUDE_DIRECTORIES(GoogleTest/include /usr/local/cuda/include)
-FILE(GLOB_RECURSE SOURCES "GTOMTest/*.cpp")
-ADD_EXECUTABLE(gtomtest ${SOURCES})
-TARGET_LINK_LIBRARIES(gtomtest gtom googletest)
