@@ -13,9 +13,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 INCLUDE(FindCUDA)
 
-INCLUDE_DIRECTORIES(/usr/local/cuda/include include)
+INCLUDE_DIRECTORIES(${CUDA_HOME}/include include)
 
-LINK_DIRECTORIES(/usr/local/cuda/lib64)
+LINK_DIRECTORIES(${CUDA_HOME}/lib64)
 
 FILE(GLOB_RECURSE SOURCES "src/*.cu")
 LIST(APPEND SOURCES src/Helpers/KaiserBessel.cpp)
@@ -24,7 +24,7 @@ LIST(APPEND SOURCES src/IO/em.cpp src/IO/mrc.cpp src/IO/raw.cpp)
 LIST(APPEND SOURCES src/Optimization/dlib/all/source.cpp)
 LIST(APPEND SOURCES src/Optimization/polynomials/Polynomial.cpp src/Optimization/polynomials/PolynomialRootFinder.cpp)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++1y -mavx -w")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++11 -mavx -w")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 
 SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-w")
